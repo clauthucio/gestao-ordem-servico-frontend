@@ -1,1 +1,140 @@
-<p>login works!</p>
+<!-- Container centralizado da tela de login com fundo industrial. -->
+<div class="min-h-screen flex flex-col items-center justify-center p-6 industrial-bg bg-background text-on-surface antialiased">
+  <!-- Card principal de login. -->
+  <div class="w-full max-w-md">
+    
+    <!-- Secao do logo e titulo. -->
+    <div class="mb-10 text-center">
+      <!-- Icone do sistema em container arredondado. -->
+      <div class="inline-flex items-center justify-center p-3 mb-6 bg-gray-200 rounded-xl">
+        <span class="material-symbols-outlined text-primary text-4xl">precision_manufacturing</span>
+      </div>
+      <!-- Titulo do sistema. -->
+      <h1 class="text-2xl font-black tracking-tight text-on-background mb-1">Compras INDT</h1>
+      <!-- Subtitulo descritivo. -->
+      <p class="text-gray-500 text-sm font-medium">Sistema de Gestão de Compras</p>
+    </div>
+
+    <!-- Card de login com sombra e borda. -->
+    <div class="bg-surface-container-lowest p-8 rounded-xl shadow-[0px_20px_40px_rgba(42,52,57,0.08)] border border-outline-variant/10">
+      
+      <!-- Cabecalho do formulario. -->
+      <div class="mb-8">
+        <h2 class="text-xl font-bold text-on-surface tracking-tight">Acesse o sistema</h2>
+        <p class="text-gray-500 text-sm mt-1">Insira suas credenciais para continuar.</p>
+      </div>
+
+      <!-- Exibe mensagem de erro quando existir. -->
+      @if (error()) {
+        <!-- Caixa de alerta de erro com estilo do tema. -->
+        <div class="bg-error-container/20 border border-error/30 text-error text-sm rounded-lg p-3 mb-6 flex items-center gap-2">
+          <span class="material-symbols-outlined text-error text-lg">error</span>
+          {{ error() }}
+        </div>
+      }
+
+      <!-- Formulario de login. -->
+      <form (ngSubmit)="onSubmit()" #form="ngForm" class="space-y-6">
+        
+        <!-- Campo de email. -->
+        <div>
+          <!-- Label do email com estilo uppercase do tema. -->
+          <label class="block text-[11px] font-bold tracking-wider text-on-surface-variant uppercase mb-2">E-mail Corporativo</label>
+          <!-- Container do input com icone. -->
+          <div class="relative group">
+            <!-- Icone de email a esquerda. -->
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span class="material-symbols-outlined text-outline text-lg">mail</span>
+            </div>
+            <!-- Input de email com estilos do tema. -->
+            <input 
+              type="email" 
+              name="email" 
+              [(ngModel)]="email" 
+              required
+              class="block w-full pl-10 pr-4 py-3 bg-gray-200 border-0 rounded-lg focus:ring-2 focus:ring-primary/20 focus:bg-gray-100 transition-all text-sm placeholder:text-outline-variant"
+              placeholder="exemplo@indt.org.br"
+            />
+          </div>
+        </div>
+
+        <!-- Campo de senha. -->
+        <div>
+          <!-- Linha com label e link de esqueci senha. -->
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-[11px] font-bold tracking-wider text-on-surface-variant uppercase">Senha</label>
+            <a class="text-[11px] font-bold text-secondary hover:underline transition-all text-blue-700" href="#" onclick="event.preventDefault()">Esqueceu a senha?</a>
+          </div>
+          <!-- Container do input com icone. -->
+          <div class="relative group">
+            <!-- Icone de cadeado a esquerda. -->
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span class="material-symbols-outlined text-outline text-lg">lock</span>
+            </div>
+            <!-- Input de senha com estilos do tema. -->
+            <input 
+              type="password" 
+              name="password" 
+              [(ngModel)]="password" 
+              required
+              class="block w-full pl-10 pr-4 py-3 bg-gray-200 border-0 rounded-lg focus:ring-2 focus:ring-primary/20 focus:bg-gray-100 transition-all text-sm placeholder:text-outline-variant"
+              placeholder="••••••••"
+            />
+          </div>
+        </div>
+
+        <!-- Botao de envio com gradiente do tema. -->
+        <button 
+          type="submit" 
+          [disabled]="loading()"
+          class="w-full py-4 px-6 rounded-lg text-white font-bold tracking-wide btn-gradient hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          @if (loading()) {
+            <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+            <span>Entrando...</span>
+          } @else {
+            <span>Entrar</span>
+            <span class="material-symbols-outlined text-lg">login</span>
+          }
+        </button>
+      </form>
+
+      <!-- Link de suporte. -->
+      <div class="mt-8 pt-6 border-t border-outline-variant/15 text-center">
+        <p class="text-xs text-on-surface-variant">
+          Problemas com o acesso? 
+          <a class="text-primary font-semibold hover:underline" href="#" onclick="event.preventDefault()">Contate o Suporte TI</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- Selos de seguranca. -->
+    <div class="mt-12 flex flex-col items-center gap-6 opacity-60">
+      <div class="flex gap-8 items-center">
+        <div class="h-[1px] w-12 bg-outline-variant"></div>
+        <span class="text-[10px] font-bold tracking-[0.2em] uppercase text-outline">Segurança Industrial Nivel 4</span>
+        <div class="h-[1px] w-12 bg-outline-variant"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-4 w-full px-4">
+        <div class="flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-lg">
+          <span class="material-symbols-outlined text-outline text-md">shield</span>
+          <span class="text-[10px] font-semibold text-on-surface-variant">Dados Criptografados</span>
+        </div>
+        <div class="flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-lg">
+          <span class="material-symbols-outlined text-outline text-md">location_on</span>
+          <span class="text-[10px] font-semibold text-on-surface-variant">Acesso Restrito</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rodape. -->
+    <footer class="mt-16 text-center">
+      <p class="text-[11px] font-bold tracking-widest text-outline-variant uppercase">© 2026 INDT - Instituto de Desenvolvimento Tecnológico</p>
+    </footer>
+  </div>
+
+  <!-- Decoracao de fundo com icone de fabrica. -->
+  <div class="fixed bottom-0 right-0 p-8 pointer-events-none opacity-10">
+    <span class="material-symbols-outlined text-[200px]">factory</span>
+  </div>
+</div>
