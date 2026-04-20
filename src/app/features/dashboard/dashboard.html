@@ -1,0 +1,268 @@
+<!-- Metric Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+  
+  <!-- Card 1: OS Abertas Hoje -->
+  <div class="bg-white p-6 rounded-xl shadow-sm border border-transparent hover:shadow-md transition-all flex flex-col justify-between">
+    <div>
+      <div class="flex justify-between items-start mb-4">
+        <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+          <span class="material-symbols-outlined text-slate-600">pending_actions</span>
+        </div>
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">HOJE</span>
+      </div>
+      <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">OS Abertas Hoje</h3>
+      <p class="text-3xl font-black text-slate-800 tracking-tighter">12</p>
+    </div>
+    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-[11px] text-emerald-600 font-medium">
+      <span class="material-symbols-outlined text-sm mr-1">trending_up</span>
+      <span>8% vs. ontem</span>
+    </div>
+  </div>
+
+  <!-- Card 2: OS em Andamento -->
+  <div class="bg-white p-6 rounded-xl shadow-sm border border-transparent hover:shadow-md transition-all flex flex-col justify-between">
+    <div>
+      <div class="flex justify-between items-start mb-4">
+        <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+          <span class="material-symbols-outlined text-blue-600">engineering</span>
+        </div>
+      </div>
+      <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">OS em Andamento</h3>
+      <p class="text-3xl font-black text-slate-800 tracking-tighter">24</p>
+    </div>
+    <div class="mt-4 flex items-center gap-2">
+      <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div class="h-full bg-blue-600 rounded-full" style="width: 75%"></div>
+      </div>
+      <span class="text-[10px] font-bold text-blue-600">75%</span>
+    </div>
+  </div>
+
+  <!-- Card 3: Prioridade Crítica -->
+  <div class="bg-red-50 p-6 rounded-xl shadow-sm border border-red-100 hover:shadow-md transition-all flex flex-col justify-between">
+    <div>
+      <div class="flex justify-between items-start mb-4">
+        <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+          <span class="material-symbols-outlined text-red-600" style="font-variation-settings: 'FILL' 1;">priority_high</span>
+        </div>
+        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-600 text-white uppercase">Crítico</span>
+      </div>
+      <h3 class="text-red-600 text-xs font-semibold uppercase tracking-wider mb-1">OS Prioridade Crítica</h3>
+      <p class="text-3xl font-black text-red-800 tracking-tighter">3</p>
+    </div>
+    <p class="mt-4 text-[11px] text-red-600 font-medium">Ação imediata necessária em Linha A</p>
+  </div>
+
+  <!-- Card 4: Tempo Médio -->
+  <div class="bg-white p-6 rounded-xl shadow-sm border border-transparent hover:shadow-md transition-all flex flex-col justify-between">
+    <div>
+      <div class="flex justify-between items-start mb-4">
+        <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+          <span class="material-symbols-outlined text-emerald-600">schedule</span>
+        </div>
+      </div>
+      <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Tempo Médio de Conclusão</h3>
+      <p class="text-3xl font-black text-slate-800 tracking-tighter">4.2h</p>
+    </div>
+    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-[11px] text-slate-500 font-medium">
+      <span class="material-symbols-outlined text-sm mr-1">check_circle</span>
+      <span>Dentro da meta (5h)</span>
+    </div>
+  </div>
+</div>
+
+<!-- Dashboard Body -->
+<div class="grid grid-cols-12 gap-8">
+  
+  <!-- Main OS Table -->
+  <section class="col-span-12 xl:col-span-8">
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div class="px-6 py-5 flex items-center justify-between border-b border-slate-100">
+        <h2 class="text-sm font-bold text-slate-800">Ordens de Serviço Recentes</h2>
+        <button class="text-slate-600 text-xs font-semibold hover:underline">Ver todas</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID</th>
+              <th class="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Equipamento</th>
+              <th class="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
+              <th class="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Técnico</th>
+              <th class="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr class="hover:bg-slate-50/50 transition-colors">
+              <td class="px-6 py-4 text-xs font-mono font-medium text-slate-600">#OS-8842</td>
+              <td class="px-6 py-4">
+                <p class="text-sm font-semibold text-slate-800">Prensa Hidráulica P-04</p>
+                <p class="text-[10px] text-slate-400">Setor: Estamparia</p>
+              </td>
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600 uppercase">Aberta</span>
+              </td>
+              <td class="px-6 py-4 text-sm text-slate-500">---</td>
+              <td class="px-6 py-4 text-right">
+                <button class="material-symbols-outlined text-slate-400 hover:text-slate-600 transition-colors">more_vert</button>
+              </td>
+            </tr>
+            <tr class="hover:bg-slate-50/50 transition-colors">
+              <td class="px-6 py-4 text-xs font-mono font-medium text-slate-600">#OS-8841</td>
+              <td class="px-6 py-4">
+                <p class="text-sm font-semibold text-slate-800">Motor de Exaustão EX-22</p>
+                <p class="text-[10px] text-slate-400">Setor: Pintura</p>
+              </td>
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-blue-50 text-blue-600 uppercase">Em andamento</span>
+              </td>
+              <td class="px-6 py-4 text-sm text-slate-500">Ricardo Alves</td>
+              <td class="px-6 py-4 text-right">
+                <button class="material-symbols-outlined text-slate-400 hover:text-slate-600 transition-colors">more_vert</button>
+              </td>
+            </tr>
+            <tr class="hover:bg-slate-50/50 transition-colors">
+              <td class="px-6 py-4 text-xs font-mono font-medium text-slate-600">#OS-8839</td>
+              <td class="px-6 py-4">
+                <p class="text-sm font-semibold text-slate-800">Robô de Solda RS-09</p>
+                <p class="text-[10px] text-slate-400">Setor: Montagem</p>
+              </td>
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-red-50 text-red-600 uppercase">Prioridade Crítica</span>
+              </td>
+              <td class="px-6 py-4 text-sm text-slate-500">Fabio Souza</td>
+              <td class="px-6 py-4 text-right">
+                <button class="material-symbols-outlined text-slate-400 hover:text-slate-600 transition-colors">more_vert</button>
+              </td>
+            </tr>
+            <tr class="hover:bg-slate-50/50 transition-colors">
+              <td class="px-6 py-4 text-xs font-mono font-medium text-slate-600">#OS-8838</td>
+              <td class="px-6 py-4">
+                <p class="text-sm font-semibold text-slate-800">Esteira Transportadora T-01</p>
+                <p class="text-[10px] text-slate-400">Setor: Logística</p>
+              </td>
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-orange-50 text-orange-600 uppercase">Aguardando Peça</span>
+              </td>
+              <td class="px-6 py-4 text-sm text-slate-500">Marcos Lima</td>
+              <td class="px-6 py-4 text-right">
+                <button class="material-symbols-outlined text-slate-400 hover:text-slate-600 transition-colors">more_vert</button>
+              </td>
+            </tr>
+            <tr class="hover:bg-slate-50/50 transition-colors">
+              <td class="px-6 py-4 text-xs font-mono font-medium text-slate-600">#OS-8835</td>
+              <td class="px-6 py-4">
+                <p class="text-sm font-semibold text-slate-800">Compressor Central C-02</p>
+                <p class="text-[10px] text-slate-400">Setor: Utilidades</p>
+              </td>
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-600 uppercase">Concluída</span>
+              </td>
+              <td class="px-6 py-4 text-sm text-slate-500">Ana Paula</td>
+              <td class="px-6 py-4 text-right">
+                <button class="material-symbols-outlined text-slate-400 hover:text-slate-600 transition-colors">more_vert</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sidebar -->
+  <aside class="col-span-12 xl:col-span-4 space-y-8">
+    
+    <!-- Activity Chart -->
+    <div class="bg-white p-6 rounded-xl shadow-sm">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-sm font-bold text-slate-800">Atividade Semanal</h2>
+        <span class="text-[10px] font-bold text-slate-400">ÚLTIMOS 7 DIAS</span>
+      </div>
+      <div class="relative h-32 flex items-end justify-between gap-2 px-1">
+        <div class="flex-1 bg-slate-100 rounded-t-sm h-[40%] hover:bg-slate-300 transition-colors cursor-pointer"></div>
+        <div class="flex-1 bg-slate-100 rounded-t-sm h-[65%] hover:bg-slate-300 transition-colors cursor-pointer"></div>
+        <div class="flex-1 bg-slate-100 rounded-t-sm h-[85%] hover:bg-slate-300 transition-colors cursor-pointer"></div>
+        <div class="flex-1 bg-slate-100 rounded-t-sm h-[55%] hover:bg-slate-300 transition-colors cursor-pointer"></div>
+        <div class="flex-1 bg-slate-100 rounded-t-sm h-[70%] hover:bg-slate-300 transition-colors cursor-pointer"></div>
+        <div class="flex-1 bg-slate-100 rounded-t-sm h-[95%] hover:bg-slate-300 transition-colors cursor-pointer"></div>
+        <div class="flex-1 bg-slate-600 rounded-t-sm h-[60%]"></div>
+      </div>
+      <div class="flex justify-between mt-2 text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+        <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sab</span><span>Dom</span>
+      </div>
+      <div class="mt-6 flex items-center justify-between">
+        <div class="text-center">
+          <p class="text-xs text-slate-400 font-medium">Concluídas</p>
+          <p class="text-lg font-bold text-slate-800">142</p>
+        </div>
+        <div class="w-[1px] h-8 bg-slate-100"></div>
+        <div class="text-center">
+          <p class="text-xs text-slate-400 font-medium">Rejeitadas</p>
+          <p class="text-lg font-bold text-red-600">2</p>
+        </div>
+        <div class="w-[1px] h-8 bg-slate-100"></div>
+        <div class="text-center">
+          <p class="text-xs text-slate-400 font-medium">Eficiência</p>
+          <p class="text-lg font-bold text-emerald-600">94%</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team Status -->
+    <div class="bg-white p-6 rounded-xl shadow-sm">
+      <h2 class="text-sm font-bold text-slate-800 mb-6">Equipe de Plantão</h2>
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDg6n0KBPJcqXxX2h-1lmOQZkZlxoFKuBnQ_AfGoWqTK1n-85cyKa_whduwN_kw9uR6IOIcqI31fF7eH5YpPS0DKnuqbCcW9-E_PXTr3eX9M53WwRFTIE1BQucx3s0aGRhsg73xpaBpanUx7wxYF-RPemHtMIlGLesIxBPkdtDzxqSoyfChge3Q-Wi1oRpWFhSQrWqrOfX0q-c8s1y1EexxeRUJNrD3uLenDIIJGrCXGxB9G_mre5v4ON778acfQR3wC_CkRDFwT9sq" alt="Ricardo Alves" class="w-8 h-8 rounded-full object-cover" />
+            <div>
+              <p class="text-xs font-bold text-slate-800">Ricardo Alves</p>
+              <p class="text-[10px] text-blue-600 font-medium">Em Manutenção OS-8841</p>
+            </div>
+          </div>
+          <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAF1dGwwNehj3gUVyIhCy0mil-8Q1xZKqv9pd7isSxOI0nxsyH5pAEBLNUJ8vOsZ0fJylL-jt5qvX7jmA_1bhxcP6XO6PEVXO6gvTct5pYhS_3-p_i5w3lLZ-VX4jRLGiKgC-N_xJlHO_eJAAMQiRbDEZ2xJUU2y0k81asKu_UO7LLHHMbpACRwzQZINTlbM9nYWyBU4KSxBplbsuAfXUHviKMzXsO0-_2bGTSVONGzzpgTBIAGVx2voryHSoLHkQ49VNv-7thCZyto" alt="Ana Paula" class="w-8 h-8 rounded-full object-cover" />
+            <div>
+              <p class="text-xs font-bold text-slate-800">Ana Paula</p>
+              <p class="text-[10px] text-emerald-600 font-medium">Disponível</p>
+            </div>
+          </div>
+          <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAKSWo8Z919yjy8H_SvzPRhv5qV7Huq_a0MYxQNlfbspeXgjiyJt3H601w5Pe6--uf3z-F-nXYst3pqMHX1GIyhtuBLUrBiMJsS6naPhbu3OIMAp3q4Uq6XsEelLBpzbTbxXUtDVxWt5MtkyoPILWR0iso6zu1CKgCpWB21uGi08a380VtQaLAeZNJ24pa-Vg-BBschJh7lJl225uELL2YqPtZrtBOZUjBHEx1iwTkuqzkH47HbdyC5ttNvf2T_8cCI13mBQ4F60O4" alt="Fabio Souza" class="w-8 h-8 rounded-full object-cover" />
+            <div>
+              <p class="text-xs font-bold text-slate-800">Fabio Souza</p>
+              <p class="text-[10px] text-red-600 font-medium">Ocupado (Crítico)</p>
+            </div>
+          </div>
+          <span class="w-2 h-2 rounded-full bg-red-600"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shift Report -->
+    <div class="p-6 rounded-xl bg-slate-600 text-white shadow-sm relative overflow-hidden">
+      <div class="relative z-10">
+        <h3 class="text-sm font-bold mb-2">Relatório de Turno</h3>
+        <p class="text-xs text-white/80 mb-4 leading-relaxed">Gere o consolidado de atividades do turno matutino agora.</p>
+        <button class="px-4 py-2 bg-white text-slate-600 text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-slate-100 transition-colors">
+          Gerar PDF
+        </button>
+      </div>
+      <span class="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl text-white/10">description</span>
+    </div>
+  </aside>
+</div>
+
+<!-- FAB -->
+<div class="fixed bottom-8 right-8 z-50">
+  <button class="w-14 h-14 bg-gradient-to-br from-slate-600 to-slate-700 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all group">
+    <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">add</span>
+    <span class="absolute right-full mr-4 px-3 py-1.5 bg-slate-800 text-white text-[10px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">Criar OS</span>
+  </button>
+</div>

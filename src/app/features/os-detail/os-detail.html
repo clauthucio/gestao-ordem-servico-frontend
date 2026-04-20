@@ -1,0 +1,203 @@
+<!-- Header Section: Tonal Layering -->
+<div class="mb-8 flex flex-wrap items-end justify-between gap-6">
+  <div>
+    <div class="flex items-center gap-3 mb-2">
+      <span class="bg-primary/12 text-primary px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">{{ osType }}</span>
+      <span class="bg-error/12 text-error px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">{{ priority }}</span>
+    </div>
+    <h2 class="text-3xl font-black tracking-tight text-on-background">{{ osNumber }}</h2>
+    <p class="text-on-surface-variant flex items-center gap-2 mt-1">
+      <span class="material-symbols-outlined text-sm">calendar_today</span>
+      Criada em {{ createdAt }}
+    </p>
+  </div>
+  <div class="flex items-center gap-3">
+    <div class="flex flex-col items-end mr-4">
+      <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Status Atual</span>
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full animate-pulse" [class]="statusColor"></span>
+        <span class="font-bold text-on-background">{{ currentStatus }}</span>
+      </div>
+    </div>
+    <button 
+      class="px-6 py-2.5 bg-gradient-to-br from-primary to-primary-dim text-white rounded-lg font-semibold shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity flex items-center gap-2"
+      (click)="onChangeStatus()"
+    >
+      <span class="material-symbols-outlined text-sm">check_circle</span>
+      Alterar Status
+    </button>
+  </div>
+</div>
+
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  
+  <!-- Left Column: Primary Details -->
+  <div class="lg:col-span-2 space-y-6">
+    
+    <!-- Equipment & Request Card -->
+    <div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/10">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Equipment -->
+        <div>
+          <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-4">Equipamento</h3>
+          <div class="flex items-start gap-4">
+            <div class="w-12 h-12 bg-surface-container-high rounded-lg flex items-center justify-center">
+              <span class="material-symbols-outlined text-primary text-2xl">precision_manufacturing</span>
+            </div>
+            <div>
+              <h4 class="font-bold text-lg text-on-background">{{ equipmentName }}</h4>
+              <p class="text-on-surface-variant text-sm">ID: {{ equipmentId }} | {{ equipmentSector }}</p>
+            </div>
+          </div>
+        </div>
+        <!-- Requester -->
+        <div>
+          <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-4">Solicitante</h3>
+          <div class="flex items-center gap-4">
+            <img 
+              [src]="requesterAvatar" 
+              [alt]="requesterName"
+              class="w-10 h-10 rounded-full object-cover"
+            />
+            <div>
+              <h4 class="font-bold text-on-background">{{ requesterName }}</h4>
+              <p class="text-on-surface-variant text-sm">{{ requesterRole }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Description -->
+      <div class="mt-8 pt-8 border-t border-outline-variant/10">
+        <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-3">Descrição da Falha</h3>
+        <p class="text-on-background leading-relaxed">{{ failureDescription }}</p>
+      </div>
+    </div>
+
+    <!-- Execution & Timeline Card -->
+    <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden">
+      <div class="p-6 border-b border-outline-variant/10 flex justify-between items-center">
+        <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Execução e Histórico</h3>
+        <span class="text-xs text-on-surface-variant">{{ timelineEvents.length }} Eventos registrados</span>
+      </div>
+      <div class="p-8">
+        <div class="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:h-full before:w-0.5 before:bg-surface-container-high">
+          @for (event of timelineEvents; track $index) {
+            <div class="relative flex items-start gap-6">
+              <div 
+                class="absolute left-0 w-10 h-10 rounded-full flex items-center justify-center z-10 border-4 border-surface-container-lowest {{ event.iconBg }}"
+              >
+                <span 
+                  class="material-symbols-outlined text-sm"
+                  [class]="event.iconColor"
+                  [style.font-variation-settings]="getIconSettings(event.filled)">
+                  {{ event.icon }}
+                </span>
+              </div>
+              <div class="ml-10">
+                <p class="text-sm font-bold text-on-background">{{ event.title }}</p>
+                <p class="text-xs text-on-surface-variant">{{ event.timestamp }} por {{ event.author }}</p>
+                @if (event.note) {
+                  <div class="mt-2 bg-surface-container-low p-3 rounded-lg text-xs italic text-on-surface-variant">
+                    "{{ event.note }}"
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Sidebar Actions & Closure -->
+  <div class="space-y-6">
+    
+    <!-- Action Section -->
+    <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+      <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-6">Controle de Atribuição</h3>
+      <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-2">Técnico Responsável</label>
+      <div class="relative mb-6">
+        <select 
+          class="w-full pl-4 pr-10 py-3 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm font-medium focus:ring-2 focus:ring-primary/20 appearance-none"
+          [(ngModel)]="selectedTechnician"
+        >
+          @for (tec of technicians; track tec) {
+            <option [value]="tec">{{ tec }}</option>
+          }
+        </select>
+        <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 pointer-events-none">unfold_more</span>
+      </div>
+      <button 
+        class="w-full py-3 bg-surface-container-high text-on-surface font-bold rounded-lg hover:bg-surface-container-highest transition-colors text-sm flex items-center justify-center gap-2"
+        (click)="onReassign()"
+      >
+        <span class="material-symbols-outlined text-lg">sync</span>
+        Reatribuir Equipe
+      </button>
+    </div>
+
+    <!-- Closing Section (Disabled/Greyed out) -->
+    <div class="bg-surface-container-low p-6 rounded-xl border border-dashed border-outline-variant opacity-60 grayscale cursor-not-allowed">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Fechamento de OS</h3>
+        <span class="material-symbols-outlined text-on-surface-variant">lock</span>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Serviço Realizado</label>
+          <div class="w-full h-20 bg-surface-container-lowest/50 rounded border border-outline-variant/10"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Peças Utilizadas</label>
+            <div class="w-full h-10 bg-surface-container-lowest/50 rounded border border-outline-variant/10"></div>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Horas Trabalhadas</label>
+            <div class="w-full h-10 bg-surface-container-lowest/50 rounded border border-outline-variant/10"></div>
+          </div>
+        </div>
+        <div class="pt-4">
+          <button 
+            class="w-full py-3 bg-slate-300 text-slate-500 font-bold rounded-lg cursor-not-allowed text-sm" 
+            disabled
+          >
+            Encerrar Ordem de Serviço
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Technical Specs Quick View -->
+    <div class="bg-primary text-white p-6 rounded-xl">
+      <h3 class="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-4">Manual do Equipamento</h3>
+      <div 
+        class="flex items-center justify-between group cursor-pointer"
+        (click)="onDownloadManual()"
+      >
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-3xl">picture_as_pdf</span>
+          <div>
+            <p class="text-sm font-bold">{{ manualName }}</p>
+            <p class="text-xs text-white/70">{{ manualInfo }}</p>
+          </div>
+        </div>
+        <span class="material-symbols-outlined transform group-hover:translate-x-1 transition-transform">download</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FAB for New Event -->
+<div class="fixed bottom-8 right-8 z-30">
+  <button 
+    class="w-14 h-14 bg-on-background text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all group"
+    (click)="onNewComment()"
+  >
+    <span class="material-symbols-outlined text-2xl">add_comment</span>
+    <span class="absolute right-full mr-4 px-4 py-2 bg-on-background rounded-lg text-sm font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+      Novo Comentário
+    </span>
+  </button>
+</div>

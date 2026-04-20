@@ -1,0 +1,54 @@
+<header class="fixed top-0 right-0 left-0 z-40 bg-slate-50/80 backdrop-blur-md shadow-sm flex items-center justify-between px-6 h-16 ml-64">
+  <!-- Left: Menu + Title -->
+  <div class="flex items-center gap-4">
+    <span 
+      class="text-slate-500 material-symbols-outlined cursor-pointer"
+      (click)="menuClick.emit()"
+    >
+      menu
+    </span>
+    <h2 class="text-lg font-bold tracking-tight text-slate-800">{{ pageTitle() }}</h2>
+  </div>
+
+  <!-- Right: Search + Actions + Profile -->
+  <div class="flex items-center gap-6">
+    <!-- Search -->
+    <div class="relative flex items-center">
+      <span class="absolute left-3 text-slate-400 material-symbols-outlined text-xl">search</span>
+      <input 
+        type="text"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchChange.emit($event)"
+        class="pl-10 pr-4 py-1.5 bg-slate-200/50 border-none rounded-lg text-sm w-64 focus:ring-2 focus:ring-primary/20 transition-all"
+        placeholder="Buscar OS, Máquina..."
+      />
+    </div>
+
+    <!-- Actions + Profile -->
+    <div class="flex items-center gap-4 border-l border-slate-200 pl-6">
+      <!-- Notifications -->
+      <span 
+        class="material-symbols-outlined text-slate-600 cursor-pointer hover:text-primary transition-colors"
+        (click)="notificationClick.emit()"
+      >
+        notifications
+      </span>
+
+      <!-- User Profile -->
+      <div 
+        class="flex items-center gap-3 cursor-pointer group"
+        (click)="profileClick.emit()"
+      >
+        <div class="text-right">
+          <p class="text-sm font-bold text-slate-800 leading-none">{{ user().name }}</p>
+          <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">{{ user().role }}</p>
+        </div>
+        <img 
+          [src]="user().avatarUrl" 
+          [alt]="user().name"
+          class="w-10 h-10 rounded-xl object-cover ring-2 ring-slate-100 group-hover:ring-primary/30 transition-all"
+        />
+      </div>
+    </div>
+  </div>
+</header>

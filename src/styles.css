@@ -1,3 +1,43 @@
-/* You can add global styles to this file, and also import other style files */
+@import "tailwindcss";
 
-@import 'tailwindcss';
+@theme {
+  /* Cores do seu tema original */
+  --color-primary: #545f73;
+  --color-primary-dim: #485367;
+  --color-on-primary: #f6f7ff;
+  --color-primary-container: #d8e3fb;
+  
+  --color-secondary: #005bc4;
+  --color-secondary-container: #d8e2ff;
+  --color-on-secondary: #f9f8ff;
+  --color-secondary-dim: #004fad;
+  
+  --color-tertiary: #006d4a;
+  --color-tertiary-container: #69f6b8;
+  --color-on-tertiary: #e6ffee;
+  
+  --color-error: #9f403d;
+  --color-error-container: #fe8983;
+  --color-on-error: #fff7f6;
+  --color-error-dim: #4e0309;
+  
+  --color-surface: #f7f9fb;
+  --color-on-surface: #2a3439;
+  --color-on-surface-variant: #566166;
+  --color-surface-variant: #d9e4ea;
+  --color-surface-container: #e8eff3;
+  --color-surface-container-low: #f0f4f7;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-high: #e1e9ee;
+  --color-surface-dim: #cfdce3;
+  --color-surface-bright: #f7f9fb;
+  
+  --color-outline: #717c82;
+  --color-outline-variant: #a9b4b9;
+  --color-background: #f7f9fb;
+  --color-on-background: #2a3439;
+  
+  --color-inverse-surface: #0b0f10;
+  --color-inverse-on-surface: #9a9d9f;
+  --color-inverse-primary: #dae6fe;
+}

@@ -11,6 +11,18 @@ export const routes: Routes = [
     path: 'auth',
     loadChildren: () => import('./features/auth/auth.routes').then(m => m.authRoutes)
   },
+
+  // Rota do Dashboard (Pasta separada)
+  {
+    path: 'dashboard',
+    loadComponent: () => import('./features/dashboard/dashboard').then(m => m.Dashboard)
+  },
+
+  // Rota do Detalhe da OS (Pasta separada)
+  {
+    path: 'os-detail',
+    loadComponent: () => import('./features/os-detail/os-detail').then(m => m.OsDetail)
+  },
   /* 💡 Descomente os blocos abaixo conforme for criando os arquivos de rotas para cada pasta:
   {
     path: 'cotacoes',
