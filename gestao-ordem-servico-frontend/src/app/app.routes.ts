@@ -9,7 +9,7 @@ export const routes: Routes = [
   {
     // Feature de Autenticação (Carregada via Lazy Loading)
     path: 'auth',
-    loadChildren: () => import('./features/login/auth/auth.routes').then(m => m.authRoutes)
+    loadChildren: () => import('./features/auth/auth.routes').then(m => m.authRoutes)
   },
   /* 💡 Descomente os blocos abaixo conforme for criando os arquivos de rotas para cada pasta:
   {
