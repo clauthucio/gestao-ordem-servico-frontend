@@ -2,7 +2,7 @@
 <div class="min-h-screen flex flex-col items-center justify-center p-6 industrial-bg bg-background text-on-surface antialiased">
   <!-- Card principal de login. -->
   <div class="w-full max-w-md">
-    
+
     <!-- Secao do logo e titulo. -->
     <div class="mb-10 text-center">
       <!-- Icone do sistema em container arredondado. -->
@@ -17,7 +17,7 @@
 
     <!-- Card de login com sombra e borda. -->
     <div class="bg-surface-container-lowest p-8 rounded-xl shadow-[0px_20px_40px_rgba(42,52,57,0.08)] border border-outline-variant/10">
-      
+
       <!-- Cabecalho do formulario. -->
       <div class="mb-8">
         <h2 class="text-xl font-bold text-on-surface tracking-tight">Acesse o sistema</h2>
@@ -35,7 +35,7 @@
 
       <!-- Formulario de login. -->
       <form (ngSubmit)="onSubmit()" #form="ngForm" class="space-y-6">
-        
+
         <!-- Campo de email. -->
         <div>
           <!-- Label do email com estilo uppercase do tema. -->
@@ -47,10 +47,10 @@
               <span class="material-symbols-outlined text-outline text-lg">mail</span>
             </div>
             <!-- Input de email com estilos do tema. -->
-            <input 
-              type="email" 
-              name="email" 
-              [(ngModel)]="email" 
+            <input
+              type="email"
+              name="email"
+              [(ngModel)]="emailUsuario"
               required
               class="block w-full pl-10 pr-4 py-3 bg-gray-200 border-0 rounded-lg focus:ring-2 focus:ring-primary/20 focus:bg-gray-100 transition-all text-sm placeholder:text-outline-variant"
               placeholder="exemplo@indt.org.br"
@@ -72,10 +72,10 @@
               <span class="material-symbols-outlined text-outline text-lg">lock</span>
             </div>
             <!-- Input de senha com estilos do tema. -->
-            <input 
-              type="password" 
-              name="password" 
-              [(ngModel)]="password" 
+            <input
+              type="password"
+              name="password"
+              [(ngModel)]="senhaUsuario"
               required
               class="block w-full pl-10 pr-4 py-3 bg-gray-200 border-0 rounded-lg focus:ring-2 focus:ring-primary/20 focus:bg-gray-100 transition-all text-sm placeholder:text-outline-variant"
               placeholder="••••••••"
@@ -84,8 +84,8 @@
         </div>
 
         <!-- Botao de envio com gradiente do tema. -->
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           [disabled]="loading()"
           class="w-full py-4 px-6 rounded-lg text-white font-bold tracking-wide btn-gradient hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -102,7 +102,7 @@
       <!-- Link de suporte. -->
       <div class="mt-8 pt-6 border-t border-outline-variant/15 text-center">
         <p class="text-xs text-on-surface-variant">
-          Problemas com o acesso? 
+          Problemas com o acesso?
           <a class="text-primary font-semibold hover:underline" href="#" onclick="event.preventDefault()">Contate o Suporte TI</a>
         </p>
       </div>
