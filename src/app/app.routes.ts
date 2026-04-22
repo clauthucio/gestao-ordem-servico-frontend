@@ -23,6 +23,10 @@ export const routes: Routes = [
     path: 'os-detail',
     loadComponent: () => import('./features/os-detail/os-detail').then(m => m.OsDetail)
   },
+  {
+    path: 'equipamentos',
+    loadComponent: () => import('./features/equipamentos/equipamentos').then(m => m.Equipamentos)
+  },
   /* 💡 Descomente os blocos abaixo conforme for criando os arquivos de rotas para cada pasta:
   {
     path: 'cotacoes',
