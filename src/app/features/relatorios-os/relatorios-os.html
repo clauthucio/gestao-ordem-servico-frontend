@@ -1,0 +1,174 @@
+<!-- Main Content Canvas -->
+<div class="pb-12 px-8 min-h-screen bg-background">
+  
+  <!-- Header & Filters Area -->
+  <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+    <div>
+      <h2 class="text-3xl font-extrabold text-on-background tracking-tight">{{ titulo }}</h2>
+      <p class="text-on-surface-variant text-sm mt-1">{{ subtitulo }}</p>
+    </div>
+    <div class="flex items-center gap-3 bg-surface-container-low p-2 rounded-xl border border-outline-variant/10">
+      <div class="flex flex-col px-3">
+        <label class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Período</label>
+        <div class="flex items-center gap-2 text-sm font-semibold text-on-surface">
+          <span class="material-symbols-outlined text-sm">calendar_today</span>
+          <span>{{ periodo }}</span>
+        </div>
+      </div>
+      <button 
+        class="bg-slate-300 bg-surface-container-highest p-2 rounded-lg hover:bg-surface-variant transition-colors"
+        (click)="onFiltrar()"
+      >
+        <span class="material-symbols-outlined text-primary">filter_list</span>
+      </button>
+      <button 
+        class="bg-primary text-on-primary px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 shadow-lg shadow-primary/20"
+        (click)="onExportar()"
+      >
+        <span class="material-symbols-outlined text-sm">download</span>
+        EXPORTAR
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary KPI Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <!-- KPI 1 -->
+    <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/5">
+      <div class="flex items-center justify-between mb-4">
+        <div class="p-2 bg-primary-container/30 rounded-lg">
+          <span class="material-symbols-outlined text-primary">task_alt</span>
+        </div>
+        <span class="text-tertiary font-bold text-xs bg-tertiary/10 px-2 py-1 rounded">{{ variacaoOs }} vs mês ant.</span>
+      </div>
+      <p class="text-on-surface-variant text-xs font-bold uppercase tracking-widest">Total OS Concluídas</p>
+      <h3 class="text-4xl font-black text-on-surface mt-2 tracking-tighter">{{ totalOsConcluidas }}</h3>
+    </div>
+    <!-- KPI 2 -->
+    <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/5">
+      <div class="flex items-center justify-between mb-4">
+        <div class="p-2 bg-secondary-container/30 rounded-lg">
+          <span class="material-symbols-outlined text-secondary">timer</span>
+        </div>
+        <span class="text-on-surface-variant font-bold text-xs bg-surface-container-high px-2 py-1 rounded">{{ statusHoras }}</span>
+      </div>
+      <p class="text-on-surface-variant text-xs font-bold uppercase tracking-widest">Total Horas Técnicas</p>
+      <h3 class="text-4xl font-black text-on-surface mt-2 tracking-tighter">{{ totalHoras }}</h3>
+    </div>
+    <!-- KPI 3 -->
+    <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/5">
+      <div class="flex items-center justify-between mb-4">
+        <div class="p-2 bg-tertiary-container/20 rounded-lg">
+          <span class="material-symbols-outlined text-tertiary">trending_up</span>
+        </div>
+        <span class="text-error font-bold text-xs bg-error/10 px-2 py-1 rounded">{{ variacaoEficiencia }} vs meta</span>
+      </div>
+      <p class="text-on-surface-variant text-xs font-bold uppercase tracking-widest">Eficiência Média</p>
+      <h3 class="text-4xl font-black text-on-surface mt-2 tracking-tighter">{{ eficienciaMedia }}</h3>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Productivity Table -->
+    <div class="lg:col-span-2 bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-outline-variant/5">
+      <div class="p-6 border-b border-surface-container-low flex items-center justify-between">
+        <h4 class="font-bold text-on-surface text-lg">Ranking de Produtividade</h4>
+        <span class="text-xs font-medium text-on-surface-variant bg-surface-container px-3 py-1 rounded-full">Top 15 Técnicos</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-separate border-spacing-y-2 px-6 pb-6">
+          <thead>
+            <tr class="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.1em]">
+              <th class="py-4 pl-4">Técnico</th>
+              <th class="py-4 text-center">OS Concluídas</th>
+              <th class="py-4 text-center">Horas Totais</th>
+              <th class="py-4 text-right pr-4">Média / OS</th>
+            </tr>
+          </thead>
+          <tbody class="text-sm">
+            @for (tec of tecnicos; track tec.iniciais) {
+              <tr class="bg-surface-container-low/50 hover:bg-surface-container-low transition-colors group">
+                <td class="py-4 pl-4 rounded-l-xl">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs {{ tec.corIniciais }}">
+                      {{ tec.iniciais }}
+                    </div>
+                    <span class="font-semibold text-on-surface">{{ tec.nome }}</span>
+                  </div>
+                </td>
+                <td class="py-4 text-center font-bold text-on-surface">{{ tec.osConcluidas }}</td>
+                <td class="py-4 text-center text-on-surface-variant">{{ tec.horasTotais }}h</td>
+                <td class="py-4 text-right pr-4 rounded-r-xl font-mono font-bold {{ tec.corMedia }}">{{ tec.mediaOs }}h</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="p-6 mt-auto flex justify-center">
+        <button 
+          class="text-sm font-bold text-primary hover:underline underline-offset-4"
+          (click)="onVerListaCompleta()"
+        >
+          Ver Lista Completa
+        </button>
+      </div>
+    </div>
+
+    <!-- Performance Chart -->
+    <div class="bg-surface-container-lowest rounded-xl shadow-sm p-6 border border-outline-variant/5">
+      <div class="mb-8">
+        <h4 class="font-bold text-on-surface text-lg">Top 5 - Volume de OS</h4>
+        <p class="text-xs text-on-surface-variant mt-1">Comparativo de entregas por técnico</p>
+      </div>
+      <div class="space-y-6">
+        @for (item of chartData; track item.nome) {
+          <div>
+            <div class="flex justify-between text-xs font-bold mb-2">
+              <span class="text-on-surface">{{ item.nome }}</span>
+              <span class="text-on-surface-variant">{{ item.valor }} OS</span>
+            </div>
+            <div class="h-3 w-full bg-surface-container rounded-full overflow-hidden">
+              <div class="h-full rounded-full {{ item.cor }}" [style.width.%]="item.percentual"></div>
+            </div>
+          </div>
+        }
+      </div>
+      <!-- Insight Box -->
+      <div class="mt-12 p-4 bg-primary/5 rounded-xl border-l-4 border-primary">
+        <div class="flex gap-3">
+          <span class="material-symbols-outlined text-primary text-lg">lightbulb</span>
+          <div>
+            <p class="text-slate-700 text-xs font-bold text-primary uppercase tracking-wider mb-1">{{ insightTitulo }}</p>
+            <p class="text-slate-700 text-xs text-on-primary-fixed-variant leading-relaxed">{{ insightTexto }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Secondary Row for Contextual Data -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
+    <div class="md:col-span-1 bg-surface-container-low p-5 rounded-xl flex flex-col justify-center items-center text-center">
+      <span class="material-symbols-outlined text-3xl text-secondary mb-2">groups</span>
+      <h5 class="text-on-surface font-black text-2xl">{{ tecnicosAtivos }}</h5>
+      <p class="text-xs font-bold text-on-surface-variant uppercase">Técnicos Ativos</p>
+    </div>
+    <div class="md:col-span-1 bg-surface-container-low p-5 rounded-xl flex flex-col justify-center items-center text-center">
+      <span class="material-symbols-outlined text-3xl text-tertiary mb-2">verified</span>
+      <h5 class="text-on-surface font-black text-2xl">{{ slaSeguranca }}</h5>
+      <p class="text-xs font-bold text-on-surface-variant uppercase">SLA de Segurança</p>
+    </div>
+    <div class="md:col-span-2 bg-surface-container-low p-5 rounded-xl flex items-center justify-between px-8">
+      <div class="flex flex-col">
+        <p class="text-xs font-bold text-on-surface-variant uppercase mb-1">Próxima Revisão de Metas</p>
+        <h5 class="text-on-surface font-bold">{{ proximaRevisao }}</h5>
+      </div>
+      <button 
+        class="bg-white bg-surface-container-lowest text-on-surface border border-outline-variant/30 px-4 py-2 rounded-lg text-xs font-bold hover:bg-white transition-all"
+        (click)="onAgendarReuniao()"
+      >
+        AGENDAR REUNIÃO
+      </button>
+    </div>
+  </div>
+</div>

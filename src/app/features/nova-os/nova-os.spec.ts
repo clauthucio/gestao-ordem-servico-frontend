@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { NovaOs } from './nova-os';
+import { RelatoriosOs } from './relatorios-os';
 
-describe('NovaOs', () => {
-  let component: NovaOs;
-  let fixture: ComponentFixture<NovaOs>;
+describe('RelatoriosOs', () => {
+  let component: RelatoriosOs;
+  let fixture: ComponentFixture<RelatoriosOs>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NovaOs]
+      imports: [RelatoriosOs]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(NovaOs);
+    fixture = TestBed.createComponent(RelatoriosOs);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -21,82 +21,79 @@ describe('NovaOs', () => {
 
   it('deve exibir título', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Nova Ordem de Serviço');
+    expect(compiled.textContent).toContain('Relatório de Produtividade');
   });
 
-  it('deve exibir número da OS', () => {
+  it('deve exibir período', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('OS-2026-0482');
+    expect(compiled.textContent).toContain('01 Out, 2023 - 31 Out, 2023');
   });
 
-  it('deve ter select de ativos', () => {
+  it('deve ter botão exportar', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    const select = compiled.querySelector('select[name="ativo"]');
-    expect(select).toBeTruthy();
-    expect(compiled.textContent).toContain('Injetora 04');
-    expect(compiled.textContent).toContain('Esteira B2');
+    expect(compiled.textContent).toContain('EXPORTAR');
   });
 
-  it('deve ter textarea de descrição', () => {
+  it('deve exibir 3 KPIs', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    const textarea = compiled.querySelector('textarea[name="descricao"]');
-    expect(textarea).toBeTruthy();
-    expect(textarea?.getAttribute('placeholder')).toContain('Descreva o problema');
+    expect(compiled.textContent).toContain('Total OS Concluídas');
+    expect(compiled.textContent).toContain('Total Horas Técnicas');
+    expect(compiled.textContent).toContain('Eficiência Média');
   });
 
-  it('deve ter radio buttons de tipo de manutenção', () => {
+  it('deve exibir valores dos KPIs', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    const radios = compiled.querySelectorAll('input[type="radio"][name="maint_type"]');
-    expect(radios.length).toBe(3);
-    expect(compiled.textContent).toContain('Corretiva');
-    expect(compiled.textContent).toContain('Preventiva');
-    expect(compiled.textContent).toContain('Preditiva');
+    expect(compiled.textContent).toContain('342');
+    expect(compiled.textContent).toContain('1.840h');
+    expect(compiled.textContent).toContain('94.2%');
   });
 
-  it('deve ter select de prioridade', () => {
+  it('deve renderizar tabela com 5 técnicos', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    const select = compiled.querySelector('select[name="prioridade"]');
-    expect(select).toBeTruthy();
-    expect(compiled.textContent).toContain('Baixa');
-    expect(compiled.textContent).toContain('Crítica');
+    const rows = compiled.querySelectorAll('tbody tr');
+    expect(rows.length).toBe(5);
   });
 
-  it('deve mostrar alerta quando prioridade é crítica', () => {
-    component.prioridade = 'critica';
-    fixture.detectChanges();
+  it('deve exibir Anderson Melo em primeiro lugar', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('notificação imediata ao gerente de planta');
+    expect(compiled.textContent).toContain('Anderson Melo');
+    expect(compiled.textContent).toContain('48');
   });
 
-  it('deve esconder alerta quando prioridade não é crítica', () => {
-    component.prioridade = 'media';
-    fixture.detectChanges();
+  it('deve exibir Felipe Gomes com média mais alta', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).not.toContain('notificação imediata ao gerente de planta');
+    expect(compiled.textContent).toContain('Felipe Gomes');
+    expect(compiled.textContent).toContain('4.6h');
   });
 
-  it('deve ter botão cancelar', () => {
+  it('deve renderizar gráfico de barras com 5 itens', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Cancelar');
+    const bars = compiled.querySelectorAll('.h-3.w-full > div');
+    expect(bars.length).toBe(5);
   });
 
-  it('deve ter botão salvar', () => {
+  it('deve exibir insight do mês', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Salvar Ordem');
+    expect(compiled.textContent).toContain('Insight do Mês');
+    expect(compiled.textContent).toContain('Anderson Melo atingiu o menor tempo médio');
   });
 
-  it('deve ter side panel com resumo do ativo', () => {
+  it('deve exibir cards inferiores', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Resumo do Ativo');
-    expect(compiled.textContent).toContain('4.820h');
-    expect(compiled.textContent).toContain('Em Operação');
+    expect(compiled.textContent).toContain('Técnicos Ativos');
+    expect(compiled.textContent).toContain('24');
+    expect(compiled.textContent).toContain('SLA de Segurança');
+    expect(compiled.textContent).toContain('100%');
   });
 
-  it('deve chamar onSalvar ao submeter', () => {
-    const spy = jest.spyOn(component, 'onSalvar');
+  it('deve exibir próxima revisão de metas', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    const form = compiled.querySelector('form');
-    form?.dispatchEvent(new Event('submit'));
-    expect(spy).toHaveBeenCalled();
+    expect(compiled.textContent).toContain('15 de Novembro, 2023');
+    expect(compiled.textContent).toContain('AGENDAR REUNIÃO');
+  });
+
+  it('deve ter botão ver lista completa', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Ver Lista Completa');
   });
 });

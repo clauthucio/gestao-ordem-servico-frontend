@@ -35,6 +35,10 @@ export const routes: Routes = [
     path: 'atualiza-os',
     loadComponent: () => import('./features/atualiza-os/atualiza-os').then(m => m.AtualizaOs)
   },
+  {
+    path: 'relatorios-os',
+    loadComponent: () => import('./features/relatorios-os/relatorios-os').then(m => m.RelatoriosOs)
+  },
 
   /* 💡 Descomente os blocos abaixo conforme for criando os arquivos de rotas para cada pasta:
   {

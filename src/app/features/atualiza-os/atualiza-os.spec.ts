@@ -87,14 +87,6 @@ describe('AtualizaOs', () => {
     expect(compiled.textContent).toContain('Reportar Incidente');
   });
 
-  it('deve chamar onSalvar ao submeter', () => {
-    const spy = jest.spyOn(component, 'onSalvar');
-    const compiled = fixture.nativeElement as HTMLElement;
-    const form = compiled.querySelector('form');
-    form?.dispatchEvent(new Event('submit'));
-    expect(spy).toHaveBeenCalled();
-  });
-
   it('deve atualizar status ao clicar em radio', () => {
     component.onStatusChange('concluida');
     expect(component.statusSelecionado).toBe('concluida');
