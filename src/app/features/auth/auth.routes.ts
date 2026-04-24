@@ -7,6 +7,7 @@ import { Equipamentos } from '../equipamentos/equipamentos';
 import { NovaOs } from '../nova-os/nova-os';
 import { AtualizaOs } from '../atualiza-os/atualiza-os';
 import { RelatoriosOs } from '../relatorios-os/relatorios-os';
+import { CadastroEquipamento } from '../cadastro-equipamentos/cadastro-equipamentos';
 
 export const authRoutes: Routes = [
   {
@@ -36,6 +37,10 @@ export const authRoutes: Routes = [
   {
     path:'relatorios-os',
     component: RelatoriosOs
+  },
+  {
+    path:'cadastro-equipamento',
+    component: CadastroEquipamento
   }
 
 ];

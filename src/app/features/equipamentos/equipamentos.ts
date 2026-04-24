@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { Router } from '@angular/router';
 
 export interface Equipamento {
   codigo: string;
@@ -18,6 +19,7 @@ export interface Equipamento {
   templateUrl: './equipamentos.html'
 })
 export class Equipamentos {
+  private router = inject(Router);
   // KPIs
   totalAtivos = 1284;
   variacaoMes = '+3% este mês';
@@ -92,7 +94,7 @@ export class Equipamentos {
   }
 
   onNovoEquipamento(): void {
-    console.log('Novo equipamento');
+    this.router.navigate(['/cadastro-equipamento']);
   }
 
   onExportarCsv(): void {

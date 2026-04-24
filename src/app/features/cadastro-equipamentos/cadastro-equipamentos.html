@@ -1,0 +1,370 @@
+<!-- Main Content Canvas -->
+<div class="pb-12 px-8 min-h-screen bg-background">
+  <div class="max-w-5xl mx-auto">
+    
+    <!-- Hero Header Section -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <span class="bg-primary/12 text-primary px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">Novo Ativo</span>
+        </div>
+        <h2 class="text-3xl font-black text-on-background tracking-tight">{{ titulo }}</h2>
+        <p class="text-on-surface-variant text-sm mt-1">{{ subtitulo }}</p>
+      </div>
+      
+      <!-- Action Buttons Header -->
+      <div class="flex items-center gap-3">
+        <button 
+          class="bg-slate-300 rounded-2xl px-4 py-2.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-2"
+          (click)="onCancelar()"
+        >
+          <span class="material-symbols-outlined text-sm">close</span>
+          Cancelar
+        </button>
+        <button 
+          class="bg-slate-300 rounded-2xl px-4 py-2.5 bg-surface-container-high text-on-surface font-bold rounded-lg hover:bg-surface-container-highest transition-colors text-sm flex items-center gap-2"
+          (click)="onLimpar()"
+        >
+          <span class="material-symbols-outlined text-sm">cleaning_services</span>
+          Limpar
+        </button>
+        <button 
+          class="bg-slate-700 text-white bg-gradient-to-br from-primary to-primary-dim px-6 py-2.5 text-sm font-bold text-on-primary rounded-lg shadow-lg shadow-primary/20 hover:shadow-xl active:scale-95 transition-all flex items-center gap-2"
+          (click)="onSalvar()"
+        >
+          <span class="material-symbols-outlined text-sm">save</span>
+          Salvar Equipamento
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Form Bento Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Left Column: Dados Principais -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <!-- Identificação -->
+        <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+          <div class="flex items-center gap-2 mb-6">
+            <span class="material-symbols-outlined text-primary text-xl">badge</span>
+            <h3 class="font-semibold text-on-surface text-sm uppercase tracking-wider">Identificação</h3>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Código / Tag</label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">tag</span>
+                <input 
+                  type="text"
+                  class="w-full bg-surface-container-low border-none rounded-lg py-3 pl-10 pr-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 placeholder:text-outline-variant"
+                  placeholder="Ex: EQ-2024-001"
+                  [(ngModel)]="codigo"
+                  name="codigo"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Nome do Equipamento</label>
+              <input 
+                type="text"
+                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 placeholder:text-outline-variant"
+                placeholder="Ex: Prensa Hidráulica 400T"
+                [(ngModel)]="nome"
+                name="nome"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Especificações Técnicas -->
+        <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+          <div class="flex items-center gap-2 mb-6">
+            <span class="material-symbols-outlined text-primary text-xl">manufacturing</span>
+            <h3 class="font-semibold text-on-surface text-sm uppercase tracking-wider">Especificações Técnicas</h3>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Categoria</label>
+              <div class="relative">
+                <select 
+                  class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none"
+                  [(ngModel)]="categoria"
+                  name="categoria"
+                >
+                  <option value="" disabled>Selecione...</option>
+                  @for (cat of categorias; track cat.value) {
+                    <option [value]="cat.value">{{ cat.label }}</option>
+                  }
+                </select>
+                <span class="material-symbols-outlined absolute right-3 top-9 text-slate-400 pointer-events-none">expand_more</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Marca</label>
+              <input 
+                type="text"
+                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 placeholder:text-outline-variant"
+                placeholder="Ex: Schuler"
+                [(ngModel)]="marca"
+                name="marca"
+              />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Modelo</label>
+              <input 
+                type="text"
+                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 placeholder:text-outline-variant"
+                placeholder="Ex: Quick Turn 250"
+                [(ngModel)]="modelo"
+                name="modelo"
+              />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Número de Série</label>
+              <input 
+                type="text"
+                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 placeholder:text-outline-variant"
+                placeholder="Ex: SN-8842156"
+                [(ngModel)]="numeroSerie"
+                name="numeroSerie"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Localização -->
+        <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+          <div class="flex items-center gap-2 mb-6">
+            <span class="material-symbols-outlined text-primary text-xl">location_on</span>
+            <h3 class="font-semibold text-on-surface text-sm uppercase tracking-wider">Localização</h3>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Setor</label>
+              <input 
+                type="text"
+                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 placeholder:text-outline-variant"
+                placeholder="Ex: Estamparia"
+                [(ngModel)]="setor"
+                name="setor"
+              />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Localização Física</label>
+              <input 
+                type="text"
+                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 placeholder:text-outline-variant"
+                placeholder="Ex: Bloco B - Galpão 04"
+                [(ngModel)]="localizacao"
+                name="localizacao"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Observações -->
+        <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="material-symbols-outlined text-primary text-xl">notes</span>
+            <h3 class="font-semibold text-on-surface text-sm uppercase tracking-wider">Observações</h3>
+          </div>
+          <textarea 
+            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 placeholder:text-outline-variant resize-none"
+            placeholder="Informações adicionais sobre o equipamento..."
+            rows="4"
+            [(ngModel)]="observacoes"
+            name="observacoes"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Right Column: Status, Criticidade, QR Code -->
+      <div class="space-y-6">
+        
+        <!-- Status do Equipamento -->
+        <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="material-symbols-outlined text-primary text-xl">toggle_on</span>
+            <h3 class="font-semibold text-on-surface text-sm uppercase tracking-wider">Status</h3>
+          </div>
+          
+          <div class="space-y-2">
+            @for (st of statusOptions; track st.value) {
+              <label 
+                class="flex items-center p-3 rounded-lg bg-surface-container-low cursor-pointer hover:bg-surface-container transition-colors border-2 border-transparent"
+                [class.border-primary]="status === st.value"
+                [class.bg-primary-container]="status === st.value"
+                [class.bg-opacity-20]="status === st.value"
+              >
+                <input 
+                  type="radio"
+                  name="status"
+                  [value]="st.value"
+                  [checked]="status === st.value"
+                  (change)="status = st.value"
+                  class="sr-only"
+                />
+                <span class="material-symbols-outlined mr-3" [class]="st.cor">{{ st.icone }}</span>
+                <span class="text-sm font-medium text-on-surface">{{ st.label }}</span>
+                @if (status === st.value) {
+                  <span class="ml-auto material-symbols-outlined text-primary text-sm">check_circle</span>
+                }
+              </label>
+            }
+          </div>
+        </div>
+
+        <!-- Criticidade ABC -->
+        <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="material-symbols-outlined text-primary text-xl">priority_high</span>
+            <h3 class="font-semibold text-on-surface text-sm uppercase tracking-wider">Criticidade</h3>
+          </div>
+          
+          <div class="space-y-2">
+            @for (crit of criticidadeOptions; track crit.value) {
+              <label 
+                class="flex items-center p-3 rounded-lg cursor-pointer transition-all"
+                [class]="criticidade === crit.value ? crit.cor + ' border-2' : 'bg-surface-container-low border-2 border-transparent hover:bg-surface-container'"
+              >
+                <input 
+                  type="radio"
+                  name="criticidade"
+                  [value]="crit.value"
+                  [checked]="criticidade === crit.value"
+                  (change)="criticidade = crit.value"
+                  class="sr-only"
+                />
+                <span class="text-sm font-bold">{{ crit.label }}</span>
+              </label>
+            }
+          </div>
+        </div>
+
+        <!-- Data de Aquisição -->
+        <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="material-symbols-outlined text-primary text-xl">calendar_today</span>
+            <h3 class="font-semibold text-on-surface text-sm uppercase tracking-wider">Aquisição</h3>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Data de Aquisição</label>
+            <input 
+              type="date"
+              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+              [(ngModel)]="dataAquisicao"
+              name="dataAquisicao"
+            />
+          </div>
+        </div>
+
+        <!-- Periodicidade Preventiva -->
+        <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="material-symbols-outlined text-primary text-xl">event_repeat</span>
+            <h3 class="font-semibold text-on-surface text-sm uppercase tracking-wider">Preventiva</h3>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Periodicidade (meses)</label>
+            <div class="relative">
+              <select 
+                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none"
+                [(ngModel)]="periodicidadePreventiva"
+                name="periodicidade"
+              >
+                @for (per of periodicidadeOptions; track per) {
+                  <option [value]="per">{{ per }} meses</option>
+                }
+              </select>
+              <span class="material-symbols-outlined absolute right-3 top-9 text-slate-400 pointer-events-none">expand_more</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- QR Code Generator -->
+        <div class="bg-primary text-on-primary p-6 rounded-xl shadow-sm relative overflow-hidden">
+          <div class="relative z-10">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="material-symbols-outlined text-xl">qr_code_2</span>
+              <h3 class="font-bold text-sm uppercase tracking-wider">QR Code</h3>
+            </div>
+            <p class="text-xs text-on-primary/80 mb-4 leading-relaxed">
+              Gere um QR Code único para colar no equipamento físico. O técnico poderá escanear e acessar a ficha técnica.
+            </p>
+            
+            @if (qrCodeGerado) {
+              <div class="bg-white p-4 rounded-lg mb-4 flex items-center justify-center">
+                <div class="w-32 h-32 bg-slate-800 rounded flex items-center justify-center">
+                  <span class="material-symbols-outlined text-6xl text-white">qr_code</span>
+                </div>
+              </div>
+              <p class="text-[10px] font-bold text-center mb-2">Código: {{ codigo || '---' }}</p>
+            }
+            
+            <button 
+              class="w-full px-4 py-2.5 bg-on-primary text-primary text-xs font-black uppercase tracking-wider rounded-lg hover:bg-primary-container transition-colors flex items-center justify-center gap-2"
+              (click)="onGerarQRCode()"
+              [disabled]="!codigo"
+              [class.opacity-50]="!codigo"
+              [class.cursor-not-allowed]="!codigo"
+            >
+              <span class="material-symbols-outlined text-sm">qr_code_scanner</span>
+              {{ qrCodeGerado ? 'Regenerar QR' : 'Gerar QR Code' }}
+            </button>
+          </div>
+          <span class="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl text-white/10">qr_code_2</span>
+        </div>
+
+        <!-- Anexar Arquivo -->
+        <div 
+          class="p-4 border-2 border-dashed border-outline-variant/30 rounded-xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-surface-container-low transition-colors group"
+          (click)="onAnexarArquivo()"
+        >
+          <span class="material-symbols-outlined text-3xl text-outline group-hover:text-primary transition-colors">upload_file</span>
+          <div class="text-center">
+            <p class="text-xs font-medium text-on-surface-variant">Anexar Manual/Foto</p>
+            @if (anexoNome) {
+              <p class="text-[10px] text-primary font-bold mt-1">{{ anexoNome }}</p>
+            } @else {
+              <p class="text-[10px] text-outline mt-1">PDF, JPG até 10MB</p>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="flex items-center justify-between pt-6 mt-8 border-t border-outline-variant/20">
+      <div class="flex items-center text-on-surface-variant/60">
+        <span class="material-symbols-outlined text-xs mr-2">info</span>
+        <p class="text-[11px]">Campos obrigatórios devem ser preenchidos antes de salvar.</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button 
+          class="bg-slate-300 rounded-2xl px-6 py-2.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface transition-colors"
+          (click)="onCancelar()"
+        >
+          Cancelar
+        </button>
+        <button 
+          class="bg-slate-300 rounded-2xl px-6 py-2.5 bg-surface-container-high text-on-surface font-bold rounded-lg hover:bg-surface-container-highest transition-colors text-sm flex items-center gap-2"
+          (click)="onLimpar()"
+        >
+          <span class="material-symbols-outlined text-sm">cleaning_services</span>
+          Limpar
+        </button>
+        <button 
+          class="bg-slate-700 text-white bg-gradient-to-br from-primary to-primary-dim px-8 py-2.5 text-sm font-bold text-on-primary rounded-lg shadow-lg shadow-primary/20 hover:shadow-xl active:scale-95 transition-all flex items-center gap-2"
+          (click)="onSalvar()"
+        >
+          <span class="material-symbols-outlined text-sm">save</span>
+          Salvar Equipamento
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
