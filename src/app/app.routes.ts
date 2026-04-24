@@ -31,6 +31,11 @@ export const routes: Routes = [
     path: 'nova-os',
     loadComponent: () => import('./features/nova-os/nova-os').then(m => m.NovaOs)
   },
+  {
+    path: 'atualiza-os',
+    loadComponent: () => import('./features/atualiza-os/atualiza-os').then(m => m.AtualizaOs)
+  },
+
   /* 💡 Descomente os blocos abaixo conforme for criando os arquivos de rotas para cada pasta:
   {
     path: 'cotacoes',

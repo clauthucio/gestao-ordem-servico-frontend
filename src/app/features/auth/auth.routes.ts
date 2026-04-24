@@ -5,6 +5,7 @@ import { Dashboard } from '../dashboard/dashboard';
 import { OsDetail } from '../os-detail/os-detail';
 import { Equipamentos } from '../equipamentos/equipamentos';
 import { NovaOs } from '../nova-os/nova-os';
+import { AtualizaOs } from '../atualiza-os/atualiza-os';
 
 export const authRoutes: Routes = [
   {
@@ -26,6 +27,10 @@ export const authRoutes: Routes = [
   {
     path: 'nova-os',
     component: NovaOs
+  },
+  {
+    path:'atualiza-os',
+    component: AtualizaOs
   }
 
 ];
