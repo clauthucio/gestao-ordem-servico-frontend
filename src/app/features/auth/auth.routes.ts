@@ -4,6 +4,7 @@ import { Login } from './login/login';
 import { Dashboard } from '../dashboard/dashboard'; 
 import { OsDetail } from '../os-detail/os-detail';
 import { Equipamentos } from '../equipamentos/equipamentos';
+import { NovaOs } from '../nova-os/nova-os';
 
 export const authRoutes: Routes = [
   {
@@ -21,5 +22,10 @@ export const authRoutes: Routes = [
   {
     path: 'equipamentos', 
     component: Equipamentos
+  },
+  {
+    path: 'nova-os',
+    component: NovaOs
   }
+
 ];
