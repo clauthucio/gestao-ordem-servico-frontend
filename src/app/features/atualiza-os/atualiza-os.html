@@ -1,0 +1,116 @@
+<!-- Content Canvas -->
+<div class="flex-1 flex flex-col min-w-0">
+  
+  <!-- Content -->
+  <main class="flex-1 flex flex-col items-center justify-start p-4 md:p-8 bg-surface">
+    <div class="w-full max-w-2xl space-y-6">
+      
+      <!-- Header Summary -->
+      <header class="space-y-2 py-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold tracking-[0.1em] uppercase text-on-surface-variant bg-surface-container-high px-2 py-1 rounded">{{ osNumber }}</span>
+          <span class="text-xs font-medium text-outline">Prioridade: {{ prioridade }}</span>
+        </div>
+        <h2 class="text-3xl font-extrabold text-on-surface tracking-tight leading-tight">
+          {{ osTitle }}
+        </h2>
+        <p class="text-sm text-on-surface-variant max-w-lg">
+          Localização: {{ localizacao }}. <br/>
+          Solicitado por: {{ solicitante }}.
+        </p>
+      </header>
+
+      <!-- Focused Task Card -->
+      <div class="bg-surface-container-lowest rounded-xl p-6 md:p-10 shadow-sm border border-outline-variant/10">
+        <form class="space-y-8" (submit)="onSalvar(); $event.preventDefault()">
+          
+          <!-- Status Selector -->
+          <div class="space-y-3">
+            <label class="block text-sm font-semibold text-on-surface tracking-wide">
+              Novo Status
+            </label>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              @for (status of statusOptions; track status.value) {
+                <label 
+                  class="relative flex flex-col items-center p-4 rounded-lg bg-surface-container-low border-2 border-transparent hover:border-primary-container cursor-pointer transition-all group"
+                  [class.border-secondary-dim]="statusSelecionado === status.value"
+                  [class.bg-secondary-container]="statusSelecionado === status.value"
+                  [class.bg-opacity-20]="statusSelecionado === status.value"
+                >
+                  <input 
+                    class="sr-only" 
+                    type="radio" 
+                    name="status" 
+                    [value]="status.value"
+                    [checked]="statusSelecionado === status.value"
+                    (change)="onStatusChange(status.value)"
+                  />
+                  <span class="material-symbols-outlined mb-1" [class]="status.color">{{ status.icon }}</span>
+                  <span class="text-xs font-bold text-on-surface">{{ status.label }}</span>
+                </label>
+              }
+            </div>
+          </div>
+
+          <!-- Observation Field -->
+          <div class="space-y-3">
+            <label class="block text-sm font-semibold text-on-surface tracking-wide">
+              Relato técnico do serviço
+            </label>
+            <div class="relative group">
+              <textarea 
+                class="w-full bg-surface-container-low border-none rounded-lg p-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline-variant outline-none resize-none"
+                placeholder="Descreva as ações realizadas, peças utilizadas ou impedimentos..."
+                rows="6"
+                [(ngModel)]="relatoTecnico"
+                name="relato"
+              ></textarea>
+              <div class="absolute bottom-3 right-3">
+                <span class="material-symbols-outlined text-outline-variant opacity-40">edit_note</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Attachment Placeholder -->
+          <div 
+            class="p-4 border-2 border-dashed border-outline-variant/30 rounded-lg flex items-center justify-center gap-3 cursor-pointer hover:bg-surface-container-low transition-colors group"
+            (click)="onAnexarFoto()"
+          >
+            <span class="material-symbols-outlined text-outline group-hover:text-primary">photo_camera</span>
+            <span class="text-xs font-medium text-on-surface-variant">Anexar foto do reparo (Opcional)</span>
+          </div>
+
+          <!-- Action Button -->
+          <button 
+            class="bg-slate-700 text-white w-full bg-gradient-to-br from-primary to-primary-dim text-on-primary py-4 rounded-lg font-bold text-sm tracking-widest uppercase flex items-center justify-center gap-2 shadow-lg hover:shadow-primary/20 active:scale-[0.98] transition-all"
+            type="submit"
+          >
+            <span class="material-symbols-outlined">save</span>
+            Salvar Atualização
+          </button>
+        </form>
+      </div>
+
+      <!-- Footer Quick Info -->
+      <footer class="flex flex-col md:flex-row items-center justify-between gap-4 py-6 border-t border-outline-variant/10">
+        <div class="flex items-center gap-3 text-on-surface-variant">
+          <span class="material-symbols-outlined text-sm">history</span>
+          <span class="text-xs">Última atualização: {{ ultimaAtualizacao }}</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <button 
+            class="text-red-500 text-xs font-bold text-error uppercase tracking-wider hover:underline transition-all"
+            (click)="onReportarIncidente()"
+          >
+            Reportar Incidente
+          </button>
+        </div>
+      </footer>
+    </div>
+  </main>
+</div>
+
+<!-- Hidden Visual Elements for Atmosphere -->
+<div class="fixed bottom-0 right-0 p-12 pointer-events-none opacity-[0.03] select-none hidden lg:block">
+  <span class="material-symbols-outlined text-[20rem]">precision_manufacturing</span>
+</div>

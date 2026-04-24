@@ -1,0 +1,199 @@
+<!-- Main Canvas -->
+<div class="ml-64 pt-24 pb-12 px-8 min-h-screen">
+  <div class="-ml-64 max-w-4xl mx-auto">
+    
+    <!-- Hero Header Section -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+      <div>
+        <h2 class="text-2xl font-bold text-on-surface tracking-tight mb-1">Nova Ordem de Serviço</h2>
+        <p class="text-on-surface-variant text-sm">Preencha os campos abaixo para registrar um novo chamado técnico.</p>
+      </div>
+      <!-- Informational Box: OS ID -->
+      <div class="bg-surface-container-high px-4 py-3 rounded-xl border-l-4 border-primary shadow-sm flex items-center space-x-4">
+        <div class="bg-primary/10 p-2 rounded-lg">
+          <span class="material-symbols-outlined text-primary">receipt_long</span>
+        </div>
+        <div>
+          <p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Registro Automático</p>
+          <p class="font-mono font-bold text-on-surface">Nº da OS: {{ osNumber }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Form Card -->
+    <form class="space-y-6" (submit)="onSalvar(); $event.preventDefault()">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Primary Configs -->
+        <div class="md:col-span-7 space-y-6">
+          
+          <!-- Section 1: Equipment Selection -->
+          <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm space-y-4">
+            <div class="flex items-center space-x-2 mb-2">
+              <span class="material-symbols-outlined text-primary text-xl">precision_manufacturing</span>
+              <h3 class="font-semibold text-on-surface text-sm">Seleção de Equipamento</h3>
+            </div>
+            <div class="relative">
+              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1 px-1">Ativo / Máquina</label>
+              <select 
+                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary/20 appearance-none text-on-surface"
+                [(ngModel)]="ativoSelecionado"
+                name="ativo"
+              >
+                <option disabled selected value="">Selecione um ativo...</option>
+                @for (ativo of ativos; track ativo.value) {
+                  <option [value]="ativo.value">{{ ativo.label }}</option>
+                }
+              </select>
+              <span class="material-symbols-outlined absolute right-3 top-9 text-slate-400 pointer-events-none">expand_more</span>
+            </div>
+          </div>
+
+          <!-- Section 4: Fault Description -->
+          <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm space-y-4">
+            <div class="flex items-center space-x-2 mb-2">
+              <span class="material-symbols-outlined text-primary text-xl">description</span>
+              <h3 class="font-semibold text-on-surface text-sm">Descrição da Ocorrência</h3>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1 px-1">Detalhamento Técnico</label>
+              <textarea 
+                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline-variant/60 resize-none"
+                placeholder="Descreva o problema observado detalhadamente..."
+                rows="6"
+                [(ngModel)]="descricao"
+                name="descricao"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Metadata -->
+        <div class="md:col-span-5 space-y-6">
+          
+          <!-- Section 2: Maintenance Type -->
+          <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm space-y-4">
+            <div class="flex items-center space-x-2 mb-2">
+              <span class="material-symbols-outlined text-primary text-xl">settings_suggest</span>
+              <h3 class="font-semibold text-on-surface text-sm">Tipo de Manutenção</h3>
+            </div>
+            <div class="space-y-3">
+              @for (tipo of tiposManutencao; track tipo) {
+                <label 
+                  class="flex items-center p-3 rounded-lg bg-surface-container-low cursor-pointer hover:bg-surface-container transition-colors border border-transparent"
+                  [class.border-primary]="tipoManutencao === tipo"
+                  [class.border-primary/30]="tipoManutencao === tipo"
+                >
+                  <input 
+                    class="w-4 h-4 text-primary bg-background border-outline focus:ring-primary ring-offset-background"
+                    type="radio"
+                    name="maint_type"
+                    [value]="tipo"
+                    [checked]="tipoManutencao === tipo"
+                    (change)="onTipoChange(tipo)"
+                  />
+                  <span class="ml-3 text-sm font-medium text-on-surface capitalize">{{ tipo }}</span>
+                  <span 
+                    class="ml-auto material-symbols-outlined text-sm"
+                    [class]="getTipoColor(tipo)"
+                  >
+                    {{ getTipoIcon(tipo) }}
+                  </span>
+                </label>
+              }
+            </div>
+          </div>
+
+          <!-- Section 3: Priority -->
+          <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm space-y-4">
+            <div class="flex items-center space-x-2 mb-2">
+              <span class="material-symbols-outlined text-primary text-xl">priority_high</span>
+              <h3 class="font-semibold text-on-surface text-sm">Criticidade</h3>
+            </div>
+            <div class="relative">
+              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1 px-1">Prioridade</label>
+              <select 
+                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary/20 appearance-none text-on-surface"
+                [(ngModel)]="prioridade"
+                name="prioridade"
+                (change)="onPrioridadeChange(prioridade)"
+              >
+                <option value="baixa">Baixa</option>
+                <option value="media" selected>Média</option>
+                <option value="alta">Alta</option>
+                <option value="critica">Crítica</option>
+              </select>
+              <span class="material-symbols-outlined absolute right-3 top-9 text-slate-400 pointer-events-none">expand_more</span>
+            </div>
+            <!-- Contextual Alert for Critical -->
+            @if (isCritica()) {
+              <div class="p-3 bg-error/5 rounded-lg border border-error/10" id="critical-alert">
+                <div class="flex space-x-2">
+                  <span class="material-symbols-outlined text-error text-xs">warning</span>
+                  <p class="text-[10px] text-error font-medium leading-relaxed">Prioridade crítica requer notificação imediata ao gerente de planta.</p>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Actions -->
+      <div class="flex items-center justify-between pt-6 border-t border-outline-variant/20">
+        <div class="flex items-center text-on-surface-variant/60">
+          <span class="material-symbols-outlined text-xs mr-2">info</span>
+          <p class="text-[11px]">Todos os campos marcados são de preenchimento obrigatório.</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <button 
+            class="px-6 py-2.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface transition-colors"
+            type="button"
+            (click)="onCancelar()"
+          >
+            Cancelar
+          </button>
+          <button 
+            class="bg-slate-700 text-white bg-gradient-to-br from-primary to-primary-dim px-10 py-2.5 text-sm font-bold text-on-primary rounded-lg shadow-md hover:shadow-lg active:scale-95 transition-all flex items-center"
+            type="submit"
+          >
+            <span class="material-symbols-outlined mr-2 text-sm">save</span>
+            Salvar Ordem
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Decorative Background Element -->
+  <div class="fixed bottom-0 right-0 p-8 pointer-events-none opacity-20">
+    <div class="w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
+  </div>
+</div>
+
+<!-- Contextual Info Floating Side Panel -->
+<div class="fixed top-24 right-8 w-72 hidden xl:block">
+  <div class="bg-surface-container-lowest/50 backdrop-blur-sm p-5 rounded-2xl border border-outline-variant/10 shadow-sm space-y-4">
+    <h4 class="text-xs font-bold text-on-surface uppercase tracking-widest">Resumo do Ativo</h4>
+    <div class="rounded-xl overflow-hidden mb-4">
+      <img 
+        alt="Equipamento Visual" 
+        class="w-full h-32 object-cover"
+        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCa4rmyRkmXIwW_avVnfu5rAwk012oiC0fPOZnwTXfJnjNd9MavBTwQAVj3ggYAxlRfLiYhGcpudE5G399yOF6SGbtYTKHCcgVy8aKi5pz8vqF9-c-vz-Omnw5HIWxYeLf2OdX4G3uwaTUlJDMYenKnXZQOhJfqAN31STlToGjc4TfF9ZTaV6hb4O8-mz2wc32HNeWQaiQaYuWy9o03JaEL1L4ex6S6dbRzA3irXJyj3DY83l2kn_Xv807p_X5EBkmt-ScWlng6x7K3"
+      />
+    </div>
+    <div class="space-y-3">
+      <div class="flex justify-between items-center pb-2 border-b border-outline-variant/10">
+        <span class="text-[10px] text-on-surface-variant font-medium">Última Manutenção</span>
+        <span class="text-[10px] font-bold">{{ ultimaManutencao }}</span>
+      </div>
+      <div class="flex justify-between items-center pb-2 border-b border-outline-variant/10">
+        <span class="text-[10px] text-on-surface-variant font-medium">Horas de Operação</span>
+        <span class="text-[10px] font-bold">{{ horasOperacao }}</span>
+      </div>
+      <div class="flex justify-between items-center">
+        <span class="text-[10px] text-on-surface-variant font-medium">Status Atual</span>
+        <span class="flex items-center px-2 py-0.5 bg-tertiary/10 text-tertiary text-[9px] font-black rounded-full uppercase tracking-tighter">{{ statusAtivo }}</span>
+      </div>
+    </div>
+  </div>
+</div>

@@ -4,6 +4,10 @@ import { Login } from './login/login';
 import { Dashboard } from '../dashboard/dashboard'; 
 import { OsDetail } from '../os-detail/os-detail';
 import { Equipamentos } from '../equipamentos/equipamentos';
+import { NovaOs } from '../nova-os/nova-os';
+import { AtualizaOs } from '../atualiza-os/atualiza-os';
+import { RelatoriosOs } from '../relatorios-os/relatorios-os';
+import { CadastroEquipamento } from '../cadastro-equipamentos/cadastro-equipamentos';
 
 export const authRoutes: Routes = [
   {
@@ -21,5 +25,22 @@ export const authRoutes: Routes = [
   {
     path: 'equipamentos', 
     component: Equipamentos
+  },
+  {
+    path: 'nova-os',
+    component: NovaOs
+  },
+  {
+    path:'atualiza-os',
+    component: AtualizaOs
+  },
+  {
+    path:'relatorios-os',
+    component: RelatoriosOs
+  },
+  {
+    path:'cadastro-equipamento',
+    component: CadastroEquipamento
   }
+
 ];

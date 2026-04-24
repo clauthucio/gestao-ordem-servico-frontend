@@ -27,24 +27,27 @@ export const routes: Routes = [
     path: 'equipamentos',
     loadComponent: () => import('./features/equipamentos/equipamentos').then(m => m.Equipamentos)
   },
-  /* 💡 Descomente os blocos abaixo conforme for criando os arquivos de rotas para cada pasta:
   {
-    path: 'cotacoes',
-    loadChildren: () => import('./features/cotacoes/cotacoes.routes').then(m => m.cotacoesRoutes)
+    path: 'nova-os',
+    loadComponent: () => import('./features/nova-os/nova-os').then(m => m.NovaOs)
   },
   {
-    path: 'requisicoes',
-    loadChildren: () => import('./features/requisicoes/requisicoes.routes').then(m => m.requisicoesRoutes)
+    path: 'atualiza-os',
+    loadComponent: () => import('./features/atualiza-os/atualiza-os').then(m => m.AtualizaOs)
   },
   {
-    path: 'setores',
-    loadChildren: () => import('./features/setores/setores.routes').then(m => m.setoresRoutes)
+    path: 'relatorios-os',
+    loadComponent: () => import('./features/relatorios-os/relatorios-os').then(m => m.RelatoriosOs)
   },
   {
-    path: 'usuarios',
-    loadChildren: () => import('./features/usuarios/usuarios.routes').then(m => m.usuariosRoutes)
+    path:'cadastro-equipamento',
+    loadComponent: () => import('./features/cadastro-equipamentos/cadastro-equipamentos').then(m => m.CadastroEquipamento)
   },
-  */
+  {
+    path:'os-list',
+    loadComponent: () => import('./features/os-list/os-list').then(m => m.OsList)
+  },
+
   {
     path: '**',
     redirectTo: 'auth'

@@ -1,0 +1,187 @@
+<!-- Content Area -->
+<div class="px-8 pb-12 min-h-screen bg-background">
+  
+  <!-- Header Actions Section -->
+  <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+    <div>
+      <h3 class="text-3xl font-extrabold text-on-background tracking-tight">{{ titulo }}</h3>
+      <p class="text-sm text-on-surface-variant">{{ subtitulo }}</p>
+    </div>
+    <button 
+      class="bg-slate-700 text-white bg-gradient-to-br from-primary to-primary-dim text-on-primary px-6 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity active:scale-95"
+      (click)="onNovaOS()"
+    >
+      <span class="material-symbols-outlined text-[20px]">add</span>
+      Nova Ordem de Serviço
+    </button>
+  </div>
+
+  <!-- Filter Shell -->
+  <div class="bg-surface-container-low rounded-xl p-5 mb-6 flex flex-wrap items-center gap-4">
+    <div class="flex-1 min-w-[300px] relative">
+      <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+      <input 
+        type="text"
+        class="w-full bg-surface-container-lowest border-none rounded-lg pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 shadow-sm"
+        placeholder="Pesquisar por n. da OS, equipamento ou descrição..."
+        [(ngModel)]="busca"
+        name="busca"
+      />
+    </div>
+    <div class="flex items-center gap-3">
+      <select 
+        class="bg-surface-container-lowest border-none rounded-lg px-4 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 shadow-sm appearance-none min-w-[140px]"
+        [(ngModel)]="filtroStatus"
+        name="filtroStatus"
+      >
+        <option value="todos">Status: Todos</option>
+        <option value="aberto">Em Aberto</option>
+        <option value="execucao">Em Execução</option>
+        <option value="pendente">Pendente</option>
+        <option value="finalizada">Finalizada</option>
+      </select>
+      <select 
+        class="bg-surface-container-lowest border-none rounded-lg px-4 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 shadow-sm appearance-none min-w-[140px]"
+        [(ngModel)]="filtroPrioridade"
+        name="filtroPrioridade"
+      >
+        <option value="todas">Prioridade: Todas</option>
+        <option value="baixa">Baixa</option>
+        <option value="media">Média</option>
+        <option value="alta">Alta</option>
+        <option value="critica">Crítica</option>
+      </select>
+      <button class="bg-surface-container-high text-on-surface px-4 py-3 rounded-lg text-sm font-medium hover:bg-surface-variant transition-colors flex items-center gap-2">
+        <span class="material-symbols-outlined text-[18px]">filter_list</span>
+        Mais Filtros
+      </button>
+    </div>
+  </div>
+
+  <!-- Data Table -->
+  <div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="w-full border-separate border-spacing-y-1 px-4 pb-4">
+        <thead>
+          <tr class="text-[10px] font-semibold text-outline-variant uppercase tracking-widest text-left">
+            <th class="py-5 px-4"># OS</th>
+            <th class="py-5 px-4">Equipamento</th>
+            <th class="py-5 px-4">Tipo</th>
+            <th class="py-5 px-4">Prioridade</th>
+            <th class="py-5 px-4">Status</th>
+            <th class="py-5 px-4">Técnico</th>
+            <th class="py-5 px-4">Abertura</th>
+            <th class="py-5 px-4 text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody class="text-sm text-on-surface">
+          @for (os of ordens; track os.numero) {
+            <tr 
+              class="hover:bg-surface-container transition-colors group"
+              [class.bg-surface-container-low]="$even"
+              [class.bg-surface-container-lowest]="$odd"
+            >
+              <td class="py-4 px-4 font-mono font-bold text-primary">{{ os.numero }}</td>
+              <td class="py-4 px-4 font-medium">{{ os.equipamento }}</td>
+              <td class="py-4 px-4">{{ os.tipo }}</td>
+              <td class="py-4 px-4">
+                <span [class]="getPrioridadeClass(os.prioridade)">{{ getPrioridadeLabel(os.prioridade) }}</span>
+              </td>
+              <td class="py-4 px-4">
+                <span [class]="getStatusClass(os.status)">{{ getStatusLabel(os.status) }}</span>
+              </td>
+              <td class="py-4 px-4">
+                @if (os.tecnico) {
+                  <div class="flex items-center gap-2">
+                    <img [src]="os.tecnicoAvatar" [alt]="os.tecnico" class="w-6 h-6 rounded-full object-cover" />
+                    <span>{{ os.tecnico }}</span>
+                  </div>
+                } @else {
+                  <div class="flex items-center gap-2 text-outline-variant italic">
+                    <span class="material-symbols-outlined text-sm">person_off</span>
+                    <span>Não Atribuído</span>
+                  </div>
+                }
+              </td>
+              <td class="py-4 px-4 text-outline">{{ os.dataAbertura }}</td>
+              <td class="py-4 px-4 text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <button 
+                    class="p-1.5 hover:bg-surface-container-highest rounded-md text-on-surface-variant transition-colors"
+                    title="Ver Detalhes"
+                    (click)="onVerDetalhes(os.numero)"
+                  >
+                    <span class="material-symbols-outlined text-[20px]">visibility</span>
+                  </button>
+                  <button 
+                    class="p-1.5 hover:bg-surface-container-highest rounded-md text-on-surface-variant transition-colors"
+                    title="Editar"
+                    (click)="onEditar(os.numero)"
+                  >
+                    <span class="material-symbols-outlined text-[20px]">edit</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Footer -->
+    <div class="p-6 border-t border-outline-variant/10 flex items-center justify-between">
+      <span class="text-sm text-on-surface-variant">Mostrando 1-{{ ordens.length }} de {{ totalItens }} Ordens</span>
+      <div class="flex items-center gap-2">
+        <button 
+          class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant/20 hover:bg-surface-container-low transition-colors text-outline"
+          [disabled]="paginaAtual === 1"
+          (click)="onPaginaAnterior()"
+        >
+          <span class="material-symbols-outlined">chevron_left</span>
+        </button>
+        
+        <button 
+          class="w-10 h-10 flex items-center justify-center rounded-lg font-bold shadow-md shadow-primary/20"
+          [class.bg-primary]="paginaAtual === 1"
+          [class.text-on-primary]="paginaAtual === 1"
+          [class.hover:bg-surface-container-low]="paginaAtual !== 1"
+          [class.text-on-surface]="paginaAtual !== 1"
+          (click)="onIrParaPagina(1)"
+        >1</button>
+        
+        <button 
+          class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-surface-container-low transition-colors"
+          [class.bg-primary]="paginaAtual === 2"
+          [class.text-on-primary]="paginaAtual === 2"
+          [class.text-on-surface]="paginaAtual !== 2"
+          (click)="onIrParaPagina(2)"
+        >2</button>
+        
+        <button 
+          class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-surface-container-low transition-colors"
+          [class.bg-primary]="paginaAtual === 3"
+          [class.text-on-primary]="paginaAtual === 3"
+          [class.text-on-surface]="paginaAtual !== 3"
+          (click)="onIrParaPagina(3)"
+        >3</button>
+        
+        <span class="px-2 text-outline">...</span>
+        
+        <button 
+          class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-surface-container-low transition-colors text-on-surface"
+          [class.bg-primary]="paginaAtual === totalPaginas"
+          [class.text-on-primary]="paginaAtual === totalPaginas"
+          (click)="onIrParaPagina(totalPaginas)"
+        >{{ totalPaginas }}</button>
+        
+        <button 
+          class="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant/20 hover:bg-surface-container-low transition-colors text-outline"
+          [disabled]="paginaAtual === totalPaginas"
+          (click)="onProximaPagina()"
+        >
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
