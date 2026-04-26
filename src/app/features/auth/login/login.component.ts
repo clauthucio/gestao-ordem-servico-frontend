@@ -101,8 +101,8 @@ export class Login implements OnInit, OnDestroy {
     // DEBUG: Ver o form e os valores
     console.log('📋 FormGroup valor completo:', this.loginForm.value);
     console.log('📋 FormGroup raw:', this.loginForm.getRawValue());
-    console.log('📋 Email:', this.loginForm.get('email')?.value);
-    console.log('📋 Password:', this.loginForm.get('password')?.value);
+    console.log('📋 Email:', this.loginForm.get('emailUsuario')?.value);
+    console.log('📋 Password:', this.loginForm.get('senhaUsuario')?.value);
 
 
     // Obter valores do form
