@@ -1,6 +1,5 @@
 import { Component, input, output} from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { NgClass } from '@angular/common';
 
 export interface NavItem {
   label: string;
@@ -11,7 +10,7 @@ export interface NavItem {
 @Component({
   selector: 'app-side-nav',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, NgClass],
+  imports: [RouterLink, RouterLinkActive],
   templateUrl: './side-nav.html'
 })
 export class SideNav {
