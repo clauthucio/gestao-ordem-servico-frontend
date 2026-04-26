@@ -4,11 +4,12 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { tap, catchError, map } from 'rxjs/operators';
 
 import {
   LoginRequest,
   LoginResponse,
+  BackendLoginResponse,
   User,
   RefreshResponse,
 } from '../models/auth.model';
@@ -22,7 +23,7 @@ export class AuthService {
   // URL base do backend
   private readonly API_URL = 'http://localhost:3000';
 
-  // Injetar serviços (Angular 14+)
+  // Injetar serviços
   private http = inject(HttpClient);
   private tokenService = inject(TokenService);
 
@@ -44,8 +45,15 @@ export class AuthService {
     const loginRequest: LoginRequest = { emailUsuario, senhaUsuario };
 
     return this.http
-      .post<LoginResponse>(`${this.API_URL}/auth/login`, loginRequest)
+      .post<BackendLoginResponse>(`${this.API_URL}/auth/login`, loginRequest)
       .pipe(
+        // map = transforma a resposta do backend no formato interno
+        map((backendResponse: BackendLoginResponse): LoginResponse => ({
+          access_token: backendResponse.dados.accessToken,
+          refresh_token: backendResponse.dados.refreshToken,
+          user: backendResponse.dados.usuario,
+        })),
+
         // tap = executa algo sem modificar o fluxo
         tap((response: LoginResponse) => {
           // 1. Salvar token

@@ -9,6 +9,6 @@ export enum UserRole {
 export const ROLE_LABELS: Record<UserRole, string> = {
   [UserRole.SOLICITANTE]: 'Solicitante',
   [UserRole.TECNICO]: 'Técnico',
-  [UserRole.SUPERVISOR_DE_MANUTENCAO]: 'Supervisor',
+  [UserRole.SUPERVISOR_DE_MANUTENCAO]: 'Supervisor de Manutenção',
   [UserRole.ADMIN]: 'Administrador',
 };
