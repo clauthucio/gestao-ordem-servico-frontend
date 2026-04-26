@@ -1,13 +1,30 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+ //Registra todos os providers (serviços, interceptors, guards)
+
+import { ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import {
+  provideHttpClient,
+  withInterceptors,
+  HTTP_INTERCEPTORS,
+} from '@angular/common/http';
+import { provideAnimations } from '@angular/platform-browser/animations';
 
 import { routes } from './app.routes';
-import { provideHttpClient } from '@angular/common/http';
+import { AuthInterceptor } from './core/services/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideBrowserGlobalErrorListeners(),
+    // 1. Routing: definir as rotas
+    provideRouter(routes),
+    // 2. HTTP Client - Requisições HTTP
     provideHttpClient(),
-    provideRouter(routes)
-  ]
+    // 3. Registrar Auth Interceptor
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true, // multi: true permite múltiplos interceptors
+    },
+    // 4. Animações (Angular Material precisa disso)
+    provideAnimations(),
+  ],
 };

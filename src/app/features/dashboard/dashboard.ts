@@ -28,7 +28,7 @@ export interface Tecnico {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink],
+  imports: [],
   templateUrl: './dashboard.html'
 })
 export class Dashboard {

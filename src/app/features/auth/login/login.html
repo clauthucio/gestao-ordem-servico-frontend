@@ -25,16 +25,16 @@
       </div>
 
       <!-- Exibe mensagem de erro quando existir. -->
-      @if (error()) {
+      @if (errorMessage) {
         <!-- Caixa de alerta de erro com estilo do tema. -->
         <div class="bg-error-container/20 border border-error/30 text-error text-sm rounded-lg p-3 mb-6 flex items-center gap-2">
           <span class="material-symbols-outlined text-error text-lg">error</span>
-          {{ error() }}
+          {{ errorMessage }}
         </div>
       }
 
-      <!-- Formulario de login. -->
-      <form (ngSubmit)="onSubmit()" #form="ngForm" class="space-y-6">
+      <!-- Formulario de login com Reactive Forms. -->
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-6">
 
         <!-- Campo de email. -->
         <div>
@@ -49,13 +49,19 @@
             <!-- Input de email com estilos do tema. -->
             <input
               type="email"
-              name="email"
-              [(ngModel)]="emailUsuario"
-              required
+              formControlName="emailUsuario"
               class="block w-full pl-10 pr-4 py-3 bg-gray-200 border-0 rounded-lg focus:ring-2 focus:ring-primary/20 focus:bg-gray-100 transition-all text-sm placeholder:text-outline-variant"
+              [class.border-error]="hasError('emailUsuario')"
               placeholder="exemplo@indt.org.br"
             />
           </div>
+          <!-- Mensagem de erro para email -->
+          @if (hasError('emailUsuario')) {
+            <p class="text-error text-xs mt-1 flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm">error</span>
+              {{ getErrorMessage('emailUsuario') }}
+            </p>
+          }
         </div>
 
         <!-- Campo de senha. -->
@@ -74,22 +80,28 @@
             <!-- Input de senha com estilos do tema. -->
             <input
               type="password"
-              name="password"
-              [(ngModel)]="senhaUsuario"
-              required
+              formControlName="senhaUsuario"
               class="block w-full pl-10 pr-4 py-3 bg-gray-200 border-0 rounded-lg focus:ring-2 focus:ring-primary/20 focus:bg-gray-100 transition-all text-sm placeholder:text-outline-variant"
+              [class.border-error]="hasError('senhaUsuario')"
               placeholder="••••••••"
             />
           </div>
+          <!-- Mensagem de erro para senha -->
+          @if (hasError('senhaUsuario')) {
+            <p class="text-error text-xs mt-1 flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm">error</span>
+              {{ getErrorMessage('senhaUsuario') }}
+            </p>
+          }
         </div>
 
         <!-- Botao de envio com gradiente do tema. -->
         <button
           type="submit"
-          [disabled]="loading()"
+          [disabled]="isSubmitDisabled"
           class="w-full py-4 px-6 rounded-lg text-white font-bold tracking-wide btn-gradient hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          @if (loading()) {
+          @if (loading) {
             <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
             <span>Entrando...</span>
           } @else {
