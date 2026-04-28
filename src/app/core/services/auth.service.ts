@@ -1,10 +1,11 @@
-// Faz requisições HTTP para autenticação (intermediário entre o componente de login e o backend)
-// LoginComponent → AuthService → HttpClient → Backend
-
+import { Component } from '@angular/core';
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError } from 'rxjs';
 import { tap, catchError, map } from 'rxjs/operators';
+
+// Faz requisições HTTP para autenticação (intermediário entre o componente de login e o backend)
+// LoginComponent → AuthService → HttpClient → Backend
 
 import {
   LoginRequest,
@@ -136,6 +137,11 @@ export class AuthService {
         })
       );
   }
+
+  //Método para autenticar e não aparecer a side bar no login
+  isAuthenticated(): boolean {
+  return this.currentUserSubject.value !== null;
+}
 
   getCurrentUser(): User | null {
     return this.tokenService.getUser();

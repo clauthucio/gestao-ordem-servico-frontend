@@ -15,8 +15,8 @@ export interface NavItem {
 })
 export class SideNav {
   items = input<NavItem[]>([]);
-  appTitle = input('ServiçoPIM');
-  appSubtitle = input('Polo Industrial de Manaus');
+  appTitle = input('Smart OS');
+  appSubtitle = input('Sistema para Gestão de Ordem de Serviço');
 
 
 
