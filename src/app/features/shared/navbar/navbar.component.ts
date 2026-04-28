@@ -14,14 +14,14 @@ import { UserRole, ROLE_LABELS } from '../../../core/enums/roles.enum';
   imports: [CommonModule, RouterLink],
   template: `
     <!-- Sidebar -->
-    <aside class="w-64 bg-primary text-on-primary p-6 flex flex-col shadow-lg min-h-screen">
+    <aside class="w-80 bg-primary text-on-primary p-4 flex flex-col shadow-lg min-h-screen">
 
       <!-- Logo Section -->
-      <div class="flex items-center gap-3 mb-12">
+      <div class="flex flex-col items-center gap-3 mb-12">
         <span class="material-symbols-outlined text-2xl">SMART OS</span>
         <div>
-          <h1 class="text-base font-bold leading-tight">Industrial</h1>
-          <p class="text-xs opacity-75">PIM</p>
+          <h1 class="text-xl font-bold leading-tight">Industrial</h1>
+          <p class="text-sm opacity-75">PIM</p>
         </div>
       </div>
 
