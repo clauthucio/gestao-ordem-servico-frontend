@@ -10,6 +10,7 @@ import {
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { Router } from '@angular/router';
 
 import { TokenService } from '../services/token.service';
 import { AuthService } from '../services/auth.service';
@@ -19,6 +20,7 @@ export class AuthInterceptor implements HttpInterceptor {
   // Injetar serviços
   private tokenService = inject(TokenService);
   private authService = inject(AuthService);
+  private router = inject(Router);
 
   //Chamado em todas requisições
   intercept(
@@ -27,7 +29,10 @@ export class AuthInterceptor implements HttpInterceptor {
   ): Observable<HttpEvent<unknown>> {
     // 1. Pegar o token
     const token = this.tokenService.getAccessToken();
-    const isAuthRoute = request.url.includes('/auth/login') || request.url.includes('/auth/refresh');
+    const isAuthRoute =
+      request.url.includes('/auth/login') ||
+      request.url.includes('/auth/refresh') ||
+      request.url.includes('/auth/logout');
 
     // 2. Se existe token e não é rota de auth, adicionar header
     if (token && !isAuthRoute) {
@@ -46,22 +51,20 @@ export class AuthInterceptor implements HttpInterceptor {
     // 3. Passar a requisição adiante (com ou sem header)
     return next.handle(request).pipe(
       catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
-          console.warn('Token expirado (401)');
+        // Só tenta renovar token se NÃO for rota de auth (evita loop infinito)
+        if (error.status === 401 && !isAuthRoute) {
+          console.warn('Token expirado (401), tentando renovar...');
 
-          // Tentar renovar o token
           this.authService.refreshToken().subscribe({
-            // Se conseguir renovar, tentar requisição novamente
             next: () => {
-              // Aqui poderia reenviar a requisição com novo token
-              // Por simplicidade, redireciona para login
+              // Token renovado — redireciona para que o usuário repita a ação
+              // (reenvio da requisição original fica fora do escopo por simplicidade)
             },
-            // Se falhar na renovação, fazer logout
             error: () => {
-              console.error('Não foi possível renovar token, fazendo logout');
-              this.authService.logout().subscribe(() => {
-                window.location.href = '/auth/login';
-              });
+              // Refresh falhou: limpar sessão e redirecionar sem reload de página
+              console.error('Não foi possível renovar token, redirecionando para login');
+              this.tokenService.clear();
+              this.router.navigate(['/auth/login']);
             },
           });
         }
