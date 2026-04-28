@@ -32,7 +32,15 @@ export interface LoginRequest {
   senhaUsuario: string;
 }
 
-//Resposta quando renova o token
+//Estrutura real retornada pelo backend no refresh
+export interface BackendRefreshResponse {
+  mensagem: string;
+  dados: {
+    accessToken: string;
+  };
+}
+
+//Formato interno normalizado após parse da resposta de refresh
 export interface RefreshResponse {
   access_token: string;
 }

@@ -10,6 +10,7 @@ import {
   LoginRequest,
   LoginResponse,
   BackendLoginResponse,
+  BackendRefreshResponse,
   User,
   RefreshResponse,
 } from '../models/auth.model';
@@ -89,8 +90,9 @@ export class AuthService {
    * 3. Notificar que user é null (navbar desaparece)*/
 
   logout(): Observable<any> {
+    const refreshToken = this.tokenService.getRefreshToken();
     return this.http
-      .post(`${this.API_URL}/auth/logout`, {})
+      .post(`${this.API_URL}/auth/logout`, { refreshToken })
       .pipe(
         tap(() => {
           // Limpar tudo
@@ -115,16 +117,21 @@ export class AuthService {
     const refreshToken = this.tokenService.getRefreshToken();
 
     return this.http
-      .post<RefreshResponse>(`${this.API_URL}/auth/refresh`, { refreshToken })
+      .post<BackendRefreshResponse>(`${this.API_URL}/auth/refresh`, { refreshToken })
       .pipe(
+        // map = transforma a resposta do backend no formato interno
+        map((backendResponse: BackendRefreshResponse): RefreshResponse => ({
+          access_token: backendResponse.dados.accessToken,
+        })),
         tap((response: RefreshResponse) => {
           // Atualizar token
           this.tokenService.setAccessToken(response.access_token);
           console.log('Token renovado com sucesso!');
         }),
         catchError((error) => {
-          // Se refresh falhar, faz logout
-          this.logout();
+          // Se refresh falhar, limpar sessão sem nova requisição HTTP
+          this.tokenService.clear();
+          this.currentUserSubject.next(null);
           return throwError(() => error);
         })
       );
