@@ -25,10 +25,5 @@ export interface OrdemServico {
   dataAtualizacao: Date | string;
 }
 
-//Resposta do backend quando lista ordens
-export interface ListaOrdensResponse {
-  data: OrdemServico[];
-  total: number;
-  page: number;
-  limit: number;
-}
+// Backend retorna array direto, sem envelope
+export type ListaOrdensResponse = OrdemServico[];

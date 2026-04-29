@@ -4,7 +4,7 @@ import { ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import {
   provideHttpClient,
-  withInterceptors,
+  withInterceptorsFromDi,
   HTTP_INTERCEPTORS,
 } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
@@ -17,7 +17,7 @@ export const appConfig: ApplicationConfig = {
     // 1. Routing: definir as rotas
     provideRouter(routes),
     // 2. HTTP Client - Requisições HTTP
-    provideHttpClient(),
+    provideHttpClient(withInterceptorsFromDi()),
     // 3. Registrar Auth Interceptor
     {
       provide: HTTP_INTERCEPTORS,
