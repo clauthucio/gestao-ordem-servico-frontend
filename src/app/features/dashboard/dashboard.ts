@@ -1,128 +1,174 @@
-import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-
-export type StatusOS = 'aberta' | 'em_andamento' | 'critica' | 'aguardando_peca' | 'concluida';
-export type StatusTecnico = 'disponivel' | 'ocupado' | 'critico';
-
-export interface OrdemServico {
-  id: string;
-  equipamento: string;
-  setor: string;
-  status: StatusOS;
-  tecnico?: string;
-}
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { OrdemServicoService } from '../../core/http/ordem-servico.service';
+import { OrdemServico } from '../../core/models/ordem-servico.model';
+import { OrdemStatus, STATUS_COLORS, STATUS_LABELS } from '../../core/enums/status.enum';
 
 export interface DiaAtividade {
   dia: string;
   valor: number;
   ativo?: boolean;
+  porcentagem: number;
 }
 
-export interface Tecnico {
-  nome: string;
-  status: StatusTecnico;
-  tarefa?: string;
-  avatarUrl: string;
-}
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './dashboard.html'
 })
-export class Dashboard {
-  // Métricas
-  osAbertasHoje = 12;
-  variacaoOntem = '8% vs. ontem';
-  osEmAndamento = 24;
-  progressoAndamento = 75;
-  osCriticas = 3;
-  alertaCritico = 'Ação imediata necessária em Linha A';
-  tempoMedioConclusao = '4.2h';
-  metaTempo = 'Dentro da meta (5h)';
+export class Dashboard implements OnInit {
+  private ordemService = inject(OrdemServicoService);
+  private cdr = inject(ChangeDetectorRef);
 
-  // Tabela OS
-  ordens: OrdemServico[] = [
-    { id: '#OS-8842', equipamento: 'Prensa Hidráulica P-04', setor: 'Estamparia', status: 'aberta' },
-    { id: '#OS-8841', equipamento: 'Motor de Exaustão EX-22', setor: 'Pintura', status: 'em_andamento', tecnico: 'Ricardo Alves' },
-    { id: '#OS-8839', equipamento: 'Robô de Solda RS-09', setor: 'Montagem', status: 'critica', tecnico: 'Fabio Souza' },
-    { id: '#OS-8838', equipamento: 'Esteira Transportadora T-01', setor: 'Logística', status: 'aguardando_peca', tecnico: 'Marcos Lima' },
-    { id: '#OS-8835', equipamento: 'Compressor Central C-02', setor: 'Utilidades', status: 'concluida', tecnico: 'Ana Paula' }
-  ];
+  // Métricas — calculadas a partir dos dados reais
+  osAbertasHoje = 0;
+  osEmAndamento = 0;
+  osCriticas = 0;
+  osConcluidas = 0;
+  canceladas = 0;
+  eficiencia = '--';
+  tempoMedioConclusao = '--';
 
-  // Gráfico atividade
-  atividadeSemanal: DiaAtividade[] = [
-    { dia: 'Seg', valor: 40 },
-    { dia: 'Ter', valor: 65 },
-    { dia: 'Qua', valor: 85 },
-    { dia: 'Qui', valor: 55 },
-    { dia: 'Sex', valor: 70 },
-    { dia: 'Sab', valor: 95 },
-    { dia: 'Dom', valor: 60, ativo: true }
-  ];
-
-  resumoAtividade = {
-    concluidas: 142,
-    rejeitadas: 2,
-    eficiencia: '94%'
+  // Filtro ativo pelos cards
+  filtroAtivo: string | null = null;
+  readonly filtroLabels: Record<string, string> = {
+    'ABERTO': 'Abertas',
+    'EM_ANDAMENTO': 'Em Andamento',
+    'CRITICA': 'Alta Prioridade',
+    'CONCLUIDO': 'Concluídas'
   };
 
-  // Equipe
-  tecnicos: Tecnico[] = [
-    { nome: 'Ricardo Alves', status: 'ocupado', tarefa: 'OS-8841', avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDg6n0KBPJcqXxX2h-1lmOQZkZlxoFKuBnQ_AfGoWqTK1n-85cyKa_whduwN_kw9uR6IOIcqI31fF7eH5YpPS0DKnuqbCcW9-E_PXTr3eX9M53WwRFTIE1BQucx3s0aGRhsg73xpaBpanUx7wxYF-RPemHtMIlGLesIxBPkdtDzxqSoyfChge3Q-Wi1oRpWFhSQrWqrOfX0q-c8s1y1EexxeRUJNrD3uLenDIIJGrCXGxB9G_mre5v4ON778acfQR3wC_CkRDFwT9sq' },
-    { nome: 'Ana Paula', status: 'disponivel', avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAF1dGwwNehj3gUVyIhCy0mil-8Q1xZKqv9pd7isSxOI0nxsyH5pAEBLNUJ8vOsZ0fJylL-jt5qvX7jmA_1bhxcP6XO6PEVXO6gvTct5pYhS_3-p_i5w3lLZ-VX4jRLGiKgC-N_xJlHO_eJAAMQiRbDEZ2xJUU2y0k81asKu_UO7LLHHMbpACRwzQZINTlbM9nYWyBU4KSxBplbsuAfXUHviKMzXsO0-_2bGTSVONGzzpgTBIAGVx2voryHSoLHkQ49VNv-7thCZyto' },
-    { nome: 'Fabio Souza', status: 'critico', tarefa: 'OS-8839', avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBAKSWo8Z919yjy8H_SvzPRhv5qV7Huq_a0MYxQNlfbspeXgjiyJt3H601w5Pe6--uf3z-F-nXYst3pqMHX1GIyhtuBLUrBiMJsS6naPhbu3OIMAp3q4Uq6XsEelLBpzbTbxXUtDVxWt5MtkyoPILWR0iso6zu1CKgCpWB21uGi08a380VtQaLAeZNJ24pa-Vg-BBschJh7lJl225uELL2YqPtZrtBOZUjBHEx1iwTkuqzkH47HbdyC5ttNvf2T_8cCI13mBQ4F60O4' }
-  ];
+  // Estado da tabela
+  ordens: OrdemServico[] = [];  // preenchido pelo backend
+  carregando = true;            // exibe spinner enquanto aguarda
+  erro: string | null = null;   // exibe mensagem se der erro
 
-  getStatusClass(status: StatusOS): string {
-    const map: Record<StatusOS, string> = {
-      aberta: 'bg-on-surface-variant/10 text-on-surface-variant',
-      em_andamento: 'bg-secondary/10 text-secondary',
-      critica: 'bg-error/10 text-error',
-      aguardando_peca: 'bg-orange-100 text-orange-600',
-      concluida: 'bg-tertiary/10 text-tertiary'
+  // Chamado automaticamente ao abrir a tela
+  ngOnInit(): void {
+    console.log('[Dashboard] ngOnInit() executado - iniciando carregamento de ordens');
+    this.ordemService.listar().subscribe({
+      next: (dados) => {
+        console.log('[Dashboard] Dados recebidos do backend:', dados);
+        console.log('[Dashboard] Total de ordens recebidas:', dados.length);
+
+        // Filtra apenas OS dos últimos 30 dias por aberturaEm
+        const trintaDiasAtras = new Date();
+        trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+        console.log('[Dashboard] Data de corte (30 dias atrás):', trintaDiasAtras);
+
+        this.ordens = dados.filter(os => new Date(os.aberturaEm) >= trintaDiasAtras);
+        console.log('[Dashboard] Ordens após filtro de 30 dias:', this.ordens.length);
+        console.log('[Dashboard] Ordens filtradas:', this.ordens);
+
+        // Calcula métricas a partir dos dados filtrados
+        this.osAbertasHoje = this.ordens.filter(o => o.statusOrdemServico === OrdemStatus.ABERTO).length;
+        this.osEmAndamento = this.ordens.filter(o => o.statusOrdemServico === OrdemStatus.EM_ANDAMENTO).length;
+        this.osCriticas = this.ordens.filter(o =>
+          o.statusOrdemServico === OrdemStatus.ABERTO &&
+          o.prioridadeOrdemServico === 'CRITICA'
+        ).length;
+        this.osConcluidas = this.ordens.filter(o => o.statusOrdemServico === OrdemStatus.CONCLUIDO).length;
+        this.canceladas = this.ordens.filter(o => o.statusOrdemServico === OrdemStatus.CANCELADO).length;
+        const total = this.ordens.length;
+        this.eficiencia = total > 0 ? Math.round((this.osConcluidas / total) * 100) + '%' : '--';
+
+        // Calcula tempo médio de conclusão em horas
+        const concluidas = this.ordens.filter(o =>
+          o.statusOrdemServico === OrdemStatus.CONCLUIDO && o.conclusaoEm
+        );
+        if (concluidas.length > 0) {
+          const totalHoras = concluidas.reduce((acc, os) => {
+            const abertura = new Date(os.aberturaEm).getTime();
+            const conclusao = new Date(os.conclusaoEm!).getTime();
+            const horas = (conclusao - abertura) / (1000 * 60 * 60);
+            return acc + horas;
+          }, 0);
+          const mediaHoras = Math.round(totalHoras / concluidas.length);
+          this.tempoMedioConclusao = mediaHoras + 'h';
+        }
+        this.calcularAtividadeSemanal(dados);
+        console.log('[Dashboard] Métricas calculadas:', {
+          osAbertasHoje: this.osAbertasHoje,
+          osEmAndamento: this.osEmAndamento,
+          osCriticas: this.osCriticas,
+          osConcluidas: this.osConcluidas,
+          canceladas: this.canceladas,
+          eficiencia: this.eficiencia,
+          tempoMedioConclusao: this.tempoMedioConclusao
+        });
+
+        this.carregando = false;
+        this.cdr.markForCheck();
+        console.log('[Dashboard] Dados carregados com sucesso. carregando=false');
+      },
+      error: (err) => {
+        console.error('[Dashboard] Erro ao carregar ordens:', err);
+        this.erro = 'Não foi possível carregar as ordens de serviço.';
+        this.carregando = false;
+      }
+    });
+  }
+
+  // Gráfico atividade semanal — calculado a partir dos dados reais
+  atividadeSemanal: DiaAtividade[] = [];
+
+  private calcularAtividadeSemanal(dados: OrdemServico[]): void {
+    const diasNomes = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const hoje = new Date();
+    const ultimos7: DiaAtividade[] = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const data = new Date(hoje);
+      data.setDate(hoje.getDate() - i);
+      const dateStr = data.toDateString();
+      const count = dados.filter(os => new Date(os.aberturaEm).toDateString() === dateStr).length;
+      ultimos7.push({ dia: diasNomes[data.getDay()], valor: count, ativo: i === 0, porcentagem: 0 });
+    }
+
+    const maxValor = Math.max(...ultimos7.map(d => d.valor), 1);
+    this.atividadeSemanal = ultimos7.map(d => ({
+      ...d,
+      porcentagem: Math.max(Math.round((d.valor / maxValor) * 100), 8)
+    }));
+  }
+
+  // Retorna classes CSS do badge conforme o status da OS
+  getStatusClass(status: OrdemStatus): string {
+    const map: Record<OrdemStatus, string> = {
+      [OrdemStatus.ABERTO]:          'bg-slate-100 text-slate-600',
+      [OrdemStatus.EM_ANDAMENTO]:    'bg-blue-50 text-blue-600',
+      [OrdemStatus.AGUARDANDO_PECA]: 'bg-orange-50 text-orange-600',
+      [OrdemStatus.CONCLUIDO]:       'bg-emerald-50 text-emerald-600',
+      [OrdemStatus.CANCELADO]:       'bg-red-50 text-red-600',
     };
     return `inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold uppercase ${map[status]}`;
   }
 
-  getStatusLabel(status: StatusOS): string {
-    const map: Record<StatusOS, string> = {
-      aberta: 'Aberta',
-      em_andamento: 'Em andamento',
-      critica: 'Prioridade Crítica',
-      aguardando_peca: 'Aguardando Peça',
-      concluida: 'Concluída'
-    };
-    return map[status];
-  }
-
-  getTecnicoStatusClass(status: StatusTecnico): string {
-    const map: Record<StatusTecnico, string> = {
-      disponivel: 'text-tertiary',
-      ocupado: 'text-secondary',
-      critico: 'text-error'
-    };
-    return `text-[10px] font-medium ${map[status]}`;
-  }
-
-  getTecnicoDotClass(status: StatusTecnico): string {
-    const map: Record<StatusTecnico, string> = {
-      disponivel: 'bg-tertiary',
-      ocupado: 'bg-secondary',
-      critico: 'bg-error'
-    };
-    return `w-2 h-2 rounded-full ${map[status]}`;
-  }
-
-  getTecnicoLabel(tec: Tecnico): string {
-    if (tec.status === 'disponivel') return 'Disponível';
-    if (tec.status === 'ocupado') return `Em Manutenção ${tec.tarefa ?? ''}`;
-    return `Ocupado (Crítico)`;
+  // Retorna o label em português do status usando o enum
+  getStatusLabel(status: OrdemStatus): string {
+    return STATUS_LABELS[status];
   }
 
   onVerTodas(): void {
-    console.log('Ver todas as OS');
+    this.selecionarFiltro(null);
+  }
+
+  selecionarFiltro(filtro: string | null): void {
+    this.filtroAtivo = this.filtroAtivo === filtro ? null : filtro;
+  }
+
+  get ordensFiltradas(): OrdemServico[] {
+    if (!this.filtroAtivo) return this.ordens;
+    if (this.filtroAtivo === 'CRITICA') {
+      return this.ordens.filter(o =>
+        o.statusOrdemServico === OrdemStatus.ABERTO &&
+        o.prioridadeOrdemServico === 'CRITICA'
+      );
+    }
+    return this.ordens.filter(o => o.statusOrdemServico === this.filtroAtivo as OrdemStatus);
   }
 
   onAcaoOS(id: string): void {
