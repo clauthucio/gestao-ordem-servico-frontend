@@ -1,5 +1,5 @@
 <!-- Metric Grid -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-4 max-w-7xl mx-auto mt-6"></div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-4 max-w-7xl mx-auto mt-6">
 
   <!-- Card 1: OS Abertas Hoje -->
   <div class="bg-slate-50 p-2 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
@@ -164,11 +164,7 @@
                     <span [class]="getStatusClass(os.statusOrdemServico)">{{ getStatusLabel(os.statusOrdemServico) }}</span>
                   </td>
                   <td class="px-6 py-4 text-sm text-slate-500">
-                    @if (os.idTecnico) {
-                      <span>Técnico atribuído</span>
-                    } @else {
-                      <span class="text-slate-400">---</span>
-                    }
+                    {{ getTecnicoNome(os.idTecnico) }}
                   </td>
                   <td class="px-6 py-4 text-right">
                     <button class="material-symbols-outlined text-slate-400 hover:text-slate-600 transition-colors">more_vert</button>
@@ -184,6 +180,78 @@
 
   <!-- Sidebar -->
   <aside class="col-span-12 xl:col-span-4 space-y-8">
+
+    <!-- Disponibilidade Técnica -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+        <h2 class="text-sm font-bold text-slate-800">Disponibilidade técnica</h2>
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">OS ativas</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Técnico</th>
+              <th class="px-3 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Baixa</th>
+              <th class="px-3 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Média</th>
+              <th class="px-3 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Alta</th>
+              <th class="px-3 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Crítica</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @if (carregando) {
+              <tr>
+                <td colspan="5" class="px-4 py-8 text-center">
+                  <span class="material-symbols-outlined animate-spin text-slate-400">hourglass_bottom</span>
+                </td>
+              </tr>
+            } @else if (disponibilidadeTecnicos.length === 0) {
+              <tr>
+                <td colspan="5" class="px-4 py-8 text-center text-xs text-slate-400">
+                  Nenhum técnico com OS ativa
+                </td>
+              </tr>
+            } @else {
+              @for (tec of disponibilidadeTecnicos; track tec.idTecnico) {
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                  <td class="px-4 py-3 text-xs font-semibold text-slate-700 max-w-[120px] truncate" [title]="tec.tecnicoNome">
+                    {{ tec.tecnicoNome }}
+                  </td>
+                  <td class="px-3 py-3 text-center">
+                    @if (tec.baixa > 0) {
+                      <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">{{ tec.baixa }}</span>
+                    } @else {
+                      <span class="text-[11px] text-slate-300 font-medium">—</span>
+                    }
+                  </td>
+                  <td class="px-3 py-3 text-center">
+                    @if (tec.media > 0) {
+                      <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold">{{ tec.media }}</span>
+                    } @else {
+                      <span class="text-[11px] text-slate-300 font-medium">—</span>
+                    }
+                  </td>
+                  <td class="px-3 py-3 text-center">
+                    @if (tec.alta > 0) {
+                      <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-700 text-[11px] font-bold">{{ tec.alta }}</span>
+                    } @else {
+                      <span class="text-[11px] text-slate-300 font-medium">—</span>
+                    }
+                  </td>
+                  <td class="px-3 py-3 text-center">
+                    @if (tec.critica > 0) {
+                      <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-700 text-[11px] font-bold">{{ tec.critica }}</span>
+                    } @else {
+                      <span class="text-[11px] text-slate-300 font-medium">—</span>
+                    }
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
 
     <!-- Activity Chart -->
     <div class="bg-white p-6 rounded-xl shadow-sm">
