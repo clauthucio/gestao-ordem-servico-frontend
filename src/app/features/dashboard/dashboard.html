@@ -1,99 +1,39 @@
 <!-- Metric Grid -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-4 max-w-7xl mx-auto mt-6"></div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-4 max-w-7xl mx-auto mt-6">
 
-  <!-- Card 1: OS Abertas Hoje -->
+  <!-- Card 1 -->
   <div class="bg-slate-50 p-2 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
        [ngClass]="{'ring-2 ring-slate-400 ring-offset-2': filtroAtivo === 'ABERTO'}"
        (click)="selecionarFiltro('ABERTO')">
-    <div>
-      <div class="flex justify-between items-start mb-4">
-        <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
-          <span class="material-symbols-outlined text-slate-600">pending_actions</span>
-        </div>
-        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">30 DIAS</span>
-      </div>
-      <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Abertas</h3>
-      <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ osAbertasHoje }}</p>
-    </div>
-    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-[11px] text-slate-600 font-medium">
-      <span class="material-symbols-outlined text-xl mr-1">assignment</span>
-      <!-- <span class="material-symbols-outlined text-sm mr-1">trending_up</span> -->
-      <!-- <span>8% vs. ontem</span> --> <!-- IMPLEMENTAÇÃÕ FUTURA -->
-    </div>
+    ...
   </div>
 
-  <!-- Card 2: OS em Andamento -->
+  <!-- Card 2 -->
   <div class="bg-amber-50 p-4 rounded-xl shadow-sm border border-amber-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
        [ngClass]="{'ring-2 ring-amber-400 ring-offset-2': filtroAtivo === 'EM_ANDAMENTO'}"
        (click)="selecionarFiltro('EM_ANDAMENTO')">
-    <div>
-      <div class="flex justify-between items-start mb-4">
-        <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-          <span class="material-symbols-outlined text-amber-600">engineering</span>
-        </div>
-      </div>
-      <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Em Andamento</h3>
-      <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ osEmAndamento }}</p>
-    </div>
-    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 text-amber-600">
-      <span class="material-symbols-outlined text-xl mr-1">cycle</span>
-
-      <!-- <span class="text-[10px] font-bold text-blue-600">75%</span> -->
-    </div>
+    ...
   </div>
 
-  <!-- Card 3: Prioridade Crítica -->
+  <!-- Card 3 -->
   <div class="bg-red-50 p-4 rounded-xl shadow-sm border border-red-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
        [ngClass]="{'ring-2 ring-red-400 ring-offset-2': filtroAtivo === 'CRITICA'}"
        (click)="selecionarFiltro('CRITICA')">
-    <div>
-      <div class="flex justify-between items-start mb-4">
-        <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-          <span class="material-symbols-outlined text-red-600" style="font-variation-settings: 'FILL' 1;">priority_high</span>
-        </div>
-        <span class="px-2 py-0. rounded text-[10px] font-bold bg-red-600 text-white uppercase">Crítico</span>
-      </div>
-      <h3 class="text-red-600 text-xs font-semibold uppercase tracking-wider mb-1">Alta - Não Iniciado </h3>
-      <p class="text-3xl font-black text-red-800 tracking-tighter">{{ osCriticas }}</p>
-    </div>
-    <span class="material-symbols-outlined text-2xl text-red-600">e911_emergency</span>
-    <!-- <p class="mt-4 text-[11px] text-red-600 font-medium">Ação imediata necessária</p> -->
+    ...
   </div>
 
-  <!-- Card 4: Concluídas -->
+  <!-- Card 4 -->
   <div class="bg-emerald-50 p-6 rounded-xl shadow-sm border border-emerald-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
        [ngClass]="{'ring-2 ring-emerald-400 ring-offset-2': filtroAtivo === 'CONCLUIDO'}"
        (click)="selecionarFiltro('CONCLUIDO')">
-    <div>
-      <div class="flex justify-between items-start mb-4">
-        <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-          <span class="material-symbols-outlined text-xl text-emerald-600">check_circle</span>
-        </div>
-      </div>
-      <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Concluídas</h3>
-      <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ osConcluidas }}</p>
-    </div>
-    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-[11px] text-emerald-600 font-medium">
-      <span class="material-symbols-outlined text-xl mr-1">verified</span>
-    </div>
+    ...
   </div>
 
-  <!-- Card 5: Tempo Médio -->
+  <!-- Card 5 -->
   <div class="bg-blue-50 p-6 rounded-xl shadow-sm border border-blue-100 hover:shadow-md transition-all flex flex-col justify-between">
-    <div>
-      <div class="flex justify-between items-start mb-4">
-        <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-          <span class="material-symbols-outlined text-xl text-blue-600">schedule</span>
-        </div>
-      </div>
-      <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Tempo Médio de Conslusão</h3>
-      <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ tempoMedioConclusao }}</p>
-    </div>
-    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-[11px] text-blue-600 font-medium">
-      <span class="material-symbols-outlined text-xl mr-1">schedule</span>
-      <!-- <span>Dentro da meta (5h)</span> -->
-    </div>
+    ...
   </div>
+
 </div>
 
 <!-- Dashboard Body -->
@@ -242,8 +182,4 @@
 
 <!-- FAB -->
 <div class="fixed bottom-8 right-8 z-50">
-  <button class="w-14 h-14 bg-gradient-to-br from-slate-600 to-slate-700 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all group">
-    <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">add</span>
-    <span class="absolute right-full mr-4 px-3 py-1.5 bg-slate-800 text-white text-[10px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">Criar OS</span>
-  </button>
 </div>
