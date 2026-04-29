@@ -55,7 +55,7 @@ import { UserRole, ROLE_LABELS } from '../../../core/enums/roles.enum';
               routerLinkActive="bg-on-primary/20"
               class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-on-primary/10 transition-all text-sm"
             >
-              <span class="material-symbols-outlined">precision_manufacturing</span>
+              <span class="material-symbols-outlined">handyman</span>
               <span>Equipamentos</span>
             </a>
           }

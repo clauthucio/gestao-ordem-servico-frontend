@@ -1,37 +1,92 @@
 <!-- Metric Grid -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-4 max-w-7xl mx-auto mt-6">
 
-  <!-- Card 1 -->
+  <!-- Card 1: OS Abertas Hoje -->
   <div class="bg-slate-50 p-2 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
        [ngClass]="{'ring-2 ring-slate-400 ring-offset-2': filtroAtivo === 'ABERTO'}"
        (click)="selecionarFiltro('ABERTO')">
-    ...
+    <div>
+      <div class="flex justify-between items-start mb-4">
+        <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+          <span class="material-symbols-outlined text-slate-600">pending_actions</span>
+        </div>
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">30 DIAS</span>
+      </div>
+      <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Abertas</h3>
+      <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ osAbertasHoje }}</p>
+    </div>
+    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-[11px] text-slate-600 font-medium">
+      <span class="material-symbols-outlined text-xl mr-1">assignment</span>
+    </div>
   </div>
 
-  <!-- Card 2 -->
+  <!-- Card 2: OS em Andamento -->
   <div class="bg-amber-50 p-4 rounded-xl shadow-sm border border-amber-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
        [ngClass]="{'ring-2 ring-amber-400 ring-offset-2': filtroAtivo === 'EM_ANDAMENTO'}"
        (click)="selecionarFiltro('EM_ANDAMENTO')">
-    ...
+    <div>
+      <div class="flex justify-between items-start mb-4">
+        <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+          <span class="material-symbols-outlined text-amber-600">engineering</span>
+        </div>
+      </div>
+      <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Em Andamento</h3>
+      <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ osEmAndamento }}</p>
+    </div>
+    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 text-amber-600">
+      <span class="material-symbols-outlined text-xl mr-1">cycle</span>
+    </div>
   </div>
 
-  <!-- Card 3 -->
+  <!-- Card 3: Prioridade Crítica -->
   <div class="bg-red-50 p-4 rounded-xl shadow-sm border border-red-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
        [ngClass]="{'ring-2 ring-red-400 ring-offset-2': filtroAtivo === 'CRITICA'}"
        (click)="selecionarFiltro('CRITICA')">
-    ...
+    <div>
+      <div class="flex justify-between items-start mb-4">
+        <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+          <span class="material-symbols-outlined text-red-600" style="font-variation-settings: 'FILL' 1;">priority_high</span>
+        </div>
+        <span class="px-2 py-0. rounded text-[10px] font-bold bg-red-600 text-white uppercase">Crítico</span>
+      </div>
+      <h3 class="text-red-600 text-xs font-semibold uppercase tracking-wider mb-1">Crítica - Não Iniciado </h3>
+      <p class="text-3xl font-black text-red-800 tracking-tighter">{{ osCriticas }}</p>
+    </div>
+    <span class="material-symbols-outlined text-2xl text-red-600">e911_emergency</span>
   </div>
 
-  <!-- Card 4 -->
+  <!-- Card 4: Concluídas -->
   <div class="bg-emerald-50 p-6 rounded-xl shadow-sm border border-emerald-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
        [ngClass]="{'ring-2 ring-emerald-400 ring-offset-2': filtroAtivo === 'CONCLUIDO'}"
        (click)="selecionarFiltro('CONCLUIDO')">
-    ...
+    <div>
+      <div class="flex justify-between items-start mb-4">
+        <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+          <span class="material-symbols-outlined text-xl text-emerald-600">check_circle</span>
+        </div>
+      </div>
+      <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Concluídas</h3>
+      <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ osConcluidas }}</p>
+    </div>
+    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-[11px] text-emerald-600 font-medium">
+      <span class="material-symbols-outlined text-xl mr-1">verified</span>
+    </div>
   </div>
 
-  <!-- Card 5 -->
+  <!-- Card 5: Tempo Médio -->
   <div class="bg-blue-50 p-6 rounded-xl shadow-sm border border-blue-100 hover:shadow-md transition-all flex flex-col justify-between">
-    ...
+    <div>
+      <div class="flex justify-between items-start mb-4">
+        <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+          <span class="material-symbols-outlined text-xl text-blue-600">schedule</span>
+        </div>
+      </div>
+      <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Tempo Médio de Conslusão</h3>
+      <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ tempoMedioConclusao }}</p>
+    </div>
+    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-[11px] text-blue-600 font-medium">
+      <span class="material-symbols-outlined text-xl mr-1">schedule</span>
+    </div>
   </div>
 
 </div>
@@ -104,11 +159,7 @@
                     <span [class]="getStatusClass(os.statusOrdemServico)">{{ getStatusLabel(os.statusOrdemServico) }}</span>
                   </td>
                   <td class="px-6 py-4 text-sm text-slate-500">
-                    @if (os.idTecnico) {
-                      <span>Técnico atribuído</span>
-                    } @else {
-                      <span class="text-slate-400">---</span>
-                    }
+                    {{ getTecnicoNome(os.idTecnico) }}
                   </td>
                   <td class="px-6 py-4 text-right">
                     <button class="material-symbols-outlined text-slate-400 hover:text-slate-600 transition-colors">more_vert</button>
@@ -124,6 +175,78 @@
 
   <!-- Sidebar -->
   <aside class="col-span-12 xl:col-span-4 space-y-8">
+
+    <!-- Disponibilidade Técnica -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+        <h2 class="text-sm font-bold text-slate-800">Disponibilidade técnica</h2>
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">OS ativas</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Técnico</th>
+              <th class="px-3 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Baixa</th>
+              <th class="px-3 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Média</th>
+              <th class="px-3 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Alta</th>
+              <th class="px-3 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Crítica</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @if (carregando) {
+              <tr>
+                <td colspan="5" class="px-4 py-8 text-center">
+                  <span class="material-symbols-outlined animate-spin text-slate-400">hourglass_bottom</span>
+                </td>
+              </tr>
+            } @else if (disponibilidadeTecnicos.length === 0) {
+              <tr>
+                <td colspan="5" class="px-4 py-8 text-center text-xs text-slate-400">
+                  Nenhum técnico com OS ativa
+                </td>
+              </tr>
+            } @else {
+              @for (tec of disponibilidadeTecnicos; track tec.idTecnico) {
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                  <td class="px-4 py-3 text-xs font-semibold text-slate-700 max-w-[120px] truncate" [title]="tec.tecnicoNome">
+                    {{ tec.tecnicoNome }}
+                  </td>
+                  <td class="px-3 py-3 text-center">
+                    @if (tec.baixa > 0) {
+                      <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">{{ tec.baixa }}</span>
+                    } @else {
+                      <span class="text-[11px] text-slate-300 font-medium">—</span>
+                    }
+                  </td>
+                  <td class="px-3 py-3 text-center">
+                    @if (tec.media > 0) {
+                      <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold">{{ tec.media }}</span>
+                    } @else {
+                      <span class="text-[11px] text-slate-300 font-medium">—</span>
+                    }
+                  </td>
+                  <td class="px-3 py-3 text-center">
+                    @if (tec.alta > 0) {
+                      <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-700 text-[11px] font-bold">{{ tec.alta }}</span>
+                    } @else {
+                      <span class="text-[11px] text-slate-300 font-medium">—</span>
+                    }
+                  </td>
+                  <td class="px-3 py-3 text-center">
+                    @if (tec.critica > 0) {
+                      <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-700 text-[11px] font-bold">{{ tec.critica }}</span>
+                    } @else {
+                      <span class="text-[11px] text-slate-300 font-medium">—</span>
+                    }
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
 
     <!-- Activity Chart -->
     <div class="bg-white p-6 rounded-xl shadow-sm">

@@ -1,0 +1,223 @@
+<!-- Loading state -->
+@if (carregandoDados) {
+  <div class="flex items-center justify-center py-16 text-on-surface-variant gap-2">
+    <span class="material-symbols-outlined animate-spin">hourglass_bottom</span>
+    <span class="text-sm">Carregando dados...</span>
+  </div>
+} @else {
+  <form [formGroup]="form" (ngSubmit)="onSalvar()" novalidate>
+
+    <!-- Erro global -->
+    @if (erro) {
+      <div class="mb-6 flex items-start gap-2 p-4 bg-error/10 rounded-xl text-error text-sm">
+        <span class="material-symbols-outlined text-base shrink-0">error</span>
+        <span>{{ erro }}</span>
+      </div>
+    }
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <!-- COLUNA ESQUERDA -->
+      <div class="space-y-5">
+
+        <!-- Equipamento -->
+        <div>
+          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            Equipamento <span class="text-error">*</span>
+          </label>
+          <div class="relative">
+            <select
+              formControlName="idEquipamento"
+              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 pr-10 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none"
+              [class.ring-2]="isInvalid('idEquipamento')"
+              [class.ring-error]="isInvalid('idEquipamento')"
+            >
+              <option value="" disabled>Selecione um equipamento...</option>
+              @for (eq of equipamentos; track eq.id) {
+                <option [value]="eq.id">{{ eq.nome }} — {{ eq.localizacao }}</option>
+              }
+            </select>
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+          </div>
+          @if (isInvalid('idEquipamento')) {
+            <p class="mt-1 text-[11px] text-error">Selecione um equipamento.</p>
+          }
+        </div>
+
+        <!-- Descrição da Falha -->
+        <div>
+          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            Descrição da Falha <span class="text-error">*</span>
+          </label>
+          <textarea
+            formControlName="descricaoFalha"
+            rows="5"
+            placeholder="Descreva o problema observado detalhadamente..."
+            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface placeholder:text-outline-variant/60 focus:ring-2 focus:ring-primary/20 resize-none"
+            [class.ring-2]="isInvalid('descricaoFalha')"
+            [class.ring-error]="isInvalid('descricaoFalha')"
+          ></textarea>
+          @if (isInvalid('descricaoFalha')) {
+            <p class="mt-1 text-[11px] text-error">
+              @if (f['descricaoFalha'].errors?.['required']) { Campo obrigatório. }
+              @else if (f['descricaoFalha'].errors?.['maxlength']) { Máximo de 2000 caracteres. }
+            </p>
+          }
+        </div>
+
+        <!-- Descrição do Serviço -->
+        <div>
+          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            Descrição do Serviço
+          </label>
+          <textarea
+            formControlName="descricaoServico"
+            rows="3"
+            placeholder="Descreva o serviço a ser realizado..."
+            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface placeholder:text-outline-variant/60 focus:ring-2 focus:ring-primary/20 resize-none"
+          ></textarea>
+        </div>
+
+      </div>
+
+      <!-- COLUNA DIREITA -->
+      <div class="space-y-5">
+
+        <!-- Tipo de Manutenção -->
+        <div>
+          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            Tipo de Manutenção <span class="text-error">*</span>
+          </label>
+          <div class="relative">
+            <select
+              formControlName="tipoManutencao"
+              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 pr-10 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none"
+            >
+              @for (tipo of tiposManutencao; track tipo.value) {
+                <option [value]="tipo.value">{{ tipo.label }}</option>
+              }
+            </select>
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+          </div>
+        </div>
+
+        <!-- Prioridade -->
+        <div>
+          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            Prioridade <span class="text-error">*</span>
+          </label>
+          <div class="relative">
+            <select
+              formControlName="prioridadeOrdemServico"
+              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 pr-10 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none"
+            >
+              @for (p of prioridades; track p.value) {
+                <option [value]="p.value">{{ p.label }}</option>
+              }
+            </select>
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+          </div>
+          @if (f['prioridadeOrdemServico'].value === 'CRITICA') {
+            <div class="mt-2 flex items-start gap-2 p-3 bg-error/5 rounded-lg border border-error/20 text-error text-[11px]">
+              <span class="material-symbols-outlined text-sm shrink-0">warning</span>
+              Prioridade crítica requer notificação imediata ao gerente de planta.
+            </div>
+          }
+        </div>
+
+        <!-- Técnico Responsável -->
+        <div>
+          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            Técnico Responsável
+          </label>
+          <div class="relative">
+            <select
+              formControlName="idTecnico"
+              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 pr-10 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none"
+            >
+              <option value="">Não atribuído</option>
+              @for (t of tecnicos; track t.idUsuario) {
+                <option [value]="t.idUsuario">{{ t.nomeUsuario }}</option>
+              }
+            </select>
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+          </div>
+        </div>
+
+        <!-- Peças Utilizadas -->
+        <div>
+          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            Peças Utilizadas
+          </label>
+          <input
+            formControlName="pecasUtilizadas"
+            type="text"
+            placeholder="Ex: Rolamento 6205, correia V..."
+            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface placeholder:text-outline-variant/60 focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+
+        <!-- Linha: Horas Trabalhadas + Data Conclusão -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+              Horas Trabalhadas
+            </label>
+            <input
+              formControlName="horasTrabalhadas"
+              type="number"
+              min="0"
+              placeholder="0"
+              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+            />
+            @if (isInvalid('horasTrabalhadas')) {
+              <p class="mt-1 text-[11px] text-error">Valor deve ser ≥ 0.</p>
+            }
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+              Data Prevista de Conclusão
+            </label>
+            <input
+              formControlName="conclusaoEm"
+              type="date"
+              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="flex items-center justify-between pt-6 mt-6 border-t border-outline-variant/20">
+      <p class="text-[11px] text-on-surface-variant/60 flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm">info</span>
+        Campos marcados com <span class="text-error mx-1">*</span> são obrigatórios.
+      </p>
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          class="px-5 py-2.5 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors"
+          (click)="cancelado.emit()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="flex items-center gap-2 bg-primary text-on-primary px-8 py-2.5 rounded-lg text-sm font-bold shadow hover:shadow-md active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          [disabled]="salvando"
+        >
+          @if (salvando) {
+            <span class="material-symbols-outlined animate-spin text-sm">hourglass_bottom</span>
+            Salvando...
+          } @else {
+            <span class="material-symbols-outlined text-sm">save</span>
+            Salvar Ordem
+          }
+        </button>
+      </div>
+    </div>
+
+  </form>
+}

@@ -1,8 +1,11 @@
 import { RouterLink } from '@angular/router';
 import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { forkJoin } from 'rxjs';
 import { OrdemServicoService } from '../../core/http/ordem-servico.service';
+import { UsuarioService } from '../../core/http/usuario.service';
 import { OrdemServico } from '../../core/models/ordem-servico.model';
+import { UserRole } from '../../core/enums/roles.enum';
 import { OrdemStatus, STATUS_COLORS, STATUS_LABELS } from '../../core/enums/status.enum';
 
 export interface DiaAtividade {
@@ -10,6 +13,15 @@ export interface DiaAtividade {
   valor: number;
   ativo?: boolean;
   porcentagem: number;
+}
+
+export interface DisponibilidadeTecnico {
+  idTecnico: string;
+  tecnicoNome: string;
+  baixa: number;
+  media: number;
+  alta: number;
+  critica: number;
 }
 
 
@@ -21,7 +33,10 @@ export interface DiaAtividade {
 })
 export class Dashboard implements OnInit {
   private ordemService = inject(OrdemServicoService);
+  private usuarioService = inject(UsuarioService);
   private cdr = inject(ChangeDetectorRef);
+
+  tecnicoNomeMap = new Map<string, string>();
 
   // Métricas — calculadas a partir dos dados reais
   osAbertasHoje = 0;
@@ -49,8 +64,18 @@ export class Dashboard implements OnInit {
   // Chamado automaticamente ao abrir a tela
   ngOnInit(): void {
     console.log('[Dashboard] ngOnInit() executado - iniciando carregamento de ordens');
-    this.ordemService.listar().subscribe({
-      next: (dados) => {
+    forkJoin({
+      ordens: this.ordemService.listar(),
+      usuarios: this.usuarioService.listar()
+    }).subscribe({
+      next: ({ ordens: dados, usuarios }) => {
+        // Popula mapa idUsuario → nomeUsuario filtrando apenas técnicos
+        this.tecnicoNomeMap.clear();
+        usuarios
+          .filter(u => u.perfilUsuario === UserRole.TECNICO)
+          .forEach(u => this.tecnicoNomeMap.set(u.idUsuario, u.nomeUsuario));
+        console.log('[Dashboard] Técnicos carregados:', this.tecnicoNomeMap.size);
+
         console.log('[Dashboard] Dados recebidos do backend:', dados);
         console.log('[Dashboard] Total de ordens recebidas:', dados.length);
 
@@ -181,5 +206,46 @@ export class Dashboard implements OnInit {
 
   criarOS(): void {
     console.log('Criar nova OS');
+  }
+
+  getTecnicoNome(idTecnico?: string): string {
+    if (!idTecnico) return '---';
+    return this.tecnicoNomeMap.get(idTecnico) ?? '---';
+  }
+
+  get disponibilidadeTecnicos(): DisponibilidadeTecnico[] {
+    const ativas = this.ordens.filter(o =>
+      o.statusOrdemServico === OrdemStatus.ABERTO ||
+      o.statusOrdemServico === OrdemStatus.EM_ANDAMENTO
+    );
+
+    const mapa = new Map<string, DisponibilidadeTecnico>();
+
+    for (const os of ativas) {
+      if (!os.idTecnico) continue;
+      const nome = this.tecnicoNomeMap.get(os.idTecnico) ?? `Técnico ${os.idTecnico.substring(0, 8)}`;
+
+      if (!mapa.has(os.idTecnico)) {
+        mapa.set(os.idTecnico, {
+          idTecnico: os.idTecnico,
+          tecnicoNome: nome,
+          baixa: 0,
+          media: 0,
+          alta: 0,
+          critica: 0,
+        });
+      }
+
+      const entrada = mapa.get(os.idTecnico)!;
+      switch (os.prioridadeOrdemServico) {
+        case 'BAIXA':   entrada.baixa++;   break;
+        case 'MEDIA':   entrada.media++;   break;
+        case 'ALTA':    entrada.alta++;    break;
+        case 'CRITICA': entrada.critica++; break;
+      }
+    }
+
+    return Array.from(mapa.values())
+      .sort((a, b) => a.tecnicoNome.localeCompare(b.tecnicoNome));
   }
 }
