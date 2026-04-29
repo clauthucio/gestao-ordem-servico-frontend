@@ -29,13 +29,18 @@ export class AuthInterceptor implements HttpInterceptor {
   ): Observable<HttpEvent<unknown>> {
     // 1. Pegar o token
     const token = this.tokenService.getAccessToken();
-    const isAuthRoute =
+    // login e refresh ainda não têm token — não adicionar header
+    const skipAddToken =
+      request.url.includes('/auth/login') ||
+      request.url.includes('/auth/refresh');
+    // nenhuma rota de auth deve entrar no loop de renovação de token
+    const skip401Retry =
       request.url.includes('/auth/login') ||
       request.url.includes('/auth/refresh') ||
       request.url.includes('/auth/logout');
 
-    // 2. Se existe token e não é rota de auth, adicionar header
-    if (token && !isAuthRoute) {
+    // 2. Se existe token e não é rota que dispensa token, adicionar header
+    if (token && !skipAddToken) {
       // HttpRequest é imutável (não pode modificar direto), precisa clonar e depois modificar
       request = request.clone({
         setHeaders: {
@@ -52,7 +57,7 @@ export class AuthInterceptor implements HttpInterceptor {
     return next.handle(request).pipe(
       catchError((error: HttpErrorResponse) => {
         // Só tenta renovar token se NÃO for rota de auth (evita loop infinito)
-        if (error.status === 401 && !isAuthRoute) {
+        if (error.status === 401 && !skip401Retry) {
           console.warn('Token expirado (401), tentando renovar...');
 
           this.authService.refreshToken().subscribe({

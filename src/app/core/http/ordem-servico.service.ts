@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { OrdemServico } from '../models/ordem-servico.model';
+import { CriarOrdemServicoPayload, OrdemServico } from '../models/ordem-servico.model';
 
 @Injectable({
   providedIn: 'root', // disponível em toda a aplicação
@@ -14,5 +14,9 @@ export class OrdemServicoService {
   // O AuthInterceptor já adiciona o Bearer Token automaticamente
   listar(): Observable<OrdemServico[]> {
     return this.http.get<OrdemServico[]>(`${this.API_URL}/app/ordens`);
+  }
+
+  criar(payload: CriarOrdemServicoPayload): Observable<OrdemServico> {
+    return this.http.post<OrdemServico>(`${this.API_URL}/app/ordens`, payload);
   }
 }

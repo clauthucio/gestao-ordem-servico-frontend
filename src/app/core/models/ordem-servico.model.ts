@@ -27,3 +27,17 @@ export interface OrdemServico {
 
 // Backend retorna array direto, sem envelope
 export type ListaOrdensResponse = OrdemServico[];
+
+export interface CriarOrdemServicoPayload {
+  idEquipamento: string;
+  idSolicitante: string;
+  tipoManutencao: ManutencaoType;
+  prioridadeOrdemServico: PrioridadeType;
+  statusOrdemServico: OrdemStatus;
+  descricaoFalha: string;
+  idTecnico?: string;
+  descricaoServico?: string;
+  pecasUtilizadas?: string;
+  horasTrabalhadas?: number;
+  conclusaoEm?: string;
+}
