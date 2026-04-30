@@ -1,13 +1,13 @@
 <!-- Content Area -->
-<div class="pt-24 px-2 pb-12 space-y-8 max-w-7xl mx-auto">
+<div class="pt-5 px-2 pb-5 space-y-13 max-w-full mx-auto">
   
   <!-- Header Section with Stats Bento -->
   <section class="grid grid-cols-1 md:grid-cols-4 gap-6">
     <!-- Main KPI Card -->
-    <div class="col-span-2 bg-surface-container-lowest p-6 rounded-xl shadow-[0px_20px_40px_rgba(42,52,57,0.04)] flex flex-col justify-between">
+    <div class="col-span-2 bg-slate-700 p-6 rounded-xl shadow-[0px_20px_40px_rgba(42,52,57,0.04)] flex flex-col justify-between">
       <div>
         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-1">Total de Ativos Registrados</p>
-        <h2 class="text-4xl font-black text-on-surface tracking-tighter">
+        <h2 class="text-white text-4xl font-black text-on-surface tracking-tighter">
           {{ totalAtivos | number }} 
           <span class="text-sm font-medium text-tertiary ml-2">{{ variacaoMes }}</span>
         </h2>
@@ -31,7 +31,7 @@
     </div>
     
     <!-- Status Summary Mini-cards -->
-    <div class="bg-surface-container-low p-6 rounded-xl flex flex-col justify-center">
+    <div class="bg-slate-300 p-6 rounded-xl flex flex-col justify-center">
       <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.1em] mb-2">Operacional</p>
       <div class="flex items-end justify-between">
         <span class="text-3xl font-bold text-on-surface">{{ operacional }}</span>
@@ -44,7 +44,7 @@
       </div>
     </div>
     
-    <div class="bg-surface-container-low p-6 rounded-xl flex flex-col justify-center">
+    <div class="bg-slate-300 p-6 rounded-xl flex flex-col justify-center">
       <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.1em] mb-2">Manutenção</p>
       <div class="flex items-end justify-between">
         <span class="text-3xl font-bold text-on-surface">{{ manutencao }}</span>
