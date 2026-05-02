@@ -1,3 +1,14 @@
+<!-- Dialog reutilizável -->
+@if (dialogVisivel) {
+  <app-dialog
+    [titulo]="dialogTitulo"
+    [mensagem]="dialogMensagem"
+    [tipo]="dialogTipo"
+    [botoes]="dialogBotoes"
+    (acao)="onDialogAcao($event)"
+  />
+}
+
 <!-- Loading state -->
 @if (carregandoDados) {
   <div class="flex items-center justify-center py-16 text-on-surface-variant gap-2">
@@ -5,6 +16,19 @@
     <span class="text-sm">Carregando dados...</span>
   </div>
 } @else {
+  <!-- Título dinâmico por modo -->
+  @if (modoIniciar) {
+    <div class="mb-6 pb-4 border-b border-outline-variant/20">
+      <h2 class="text-xl font-bold text-on-surface">Iniciar Atendimento</h2>
+      <p class="text-sm text-on-surface-variant mt-1">Defina a data prevista para conclusão desta ordem de serviço.</p>
+    </div>
+  } @else if (modoEncerrar) {
+    <div class="mb-6 pb-4 border-b border-outline-variant/20">
+      <h2 class="text-xl font-bold text-on-surface">Encerrar Ordem de Serviço</h2>
+      <p class="text-sm text-on-surface-variant mt-1">Complete as informações obrigatórias para finalizar o atendimento.</p>
+    </div>
+  }
+
   <form [formGroup]="form" (ngSubmit)="onSalvar()" novalidate>
 
     <!-- Erro global -->
@@ -15,179 +39,367 @@
       </div>
     }
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-      <!-- COLUNA ESQUERDA -->
-      <div class="space-y-5">
-
-        <!-- Equipamento -->
+    <!-- MODO INICIAR -->
+    @if (modoIniciar) {
+      <div class="space-y-6">
+        <!-- Equipamento (readonly) -->
         <div>
           <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
-            Equipamento <span class="text-error">*</span>
+            Equipamento
           </label>
-          <div class="relative">
-            <select
-              formControlName="idEquipamento"
-              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 pr-10 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none"
-              [class.ring-2]="isInvalid('idEquipamento')"
-              [class.ring-error]="isInvalid('idEquipamento')"
-            >
-              <option value="" disabled>Selecione um equipamento...</option>
-              @for (eq of equipamentos; track eq.id) {
-                <option [value]="eq.id">{{ eq.nome }} — {{ eq.localizacao }}</option>
-              }
-            </select>
-            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
-          </div>
-          @if (isInvalid('idEquipamento')) {
-            <p class="mt-1 text-[11px] text-error">Selecione um equipamento.</p>
-          }
+          <input
+            type="text"
+            [value]="equipamentos.find(e => e.id === osParaIniciar?.idEquipamento)?.nome || 'N/D'"
+            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface opacity-60 cursor-not-allowed"
+            [disabled]="true"
+          />
         </div>
 
-        <!-- Descrição da Falha -->
+        <!-- Descrição da Falha (readonly) -->
         <div>
           <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
-            Descrição da Falha <span class="text-error">*</span>
+            Descrição da Falha
           </label>
           <textarea
             formControlName="descricaoFalha"
-            rows="5"
-            placeholder="Descreva o problema observado detalhadamente..."
-            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface placeholder:text-outline-variant/60 focus:ring-2 focus:ring-primary/20 resize-none"
-            [class.ring-2]="isInvalid('descricaoFalha')"
-            [class.ring-error]="isInvalid('descricaoFalha')"
+            rows="3"
+            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface resize-none opacity-60 cursor-not-allowed"
+            [disabled]="true"
           ></textarea>
-          @if (isInvalid('descricaoFalha')) {
-            <p class="mt-1 text-[11px] text-error">
-              @if (f['descricaoFalha'].errors?.['required']) { Campo obrigatório. }
-              @else if (f['descricaoFalha'].errors?.['maxlength']) { Máximo de 2000 caracteres. }
-            </p>
-          }
         </div>
 
-        <!-- Descrição do Serviço -->
+        <!-- Tipo de Manutenção (readonly) -->
+        <div>
+          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            Tipo de Manutenção
+          </label>
+          <input
+            type="text"
+            [value]="tiposManutencao.find(t => t.value === osParaIniciar?.tipoManutencao)?.label || 'N/D'"
+            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface opacity-60 cursor-not-allowed"
+            [disabled]="true"
+          />
+        </div>
+
+        <!-- Prioridade (readonly) -->
+        <div>
+          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            Prioridade
+          </label>
+          <input
+            type="text"
+            [value]="prioridades.find(p => p.value === osParaIniciar?.prioridadeOrdemServico)?.label || 'N/D'"
+            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface opacity-60 cursor-not-allowed"
+            [disabled]="true"
+          />
+        </div>
+
+        <!-- Técnico Responsável (readonly) -->
+        <div>
+          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            Técnico Responsável
+          </label>
+          <input
+            type="text"
+            [value]="tecnicos.find(t => t.idUsuario === osParaIniciar?.idTecnico)?.nomeUsuario || 'Não atribuído'"
+            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface opacity-60 cursor-not-allowed"
+            [disabled]="true"
+          />
+        </div>
+
+        <!-- Descrição do Serviço (readonly) -->
         <div>
           <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
             Descrição do Serviço
           </label>
           <textarea
-            formControlName="descricaoServico"
             rows="3"
-            placeholder="Descreva o serviço a ser realizado..."
-            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface placeholder:text-outline-variant/60 focus:ring-2 focus:ring-primary/20 resize-none"
+            [value]="osParaIniciar?.descricaoServico || 'N/D'"
+            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface resize-none opacity-60 cursor-not-allowed"
+            [disabled]="true"
           ></textarea>
         </div>
 
-      </div>
-
-      <!-- COLUNA DIREITA -->
-      <div class="space-y-5">
-
-        <!-- Tipo de Manutenção -->
+        <!-- Data Prevista para Conclusão (obrigatório, editável) -->
         <div>
           <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
-            Tipo de Manutenção <span class="text-error">*</span>
+            Data Prevista para Conclusão <span class="text-error">*</span>
           </label>
-          <div class="relative">
-            <select
-              formControlName="tipoManutencao"
-              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 pr-10 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none"
-            >
-              @for (tipo of tiposManutencao; track tipo.value) {
-                <option [value]="tipo.value">{{ tipo.label }}</option>
-              }
-            </select>
-            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
-          </div>
+          <input
+            formControlName="conclusaoEm"
+            type="date"
+            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+            [class.ring-2]="isInvalid('conclusaoEm')"
+            [class.ring-error]="isInvalid('conclusaoEm')"
+          />
+          <p class="mt-1 text-[11px] text-on-surface-variant">Este campo é obrigatório para iniciar o atendimento.</p>
+          @if (isInvalid('conclusaoEm')) {
+            <p class="mt-1 text-[11px] text-error">Data prevista para conclusão é obrigatória.</p>
+          }
+        </div>
+      </div>
+    } @else if (modoEncerrar) {
+      <!-- MODO ENCERRAR -->
+      <div class="space-y-6">
+        <!-- Descrição da Falha (readonly) -->
+        <div>
+          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            Descrição da Falha
+          </label>
+          <textarea
+            formControlName="descricaoFalha"
+            rows="3"
+            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface resize-none opacity-60 cursor-not-allowed"
+            [disabled]="true"
+          ></textarea>
         </div>
 
-        <!-- Prioridade -->
+        <!-- Descrição do Serviço (obrigatório) -->
         <div>
           <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
-            Prioridade <span class="text-error">*</span>
+            Descrição do Serviço <span class="text-error">*</span>
           </label>
-          <div class="relative">
-            <select
-              formControlName="prioridadeOrdemServico"
-              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 pr-10 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none"
-            >
-              @for (p of prioridades; track p.value) {
-                <option [value]="p.value">{{ p.label }}</option>
-              }
-            </select>
-            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
-          </div>
-          @if (f['prioridadeOrdemServico'].value === 'CRITICA') {
-            <div class="mt-2 flex items-start gap-2 p-3 bg-error/5 rounded-lg border border-error/20 text-error text-[11px]">
-              <span class="material-symbols-outlined text-sm shrink-0">warning</span>
-              Prioridade crítica requer notificação imediata ao gerente de planta.
-            </div>
+          <textarea
+            formControlName="descricaoServico"
+            rows="4"
+            placeholder="Descreva o serviço realizado..."
+            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface placeholder:text-outline-variant/60 focus:ring-2 focus:ring-primary/20 resize-none"
+            [class.ring-2]="isInvalid('descricaoServico')"
+            [class.ring-error]="isInvalid('descricaoServico')"
+          ></textarea>
+          @if (isInvalid('descricaoServico')) {
+            <p class="mt-1 text-[11px] text-error">Descrição do serviço é obrigatória.</p>
           }
         </div>
 
-        <!-- Técnico Responsável -->
+        <!-- Peças Utilizadas (obrigatório) -->
         <div>
           <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
-            Técnico Responsável
-          </label>
-          <div class="relative">
-            <select
-              formControlName="idTecnico"
-              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 pr-10 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none"
-            >
-              <option value="">Não atribuído</option>
-              @for (t of tecnicos; track t.idUsuario) {
-                <option [value]="t.idUsuario">{{ t.nomeUsuario }}</option>
-              }
-            </select>
-            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
-          </div>
-        </div>
-
-        <!-- Peças Utilizadas -->
-        <div>
-          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
-            Peças Utilizadas
+            Peças Utilizadas <span class="text-error">*</span>
           </label>
           <input
             formControlName="pecasUtilizadas"
             type="text"
             placeholder="Ex: Rolamento 6205, correia V..."
             class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface placeholder:text-outline-variant/60 focus:ring-2 focus:ring-primary/20"
+            [class.ring-2]="isInvalid('pecasUtilizadas')"
+            [class.ring-error]="isInvalid('pecasUtilizadas')"
           />
+          @if (isInvalid('pecasUtilizadas')) {
+            <p class="mt-1 text-[11px] text-error">Peças utilizadas é obrigatório.</p>
+          }
         </div>
 
-        <!-- Linha: Horas Trabalhadas + Data Conclusão -->
-        <div class="grid grid-cols-2 gap-4">
+        <!-- Horas Trabalhadas (obrigatório) -->
+        <div>
+          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            Horas Trabalhadas <span class="text-error">*</span>
+          </label>
+          <input
+            formControlName="horasTrabalhadas"
+            type="number"
+            min="0"
+            placeholder="0"
+            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+            [class.ring-2]="isInvalid('horasTrabalhadas')"
+            [class.ring-error]="isInvalid('horasTrabalhadas')"
+          />
+          @if (isInvalid('horasTrabalhadas')) {
+            <p class="mt-1 text-[11px] text-error">Horas trabalhadas é obrigatório.</p>
+          }
+        </div>
+      </div>
+    } @else {
+      <!-- MODO EDIÇÃO / CRIAÇÃO (padrão) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- COLUNA ESQUERDA -->
+        <div class="space-y-5">
+
+          <!-- Equipamento -->
           <div>
             <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
-              Horas Trabalhadas
+              Equipamento <span class="text-error">*</span>
             </label>
-            <input
-              formControlName="horasTrabalhadas"
-              type="number"
-              min="0"
-              placeholder="0"
-              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
-            />
-            @if (isInvalid('horasTrabalhadas')) {
-              <p class="mt-1 text-[11px] text-error">Valor deve ser ≥ 0.</p>
+            <div class="relative">
+              <select
+                formControlName="idEquipamento"
+                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 pr-10 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none"
+                [class.ring-2]="isInvalid('idEquipamento')"
+                [class.ring-error]="isInvalid('idEquipamento')"
+                [class.opacity-60]="modoEdicao"
+                [class.cursor-not-allowed]="modoEdicao"
+              >
+                <option value="" disabled>Selecione um equipamento...</option>
+                @for (eq of equipamentos; track eq.id) {
+                  <option [value]="eq.id">{{ eq.nome }} — {{ eq.localizacao }}</option>
+                }
+              </select>
+              <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+              <!-- Overlay para capturar o click em modo edicao -->
+              @if (modoEdicao) {
+                <div
+                  class="absolute inset-0 cursor-not-allowed rounded-lg"
+                  (click)="onEquipamentoClick()"
+                ></div>
+              }
+            </div>
+            @if (modoEdicao) {
+              <p class="mt-1 text-[11px] text-on-surface-variant flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">lock</span>
+                Equipamento não pode ser alterado após criação.
+              </p>
+            }
+            @if (isInvalid('idEquipamento')) {
+              <p class="mt-1 text-[11px] text-error">Selecione um equipamento.</p>
             }
           </div>
+
+          <!-- Descrição da Falha -->
           <div>
             <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
-              Data Prevista de Conclusão
+              Descrição da Falha <span class="text-error">*</span>
             </label>
-            <input
-              formControlName="conclusaoEm"
-              type="date"
-              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
-            />
+            <textarea
+              formControlName="descricaoFalha"
+              rows="5"
+              placeholder="Descreva o problema observado detalhadamente..."
+              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface placeholder:text-outline-variant/60 focus:ring-2 focus:ring-primary/20 resize-none"
+              [class.ring-2]="isInvalid('descricaoFalha')"
+              [class.ring-error]="isInvalid('descricaoFalha')"
+            ></textarea>
+            @if (isInvalid('descricaoFalha')) {
+              <p class="mt-1 text-[11px] text-error">
+                @if (f['descricaoFalha'].errors?.['required']) { Campo obrigatório. }
+                @else if (f['descricaoFalha'].errors?.['maxlength']) { Máximo de 2000 caracteres. }
+              </p>
+            }
           </div>
+
+          <!-- Descrição do Serviço -->
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+              Descrição do Serviço
+            </label>
+            <textarea
+              formControlName="descricaoServico"
+              rows="3"
+              placeholder="Descreva o serviço a ser realizado..."
+              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface placeholder:text-outline-variant/60 focus:ring-2 focus:ring-primary/20 resize-none"
+            ></textarea>
+          </div>
+
         </div>
 
+        <!-- COLUNA DIREITA -->
+        <div class="space-y-5">
+
+          <!-- Tipo de Manutenção -->
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+              Tipo de Manutenção <span class="text-error">*</span>
+            </label>
+            <div class="relative">
+              <select
+                formControlName="tipoManutencao"
+                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 pr-10 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none"
+              >
+                @for (tipo of tiposManutencao; track tipo.value) {
+                  <option [value]="tipo.value">{{ tipo.label }}</option>
+                }
+              </select>
+              <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+            </div>
+          </div>
+
+          <!-- Prioridade -->
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+              Prioridade <span class="text-error">*</span>
+            </label>
+            <div class="relative">
+              <select
+                formControlName="prioridadeOrdemServico"
+                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 pr-10 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none"
+              >
+                @for (p of prioridades; track p.value) {
+                  <option [value]="p.value">{{ p.label }}</option>
+                }
+              </select>
+              <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+            </div>
+            @if (f['prioridadeOrdemServico'].value === 'CRITICA') {
+              <div class="mt-2 flex items-start gap-2 p-3 bg-error/5 rounded-lg border border-error/20 text-error text-[11px]">
+                <span class="material-symbols-outlined text-sm shrink-0">warning</span>
+                Prioridade crítica requer notificação imediata ao gerente de planta.
+              </div>
+            }
+          </div>
+
+          <!-- Técnico Responsável -->
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+              Técnico Responsável
+            </label>
+            <div class="relative">
+              <select
+                formControlName="idTecnico"
+                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 pr-10 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none"
+              >
+                <option value="">Não atribuído</option>
+                @for (t of tecnicos; track t.idUsuario) {
+                  <option [value]="t.idUsuario">{{ t.nomeUsuario }}</option>
+                }
+              </select>
+              <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+            </div>
+          </div>
+
+          <!-- Peças Utilizadas -->
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+              Peças Utilizadas
+            </label>
+            <input
+              formControlName="pecasUtilizadas"
+              type="text"
+              placeholder="Ex: Rolamento 6205, correia V..."
+              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface placeholder:text-outline-variant/60 focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          <!-- Linha: Horas Trabalhadas + Data Conclusão -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+                Horas Trabalhadas
+              </label>
+              <input
+                formControlName="horasTrabalhadas"
+                type="number"
+                min="0"
+                placeholder="0"
+                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+              />
+              @if (isInvalid('horasTrabalhadas')) {
+                <p class="mt-1 text-[11px] text-error">Valor deve ser ≥ 0.</p>
+              }
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+                Data Prevista de Conclusão
+              </label>
+              <input
+                formControlName="conclusaoEm"
+                type="date"
+                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+          </div>
+
+        </div>
       </div>
-    </div>
+    }
 
     <!-- Footer -->
     <div class="flex items-center justify-between pt-6 mt-6 border-t border-outline-variant/20">
@@ -211,6 +423,15 @@
           @if (salvando) {
             <span class="material-symbols-outlined animate-spin text-sm">hourglass_bottom</span>
             Salvando...
+          } @else if (modoIniciar) {
+            <span class="material-symbols-outlined text-sm">play_arrow</span>
+            Iniciar
+          } @else if (modoEncerrar) {
+            <span class="material-symbols-outlined text-sm">check_circle</span>
+            Finalizar
+          } @else if (modoEdicao) {
+            <span class="material-symbols-outlined text-sm">edit</span>
+            Atualizar Ordem
           } @else {
             <span class="material-symbols-outlined text-sm">save</span>
             Salvar Ordem
