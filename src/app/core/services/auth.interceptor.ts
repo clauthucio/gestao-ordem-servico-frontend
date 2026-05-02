@@ -7,13 +7,50 @@ import {
   HttpEvent,
   HttpInterceptor,
   HttpErrorResponse,
+  HttpContextToken,
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, switchMap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 
 import { TokenService } from '../services/token.service';
 import { AuthService } from '../services/auth.service';
+
+/** Evita loop: uma única tentativa de refresh + reenvio por requisição original. */
+const AUTH_REFRESH_RETRIED = new HttpContextToken<boolean>(() => false);
+
+function extractApiMessage(error: HttpErrorResponse): string {
+  const body = error.error;
+  if (typeof body === 'string' && body.trim()) {
+    return body;
+  }
+  if (body && typeof body === 'object') {
+    const o = body as { message?: unknown; erro?: unknown };
+    if (typeof o.message === 'string') return o.message;
+    if (typeof o.erro === 'string') return o.erro;
+  }
+  return '';
+}
+
+/**
+ * 400/403 com mensagem que indica falha de auth (token/sessão), não validação de negócio.
+ * Deve coincidir com o ramo authLike em catchError — evita tratar "Dados inválidos" como sessão expirada.
+ */
+function isAuthLikeClientErrorMessage(message: string): boolean {
+  return /token|jwt|bearer|n[aã]o fornecid|autoriza/i.test(message);
+}
+
+/** Backend pode devolver 400 com "Token não fornecido" em vez de 401. */
+function isAuthFailureRecoverableWithRefresh(
+  error: HttpErrorResponse,
+  message: string
+): boolean {
+  if (error.status === 401) return true;
+  if (error.status === 400 || error.status === 403) {
+    return isAuthLikeClientErrorMessage(message);
+  }
+  return false;
+}
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
@@ -41,42 +78,71 @@ export class AuthInterceptor implements HttpInterceptor {
 
     // 2. Se existe token e não é rota que dispensa token, adicionar header
     if (token && !skipAddToken) {
-      // HttpRequest é imutável (não pode modificar direto), precisa clonar e depois modificar
       request = request.clone({
         setHeaders: {
-          // Adicionar Authorization header
-          // Formato padrão: "Bearer <token>"
           Authorization: `Bearer ${token}`,
         },
       });
-
-      console.log('Header adicionado:', request.headers.get('Authorization'));
     }
 
     // 3. Passar a requisição adiante (com ou sem header)
     return next.handle(request).pipe(
       catchError((error: HttpErrorResponse) => {
-        // Só tenta renovar token se NÃO for rota de auth (evita loop infinito)
-        if (error.status === 401 && !skip401Retry) {
-          console.warn('Token expirado (401), tentando renovar...');
-
-          this.authService.refreshToken().subscribe({
-            next: () => {
-              // Token renovado — redireciona para que o usuário repita a ação
-              // (reenvio da requisição original fica fora do escopo por simplicidade)
-            },
-            error: () => {
-              // Refresh falhou: limpar sessão e redirecionar sem reload de página
-              console.error('Não foi possível renovar token, redirecionando para login');
-              this.tokenService.clear();
-              this.router.navigate(['/auth/login']);
-            },
-          });
+        if (!(error instanceof HttpErrorResponse) || skip401Retry) {
+          return throwError(() => error);
         }
 
-        // Repassar o erro para o componente lidar
+        const alreadyRetried = request.context.get(AUTH_REFRESH_RETRIED);
+        const msg = extractApiMessage(error);
+        const canTryRefresh =
+          !alreadyRetried &&
+          isAuthFailureRecoverableWithRefresh(error, msg) &&
+          !!this.tokenService.getRefreshToken();
+
+        if (canTryRefresh) {
+          return this.authService.refreshToken().pipe(
+            switchMap(() => {
+              const newToken = this.tokenService.getAccessToken();
+              if (!newToken) {
+                this.endSessionAndRedirect();
+                return throwError(() => error);
+              }
+              const retry = request.clone({
+                setHeaders: {
+                  Authorization: `Bearer ${newToken}`,
+                },
+                context: request.context.set(AUTH_REFRESH_RETRIED, true),
+              });
+              return next.handle(retry);
+            }),
+            catchError(() => {
+              this.endSessionAndRedirect();
+              return throwError(() => error);
+            })
+          );
+        }
+
+        const authLike =
+          error.status === 401 ||
+          ((error.status === 400 || error.status === 403) &&
+            isAuthLikeClientErrorMessage(msg));
+
+        if (authLike && !skip401Retry) {
+          const hasRefresh = !!this.tokenService.getRefreshToken();
+          if (alreadyRetried || !hasRefresh) {
+            this.endSessionAndRedirect();
+          }
+        }
+
         return throwError(() => error);
       })
     );
+  }
+
+  private endSessionAndRedirect(): void {
+    this.authService.clearSessionLocal();
+    void this.router.navigate(['/auth/login'], {
+      queryParams: { sessao: 'expirada' },
+    });
   }
 }

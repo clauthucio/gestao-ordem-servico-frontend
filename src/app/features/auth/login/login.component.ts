@@ -3,7 +3,7 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -21,6 +21,7 @@ export class Login implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   /** Sempre definido antes da primeira renderização (evita NG01052 se redirecionar utilizador já logado). */
   loginForm: FormGroup = this.fb.group({
@@ -38,6 +39,9 @@ export class Login implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   ngOnInit(): void {
+    if (this.route.snapshot.queryParamMap.get('sessao') === 'expirada') {
+      this.errorMessage = 'Sua sessão expirou ou o acesso não foi autorizado. Faça login novamente.';
+    }
     if (this.authService.isLoggedIn()) {
       void this.router.navigate(['/app/dashboard']);
     }
