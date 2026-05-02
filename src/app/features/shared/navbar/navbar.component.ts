@@ -1,6 +1,6 @@
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, Router } from '@angular/router';
+import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -11,7 +11,7 @@ import { UserRole, ROLE_LABELS } from '../../../core/enums/roles.enum';
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, RouterLinkActive],
   template: `
     <!-- Sidebar -->
     <aside class="w-80 bg-primary text-on-primary p-4 flex flex-col shadow-lg min-h-screen">
@@ -45,8 +45,21 @@ import { UserRole, ROLE_LABELS } from '../../../core/enums/roles.enum';
             class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-on-primary/10 transition-all text-sm"
           >
             <span class="material-symbols-outlined">assignment</span>
-            <span>Ordens</span>
+            <span>Ordens de Serviço</span>
           </a>
+
+          <!-- Usuários (ADMIN) -->
+          @if (hasRole(UserRole.ADMIN)) {
+            <a
+              routerLink="/app/usuarios"
+              routerLinkActive="bg-on-primary/20"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-on-primary/10 transition-all text-sm"
+            >
+              <span class="material-symbols-outlined">group</span>
+              <span>Usuários</span>
+            </a>
+          }
 
           <!-- Equipamentos (SUPERVISOR+) -->
           @if (hasRole(UserRole.SUPERVISOR_DE_MANUTENCAO) || hasRole(UserRole.ADMIN)) {
