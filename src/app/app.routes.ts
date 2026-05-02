@@ -95,33 +95,26 @@ export const routes: Routes = [
         path: 'equipamentos',
         canActivate: [RoleGuard],
         data: { requiredRole: UserRole.ADMIN },
+        canDeactivate: [UnsavedChangesGuard],
+        loadComponent: () =>
+          import('./features/equipamentos/equipamentos').then((m) => m.Equipamentos),
+      },
+
+      // USUÁRIOS (somente ADMIN)
+      {
+        path: 'usuarios',
+        canActivate: [RoleGuard],
+        data: { requiredRole: UserRole.ADMIN },
         children: [
-          // Listar
           {
             path: '',
             loadComponent: () =>
-              import('./features/equipamentos/equipamentos').then(
-                (m) => m.Equipamentos
-              ),
+              import('./features/lista-usuarios/lista-usuarios').then((m) => m.ListaUsuarios),
           },
-
-          // Cadastro/Edição
           {
-            path: 'novo',
-            canDeactivate: [UnsavedChangesGuard],
-            loadComponent: () =>
-              import('./features/cadastro-equipamentos/cadastro-equipamentos').then(
-                (m) => m.CadastroEquipamento
-              ),
-          },
-
-          {
-            path: ':id/editar',
-            canDeactivate: [UnsavedChangesGuard],
-            loadComponent: () =>
-              import('./features/cadastro-equipamentos/cadastro-equipamentos').then(
-                (m) => m.CadastroEquipamento
-              ),
+            path: 'cadastrar',
+            redirectTo: '',
+            pathMatch: 'full',
           },
         ],
       },

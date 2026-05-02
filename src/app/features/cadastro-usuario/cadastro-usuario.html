@@ -1,0 +1,176 @@
+@if (dialogVisivel) {
+  <app-dialog
+    [titulo]="dialogTitulo"
+    [mensagem]="dialogMensagem"
+    [tipo]="dialogTipo"
+    [botoes]="dialogBotoes"
+    (acao)="onDialogAcao($event)"
+  />
+}
+
+<div [class]="dentroModal() ? 'px-0 py-0' : 'min-h-full bg-surface-container/30 px-4 py-8'">
+  <div [class]="dentroModal() ? 'max-w-full mx-auto' : 'max-w-lg mx-auto'">
+    @if (!dentroModal()) {
+      <h1 class="text-2xl font-black tracking-tight text-on-background text-center mb-2">Cadastrar Usuário</h1>
+      <p class="text-sm text-on-surface-variant text-center mb-8">
+        Preencha os dados do novo colaborador. A senha inicial é gerada e enviada por e-mail.
+      </p>
+    }
+
+    @if (erroApi) {
+      <div
+        class="mb-6 flex items-start gap-2 p-4 bg-error/10 border border-error/20 rounded-xl text-error text-sm"
+        role="alert"
+      >
+        <span class="material-symbols-outlined text-base shrink-0">error</span>
+        <span>{{ erroApi }}</span>
+      </div>
+    }
+
+    <div
+      [class]="
+        dentroModal()
+          ? 'bg-transparent p-0 rounded-none shadow-none border-0'
+          : 'bg-surface-container-lowest p-6 sm:p-8 rounded-xl shadow-sm border border-outline-variant/10'
+      "
+    >
+      <form [formGroup]="form" (ngSubmit)="onCadastrar()" class="space-y-6">
+        <!-- Nome -->
+        <div>
+          <label for="cu-nome" class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
+            >Nome</label
+          >
+          <input
+            id="cu-nome"
+            type="text"
+            formControlName="nome"
+            placeholder="Digite o nome do usuário"
+            autocomplete="off"
+            class="w-full px-4 py-3 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+          />
+          @if (form.controls.nome.invalid && form.controls.nome.touched) {
+            <p class="mt-1.5 text-xs text-error">
+              @if (form.controls.nome.errors?.['required']) {
+                O nome é obrigatório.
+              } @else if (form.controls.nome.errors?.['minlength']) {
+                Informe pelo menos 2 caracteres.
+              }
+            </p>
+          }
+        </div>
+
+        <!-- E-mail (parte local + @pim.com) -->
+        <div>
+          <label for="cu-email-local" class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
+            >E-mail</label
+          >
+          <div class="flex rounded-lg border border-outline-variant/20 bg-surface-container-low overflow-hidden focus-within:ring-2 focus-within:ring-primary/20">
+            <input
+              id="cu-email-local"
+              type="text"
+              formControlName="emailLocal"
+              placeholder="usuario"
+              autocomplete="off"
+              (input)="onEmailLocalInput()"
+              class="flex-1 min-w-0 px-4 py-3 text-sm bg-transparent outline-none"
+            />
+            <span
+              class="shrink-0 flex items-center px-3 py-3 text-sm font-mono text-on-surface-variant bg-surface-container-high/80 border-l border-outline-variant/20"
+              >{{ emailDominio }}</span
+            >
+          </div>
+          @if (form.controls.emailLocal.invalid && form.controls.emailLocal.touched) {
+            <p class="mt-1.5 text-xs text-error">
+              @if (form.controls.emailLocal.errors?.['required']) {
+                O e-mail é obrigatório.
+              } @else if (form.controls.emailLocal.errors?.['pattern']) {
+                Use apenas letras, números, ponto, hífen ou sublinhado (antes de @pim.com).
+              } @else if (form.controls.emailLocal.errors?.['duplicado']) {
+                Este e-mail já está em uso. Escolha outro identificador.
+              }
+            </p>
+          }
+        </div>
+
+        <!-- Perfil -->
+        <div>
+          <label for="cu-perfil" class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
+            >Perfil</label
+          >
+          <div class="relative">
+            <select
+              id="cu-perfil"
+              formControlName="perfil"
+              class="w-full pl-4 pr-10 py-3 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm font-medium focus:ring-2 focus:ring-primary/20 appearance-none"
+            >
+              <option value="" disabled>Selecione o perfil</option>
+              @for (op of perfilOpcoes; track op.value) {
+                <option [value]="op.value">{{ op.label }}</option>
+              }
+            </select>
+            <span
+              class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant pointer-events-none text-lg"
+              >unfold_more</span
+            >
+          </div>
+          @if (form.controls.perfil.invalid && form.controls.perfil.touched) {
+            <p class="mt-1.5 text-xs text-error">Selecione um perfil.</p>
+          }
+        </div>
+
+        <!-- Status -->
+        <div>
+          <label for="cu-status" class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
+            >Status</label
+          >
+          <div class="relative">
+            <select
+              id="cu-status"
+              formControlName="status"
+              class="w-full pl-4 pr-10 py-3 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm font-medium focus:ring-2 focus:ring-primary/20 appearance-none"
+            >
+              <option value="" disabled>Selecione o status</option>
+              @for (st of statusOpcoes; track st.value) {
+                <option [value]="st.value">{{ st.label }}</option>
+              }
+            </select>
+            <span
+              class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant pointer-events-none text-lg"
+              >unfold_more</span
+            >
+          </div>
+          @if (form.controls.status.invalid && form.controls.status.touched) {
+            <p class="mt-1.5 text-xs text-error">Selecione o status.</p>
+          }
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 pt-2">
+          <button
+            type="submit"
+            [disabled]="form.invalid || salvando || carregandoEmails"
+            class="flex-1 py-3 bg-primary text-on-primary font-bold rounded-lg hover:opacity-90 transition text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            @if (salvando) {
+              <span class="material-symbols-outlined animate-spin text-lg">hourglass_bottom</span>
+              Cadastrando...
+            } @else if (carregandoEmails) {
+              <span class="material-symbols-outlined animate-spin text-lg">hourglass_bottom</span>
+              Carregando...
+            } @else {
+              <span class="material-symbols-outlined text-lg">person_add</span>
+              Cadastrar
+            }
+          </button>
+          <button
+            type="button"
+            (click)="onCancelar()"
+            [disabled]="salvando"
+            class="flex-1 py-3 bg-surface-container-high text-on-surface font-bold rounded-lg hover:bg-surface-container-highest transition text-sm disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

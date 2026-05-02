@@ -20,6 +20,8 @@ export interface OrdemServico {
   pecasUtilizadas?: string;
   horasTrabalhadas?: number;
   aberturaEm: Date | string;
+  /** Início da execução pelo técnico (quando existir na API). */
+  inicioEm?: Date | string;
   conclusaoEm?: Date | string;
   dataCriacao: Date | string;
   dataAtualizacao: Date | string;
@@ -35,6 +37,18 @@ export interface CriarOrdemServicoPayload {
   prioridadeOrdemServico: PrioridadeType;
   statusOrdemServico: OrdemStatus;
   descricaoFalha: string;
+  idTecnico?: string;
+  descricaoServico?: string;
+  pecasUtilizadas?: string;
+  horasTrabalhadas?: number;
+  conclusaoEm?: string;
+}
+
+export interface AtualizarOrdemServicoPayload {
+  tipoManutencao?: ManutencaoType;
+  prioridadeOrdemServico?: PrioridadeType;
+  statusOrdemServico?: OrdemStatus;
+  descricaoFalha?: string;
   idTecnico?: string;
   descricaoServico?: string;
   pecasUtilizadas?: string;

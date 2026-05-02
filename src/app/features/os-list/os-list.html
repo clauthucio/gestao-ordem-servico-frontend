@@ -1,4 +1,55 @@
 <!-- Content Area -->
+<!-- Modal Nova OS -->
+@if (showModal) {
+  <app-modal-container titulo="Nova Ordem de Serviço" (fechar)="onModalFechar()">
+    <app-os-form (salvo)="onOsSalva()" (cancelado)="onModalFechar()" />
+  </app-modal-container>
+}
+
+<!-- Modal Edição OS -->
+@if (showModalEdicao && osEmEdicao) {
+  <app-modal-container titulo="Editar Ordem de Serviço" (fechar)="onModalEdicaoFechar()">
+    <app-os-form
+      [osParaEditar]="osEmEdicao"
+      (salvo)="onOsAtualizada()"
+      (cancelado)="onModalEdicaoFechar()"
+    />
+  </app-modal-container>
+}
+
+<!-- Modal Iniciar OS -->
+@if (showModalIniciar && osParaIniciar) {
+  <app-modal-container titulo="Iniciar Atendimento" (fechar)="onModalIniciarFechar()">
+    <app-os-form
+      [osParaIniciar]="osParaIniciar"
+      (salvo)="onOsIniciada()"
+      (cancelado)="onModalIniciarFechar()"
+    />
+  </app-modal-container>
+}
+
+<!-- Modal Encerrar OS -->
+@if (showModalEncerrar && osParaEncerrar) {
+  <app-modal-container titulo="Encerrar Ordem de Serviço" (fechar)="onModalEncerrarFechar()">
+    <app-os-form
+      [osParaEncerrar]="osParaEncerrar"
+      (salvo)="onOsEncerrada()"
+      (cancelado)="onModalEncerrarFechar()"
+    />
+  </app-modal-container>
+}
+
+<!-- Dialog reutilizável -->
+@if (dialogVisivel) {
+  <app-dialog
+    [titulo]="dialogTitulo"
+    [mensagem]="dialogMensagem"
+    [tipo]="dialogTipo"
+    [botoes]="dialogBotoes"
+    (acao)="onDialogAcao($event)"
+  />
+}
+
 <div class="px-8 pb-12 min-h-screen bg-background">
   <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
     <div>
@@ -128,13 +179,93 @@
                     >
                       <span class="material-symbols-outlined text-[20px]">visibility</span>
                     </button>
-                    <button
-                      class="p-1.5 hover:bg-surface-container-highest rounded-md text-on-surface-variant transition-colors"
-                      title="Editar"
-                      (click)="onEditar(os.id)"
-                    >
-                      <span class="material-symbols-outlined text-[20px]">edit</span>
-                    </button>
+                    <!-- Dropdown de Ações - OCULTAR se status = CONCLUIDO -->
+                    @if (os.statusOrdemServico !== 'CONCLUIDO') {
+                      <div class="relative">
+                        <button
+                          class="p-1.5 hover:bg-surface-container-highest rounded-md text-on-surface-variant transition-colors"
+                          title="Ações"
+                          (click)="abrirMenuAcao(os.id, $event)"
+                        >
+                          <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                        </button>
+                        @if (acaoAbertaId === os.id) {
+                        <div
+                          class="absolute right-0 top-full mt-1 z-30 bg-surface rounded-xl shadow-xl border border-outline-variant/20 py-1 min-w-[160px]"
+                          (click)="$event.stopPropagation()"
+                        >
+                          @if (os.statusOrdemServico === 'ABERTO') {
+                            <button
+                              class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-success hover:bg-success/5 transition-colors"
+                              (click)="onIniciarOS(os.id, $event)"
+                              title="Iniciar o atendimento"
+                            >
+                              <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+                              Iniciar
+                            </button>
+                          }
+                          <button
+                            class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
+                            (click)="onEditarOS(os.id, $event)"
+                            title="Editar ordem"
+                          >
+                            <span class="material-symbols-outlined text-[18px] text-primary">edit</span>
+                            Editar
+                          </button>
+                          @if (os.statusOrdemServico === 'EM_ANDAMENTO' || os.statusOrdemServico === 'AGUARDANDO_PECA') {
+                            @if (isUserAdminOrAssignedTecnico(os)) {
+                              <button
+                                class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-warning hover:bg-warning/5 transition-colors"
+                                (click)="onEncerrarOS(os.id, $event)"
+                                title="Encerrar a ordem de serviço"
+                              >
+                                <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                                Encerrar
+                              </button>
+                            } @else {
+                              <button
+                                class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface-variant/40 cursor-not-allowed opacity-50"
+                                [disabled]="true"
+                                title="Somente admin ou técnico atribuído podem encerrar"
+                              >
+                                <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                                Encerrar
+                              </button>
+                            }
+                          }
+                          @if (os.statusOrdemServico === 'EM_ANDAMENTO') {
+                            <button
+                              class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-info hover:bg-info/5 transition-colors"
+                              (click)="onAguardarPecaOS(os.id, $event)"
+                              title="Marcar como aguardando peça"
+                            >
+                              <span class="material-symbols-outlined text-[18px]">schedule</span>
+                              Aguardar Peça
+                            </button>
+                          }
+                          @if (os.statusOrdemServico === 'ABERTO') {
+                            <button
+                              class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-error hover:bg-error/5 transition-colors"
+                              (click)="onExcluirOS(os.id, $event)"
+                              title="Deletar ordem"
+                            >
+                              <span class="material-symbols-outlined text-[18px]">delete</span>
+                              Excluir
+                            </button>
+                          }
+                        </div>
+                      }
+                      </div>
+                    } @else {
+                      <!-- Se CONCLUIDO, mostrar botão "Voltar" -->
+                      <button
+                        class="p-1.5 hover:bg-surface-container-highest rounded-md text-on-surface-variant transition-colors"
+                        title="Voltar"
+                        (click)="onVerDetalhes(os.id)"
+                      >
+                        <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+                      </button>
+                    }
                   </div>
                 </td>
               </tr>
@@ -197,9 +328,3 @@
     <span class="material-symbols-outlined text-3xl">add</span>
   </button>
 </div>
-
-@if (showModal) {
-  <app-modal-container titulo="Nova Ordem de Serviço" (fechar)="onModalFechar()">
-    <app-os-form (salvo)="onOsSalva()" (cancelado)="onModalFechar()"></app-os-form>
-  </app-modal-container>
-}

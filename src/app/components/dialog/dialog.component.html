@@ -1,0 +1,32 @@
+<!-- Backdrop -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <!-- Dialog Box -->
+  <div
+    class="bg-surface rounded-2xl shadow-2xl w-full max-w-md p-6 flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-150"
+    (click)="$event.stopPropagation()"
+  >
+    <!-- Header -->
+    <div class="flex items-start gap-4">
+      <span class="material-symbols-outlined text-3xl shrink-0 mt-0.5" [class]="iconeClass">
+        {{ icone }}
+      </span>
+      <div class="flex-1 min-w-0">
+        <h3 class="text-base font-bold text-on-surface leading-tight">{{ titulo }}</h3>
+        <p class="mt-1 text-sm text-on-surface-variant leading-relaxed">{{ mensagem }}</p>
+      </div>
+    </div>
+
+    <!-- Botões -->
+    <div class="flex items-center justify-end gap-3 pt-2 border-t border-outline-variant/20">
+      @for (botao of botoes; track botao.acao) {
+        <button
+          type="button"
+          [class]="getBotaoClass(botao.estilo)"
+          (click)="emitirAcao(botao.acao)"
+        >
+          {{ botao.label }}
+        </button>
+      }
+    </div>
+  </div>
+</div>

@@ -1,0 +1,382 @@
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  HostListener,
+  OnInit,
+  inject,
+} from '@angular/core';
+import { CommonModule } from '@angular/common';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators,
+} from '@angular/forms';
+import { FormsModule } from '@angular/forms';
+import { take } from 'rxjs';
+
+import { ModalContainerComponent } from '../../components/modal-container/modal-container';
+import { CadastroUsuario } from '../cadastro-usuario/cadastro-usuario';
+import { DialogComponent, DialogBotao } from '../../components/dialog/dialog.component';
+import { UsuarioService } from '../../core/http/usuario.service';
+import { Usuario } from '../../core/models/usuario.model';
+import { AuthService } from '../../core/services/auth.service';
+import { UserRole, ROLE_LABELS } from '../../core/enums/roles.enum';
+
+function senhasCoincidemValidator(): ValidatorFn {
+  return (group: AbstractControl): ValidationErrors | null => {
+    const nova = group.get('novaSenha')?.value as string | undefined;
+    const conf = group.get('confirmarSenha')?.value as string | undefined;
+    if (nova == null || conf == null || nova === '' || conf === '') {
+      return null;
+    }
+    return nova === conf ? null : { mismatch: true };
+  };
+}
+
+@Component({
+  selector: 'app-lista-usuarios',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    ModalContainerComponent,
+    CadastroUsuario,
+    DialogComponent,
+  ],
+  templateUrl: './lista-usuarios.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ListaUsuarios implements OnInit {
+  private readonly usuarioService = inject(UsuarioService);
+  private readonly authService = inject(AuthService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly fb = inject(FormBuilder);
+
+  readonly UserRole = UserRole;
+  readonly perfilFiltroOpcoes: { value: UserRole; label: string }[] = [
+    { value: UserRole.ADMIN, label: ROLE_LABELS[UserRole.ADMIN] },
+    { value: UserRole.TECNICO, label: ROLE_LABELS[UserRole.TECNICO] },
+    { value: UserRole.SOLICITANTE, label: ROLE_LABELS[UserRole.SOLICITANTE] },
+    { value: UserRole.SUPERVISOR_DE_MANUTENCAO, label: ROLE_LABELS[UserRole.SUPERVISOR_DE_MANUTENCAO] },
+  ];
+
+  readonly formSenha = this.fb.nonNullable.group(
+    {
+      novaSenha: ['', [Validators.required, Validators.minLength(6)]],
+      confirmarSenha: ['', [Validators.required, Validators.minLength(6)]],
+    },
+    { validators: senhasCoincidemValidator() },
+  );
+
+  usuarios: Usuario[] = [];
+  /** Atualizado em `recomputarListaFiltrada` — evita refiltrar a cada ciclo de detecção. */
+  usuariosFiltradosList: Usuario[] = [];
+
+  carregando = true;
+  erro: string | null = null;
+
+  filtroNome = '';
+  filtroPerfil: UserRole | '' = '';
+  filtroStatus: 'todos' | 'ativo' | 'inativo' = 'todos';
+
+  paginaAtual = 1;
+  readonly itensPorPagina = 10;
+
+  showModalCadastro = false;
+  showModalAlterarSenha = false;
+  usuarioSenhaAlvo: Usuario | null = null;
+  salvandoSenha = false;
+
+  acaoAbertaId: string | null = null;
+
+  dialogVisivel = false;
+  dialogTitulo = '';
+  dialogMensagem = '';
+  dialogTipo: 'confirmacao' | 'erro' | 'info' = 'info';
+  dialogBotoes: DialogBotao[] = [];
+  private dialogCallback: (() => void) | null = null;
+
+  ngOnInit(): void {
+    this.carregar();
+  }
+
+  @HostListener('document:click')
+  fecharMenuAcoes(): void {
+    if (this.acaoAbertaId !== null) {
+      this.acaoAbertaId = null;
+      this.cdr.markForCheck();
+    }
+  }
+
+  carregar(): void {
+    this.carregando = true;
+    this.erro = null;
+    this.cdr.markForCheck();
+    this.usuarioService.listar().subscribe({
+      next: (lista) => {
+        this.usuarios = lista;
+        this.paginaAtual = 1;
+        this.recomputarListaFiltrada();
+        this.carregando = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.erro = 'Não foi possível carregar os usuários.';
+        this.carregando = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /** Recalcula a lista filtrada (após mudar `usuarios` ou filtros). */
+  private recomputarListaFiltrada(): void {
+    let lista = [...this.usuarios];
+    const termo = this.filtroNome.trim().toLowerCase();
+    if (termo) {
+      lista = lista.filter((u) => (u.nomeUsuario ?? '').toLowerCase().includes(termo));
+    }
+    if (this.filtroPerfil) {
+      lista = lista.filter((u) => u.perfilUsuario === this.filtroPerfil);
+    }
+    if (this.filtroStatus === 'ativo') {
+      lista = lista.filter((u) => u.statusUsuario);
+    }
+    if (this.filtroStatus === 'inativo') {
+      lista = lista.filter((u) => !u.statusUsuario);
+    }
+    this.usuariosFiltradosList = lista;
+    const maxPag = Math.max(1, Math.ceil(lista.length / this.itensPorPagina));
+    if (this.paginaAtual > maxPag) {
+      this.paginaAtual = maxPag;
+    }
+  }
+
+  onFiltroAlterado(): void {
+    this.paginaAtual = 1;
+    this.recomputarListaFiltrada();
+    this.cdr.markForCheck();
+  }
+
+  get usuariosPaginados(): Usuario[] {
+    const inicio = (this.paginaAtual - 1) * this.itensPorPagina;
+    return this.usuariosFiltradosList.slice(inicio, inicio + this.itensPorPagina);
+  }
+
+  get totalItens(): number {
+    return this.usuariosFiltradosList.length;
+  }
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.totalItens / this.itensPorPagina));
+  }
+
+  get paginaInicial(): number {
+    if (this.totalItens === 0) {
+      return 0;
+    }
+    return (this.paginaAtual - 1) * this.itensPorPagina + 1;
+  }
+
+  get paginaFinal(): number {
+    return Math.min(this.paginaAtual * this.itensPorPagina, this.totalItens);
+  }
+
+  get paginasVisiveis(): number[] {
+    return Array.from({ length: this.totalPaginas }, (_, indice) => indice + 1).slice(0, 3);
+  }
+
+  onPaginaAnterior(): void {
+    if (this.paginaAtual > 1) {
+      this.paginaAtual--;
+      this.cdr.markForCheck();
+    }
+  }
+
+  onProximaPagina(): void {
+    if (this.paginaAtual < this.totalPaginas) {
+      this.paginaAtual++;
+      this.cdr.markForCheck();
+    }
+  }
+
+  onIrParaPagina(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginas) {
+      return;
+    }
+    this.paginaAtual = pagina;
+    this.cdr.markForCheck();
+  }
+
+  abrirModalCadastro(): void {
+    this.showModalCadastro = true;
+    this.cdr.markForCheck();
+  }
+
+  abrirMenuAcao(idUsuario: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.acaoAbertaId = this.acaoAbertaId === idUsuario ? null : idUsuario;
+    this.cdr.markForCheck();
+  }
+
+  onAlterarSenha(usuario: Usuario, event: MouseEvent): void {
+    event.stopPropagation();
+    this.acaoAbertaId = null;
+    this.usuarioSenhaAlvo = usuario;
+    this.formSenha.reset();
+    this.showModalAlterarSenha = true;
+    this.cdr.markForCheck();
+  }
+
+  fecharModalAlterarSenha(): void {
+    this.showModalAlterarSenha = false;
+    this.usuarioSenhaAlvo = null;
+    this.formSenha.reset();
+    this.salvandoSenha = false;
+    this.cdr.markForCheck();
+  }
+
+  onSalvarNovaSenha(): void {
+    if (!this.usuarioSenhaAlvo?.idUsuario) {
+      return;
+    }
+    if (this.formSenha.invalid) {
+      this.formSenha.markAllAsTouched();
+      this.cdr.markForCheck();
+      return;
+    }
+    if (this.formSenha.errors?.['mismatch']) {
+      this.formSenha.markAllAsTouched();
+      this.cdr.markForCheck();
+      return;
+    }
+    const { novaSenha } = this.formSenha.getRawValue();
+    this.salvandoSenha = true;
+    this.cdr.markForCheck();
+    this.usuarioService
+      .atualizar(this.usuarioSenhaAlvo.idUsuario, { senhaUsuario: novaSenha })
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.salvandoSenha = false;
+          this.showModalAlterarSenha = false;
+          this.usuarioSenhaAlvo = null;
+          this.formSenha.reset();
+          this.dialogTitulo = 'Senha alterada';
+          this.dialogMensagem = 'A senha do usuário foi atualizada com sucesso.';
+          this.dialogTipo = 'info';
+          this.dialogBotoes = [{ label: 'OK', acao: 'ok', estilo: 'primario' }];
+          this.dialogCallback = null;
+          this.dialogVisivel = true;
+          this.cdr.markForCheck();
+        },
+        error: (err: { error?: { message?: string } }) => {
+          this.salvandoSenha = false;
+          this.showModalAlterarSenha = false;
+          this.usuarioSenhaAlvo = null;
+          this.formSenha.reset();
+          this.dialogTitulo = 'Erro';
+          this.dialogMensagem = err?.error?.message ?? 'Não foi possível alterar a senha.';
+          this.dialogTipo = 'erro';
+          this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+          this.dialogCallback = null;
+          this.dialogVisivel = true;
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  onExcluirUsuario(usuario: Usuario, event: MouseEvent): void {
+    event.stopPropagation();
+    this.acaoAbertaId = null;
+    if (!usuario.idUsuario) {
+      return;
+    }
+    const atual = this.authService.getCurrentUser();
+    if (atual?.idUsuario === usuario.idUsuario) {
+      this.dialogTitulo = 'Ação não permitida';
+      this.dialogMensagem =
+        'Administradores não podem excluir a própria conta. Utilize outra conta de administrador para realizar esta operação.';
+      this.dialogTipo = 'erro';
+      this.dialogBotoes = [{ label: 'OK', acao: 'ok', estilo: 'primario' }];
+      this.dialogCallback = null;
+      this.dialogVisivel = true;
+      this.cdr.markForCheck();
+      return;
+    }
+    this.dialogTitulo = 'Confirmar exclusão';
+    this.dialogMensagem = `Deseja realmente excluir o usuário "${usuario.nomeUsuario}" (${usuario.emailUsuario})? Esta ação não pode ser desfeita.`;
+    this.dialogTipo = 'confirmacao';
+    this.dialogBotoes = [
+      { label: 'Não', acao: 'cancelar', estilo: 'neutro' },
+      { label: 'Sim', acao: 'confirmar', estilo: 'perigo' },
+    ];
+    this.dialogCallback = () => this.executarExclusao(usuario.idUsuario);
+    this.dialogVisivel = true;
+    this.cdr.markForCheck();
+  }
+
+  private executarExclusao(idUsuario: string): void {
+    this.usuarioService
+      .deletar(idUsuario)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.carregar();
+        },
+        error: (err: { error?: { message?: string } }) => {
+          this.dialogTitulo = 'Erro ao excluir';
+          this.dialogMensagem = err?.error?.message ?? 'Não foi possível excluir o usuário.';
+          this.dialogTipo = 'erro';
+          this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+          this.dialogCallback = null;
+          this.dialogVisivel = true;
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  onDialogAcao(acao: string): void {
+    this.dialogVisivel = false;
+    if (acao === 'confirmar' && this.dialogCallback) {
+      this.dialogCallback();
+    }
+    this.dialogCallback = null;
+    this.cdr.markForCheck();
+  }
+
+  perfilLabel(perfil: UserRole): string {
+    return ROLE_LABELS[perfil] ?? String(perfil ?? '—');
+  }
+
+  indiceGlobal(pageRow: number): number {
+    return (this.paginaAtual - 1) * this.itensPorPagina + pageRow;
+  }
+
+  trackUsuario(index: number, u: Usuario): string {
+    const id = u.idUsuario?.trim();
+    if (id) return id;
+    const em = u.emailUsuario?.trim();
+    if (em) return em;
+    return `row-${index}`;
+  }
+
+  statusLabel(ativo: boolean): string {
+    return ativo ? 'Ativo' : 'Inativo';
+  }
+
+  fecharModalCadastro(): void {
+    this.showModalCadastro = false;
+    this.cdr.markForCheck();
+  }
+
+  onUsuarioCadastrado(): void {
+    this.showModalCadastro = false;
+    this.cdr.markForCheck();
+    this.carregar();
+  }
+}
