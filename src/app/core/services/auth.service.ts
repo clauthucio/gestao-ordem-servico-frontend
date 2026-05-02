@@ -17,13 +17,13 @@ import {
 } from '../models/auth.model';
 import { TokenService } from './token.service';
 import { UserRole } from '../enums/roles.enum';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  // URL base do backend
-  private readonly API_URL = 'http://localhost:3000';
+  private readonly API_URL = environment.apiUrl;
 
   // Injetar serviços
   private http = inject(HttpClient);
@@ -140,11 +140,16 @@ export class AuthService {
 
   //Método para autenticar e não aparecer a side bar no login
   isAuthenticated(): boolean {
-  return this.currentUserSubject.value !== null;
+  return this.isLoggedIn();
 }
 
   getCurrentUser(): User | null {
-    return this.tokenService.getUser();
+    const user = this.tokenService.getUser();
+
+    if (user !== this.currentUserSubject.value) {
+      this.currentUserSubject.next(user);
+    }
+    return user;
   }
 
   getCurrentUserRole(): UserRole | null {
@@ -167,6 +172,11 @@ export class AuthService {
     const userRole = this.getCurrentUserRole();
 
     if (!userRole) return false;
+
+    /** Administrador tem acesso a todas as rotas e verificações por papel. */
+    if (userRole === UserRole.ADMIN) {
+      return true;
+    }
 
     // Se requiredRole é array, verifica se user tem algum deles
     if (Array.isArray(requiredRole)) {

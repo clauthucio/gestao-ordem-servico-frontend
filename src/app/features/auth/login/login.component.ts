@@ -18,26 +18,29 @@ import { AuthService } from '../../../core/services/auth.service';
 })
 export class Login implements OnInit, OnDestroy {
   // Injetar serviços
-  private fb = inject(FormBuilder);
+  private readonly fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
 
-  // Form reativo
-  loginForm!: FormGroup;
+  /** Sempre definido antes da primeira renderização (evita NG01052 se redirecionar utilizador já logado). */
+  loginForm: FormGroup = this.fb.group({
+    emailUsuario: ['', [Validators.required, Validators.email]],
+    senhaUsuario: ['', [Validators.required, Validators.minLength(6)]],
+  });
 
   // Estados
   loading = false;
   errorMessage: string | null = null;
+  /** Alterna visibilidade do campo senha (botão “ver senha”). */
+  mostrarSenha = false;
 
   // Cleanup
   private destroy$ = new Subject<void>();
 
   ngOnInit(): void {
-    // Criar formulário com validações
-    this.loginForm = this.fb.group({
-      emailUsuario: ['', [Validators.required, Validators.email]],
-      senhaUsuario: ['', [Validators.required, Validators.minLength(6)]],
-    });
+    if (this.authService.isLoggedIn()) {
+      void this.router.navigate(['/app/dashboard']);
+    }
   }
 
   ngOnDestroy(): void {
@@ -98,13 +101,6 @@ export class Login implements OnInit, OnDestroy {
     this.loading = true;
     this.errorMessage = null;
 
-    // DEBUG: Ver o form e os valores
-    console.log('📋 FormGroup valor completo:', this.loginForm.value);
-    console.log('📋 FormGroup raw:', this.loginForm.getRawValue());
-    console.log('📋 Email:', this.loginForm.get('emailUsuario')?.value);
-    console.log('📋 Password:', this.loginForm.get('senhaUsuario')?.value);
-
-
     // Obter valores do form
     const { emailUsuario, senhaUsuario } = this.loginForm.value;
 
@@ -114,18 +110,26 @@ export class Login implements OnInit, OnDestroy {
       .subscribe({
         // Sucesso
         next: (response) => {
-          console.log('Login realizado com sucesso!', response);
-          // Redirecionar para dashboard
-          this.router.navigate(['/app/dashboard']);
+          this.loading = false;
+          void this.router.navigate(['/app/dashboard']);
         },
 
         // Erro
-        error: (error) => {
-          console.error('Erro no login:', error);
+        error: (error: { status?: number; error?: { message?: string; mensagem?: string } }) => {
           this.loading = false;
 
-          // Mensagem de erro do backend ou genérica
-          this.errorMessage = error?.error?.mensagem || 'Email ou senha inválidos';
+          const body = error?.error;
+          const fromApi =
+            (typeof body?.message === 'string' && body.message) ||
+            (typeof body?.mensagem === 'string' && body.mensagem) ||
+            '';
+
+          if (error?.status === 403 && fromApi) {
+            this.errorMessage = fromApi;
+            return;
+          }
+
+          this.errorMessage = fromApi || 'E-mail ou senha inválidos.';
         },
 
         // Completo
