@@ -122,62 +122,51 @@
         Tentar novamente
       </button>
     } @else {
-      <!-- Filtros -->
+      <!-- Filtros (layout alinhado à lista de Ordens de Serviço) -->
       <div
-        class="bg-surface-container-lowest p-4 sm:p-5 rounded-xl border border-outline-variant/10 shadow-sm mb-6 grid grid-cols-1 md:grid-cols-3 gap-4"
+        class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-5 mb-6 flex flex-wrap items-center gap-4"
       >
-        <div>
-          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
-            >Nome</label
-          >
+        <div class="flex-1 min-w-[300px] relative">
+          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
           <input
-            type="search"
+            type="text"
+            class="w-full bg-surface-container-low border border-outline-variant/20 rounded-lg pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-primary/20"
+            placeholder="Pesquisar por nome, e-mail..."
             [(ngModel)]="filtroNome"
             (ngModelChange)="onFiltroAlterado()"
-            placeholder="Filtrar por nome..."
-            class="w-full px-3 py-2.5 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm"
+            name="buscaUsuarios"
           />
         </div>
-        <div>
-          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
-            >Perfil</label
+        <div class="flex items-center gap-3 flex-wrap">
+          <select
+            class="bg-surface-container-low border border-outline-variant/20 rounded-lg px-4 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none min-w-[160px]"
+            [(ngModel)]="filtroPerfil"
+            (ngModelChange)="onFiltroAlterado()"
+            name="filtroPerfil"
           >
-          <div class="relative">
-            <select
-              [(ngModel)]="filtroPerfil"
-              (ngModelChange)="onFiltroAlterado()"
-              class="w-full pl-3 pr-9 py-2.5 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm appearance-none"
-            >
-              <option value="">Todos</option>
-              @for (op of perfilFiltroOpcoes; track op.value) {
-                <option [value]="op.value">{{ op.label }}</option>
-              }
-            </select>
-            <span
-              class="absolute right-2 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant pointer-events-none text-lg"
-              >unfold_more</span
-            >
-          </div>
-        </div>
-        <div>
-          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
-            >Status</label
+            <option value="">Perfil: Todos</option>
+            @for (op of perfilFiltroOpcoes; track op.value) {
+              <option [value]="op.value">{{ op.label }}</option>
+            }
+          </select>
+          <select
+            class="bg-surface-container-low border border-outline-variant/20 rounded-lg px-4 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none min-w-[160px]"
+            [(ngModel)]="filtroStatus"
+            (ngModelChange)="onFiltroAlterado()"
+            name="filtroStatus"
           >
-          <div class="relative">
-            <select
-              [(ngModel)]="filtroStatus"
-              (ngModelChange)="onFiltroAlterado()"
-              class="w-full pl-3 pr-9 py-2.5 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm appearance-none"
-            >
-              <option value="todos">Todos</option>
-              <option value="ativo">Ativo</option>
-              <option value="inativo">Inativo</option>
-            </select>
-            <span
-              class="absolute right-2 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant pointer-events-none text-lg"
-              >unfold_more</span
-            >
-          </div>
+            <option value="todos">Status: Todos</option>
+            <option value="ativo">Ativo</option>
+            <option value="inativo">Inativo</option>
+          </select>
+          <button
+            type="button"
+            class="bg-surface-container-high text-on-surface px-4 py-3 rounded-lg text-sm font-medium hover:bg-surface-variant transition-colors flex items-center gap-2"
+            (click)="limparFiltros()"
+          >
+            <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+            Limpar filtros
+          </button>
         </div>
       </div>
 
