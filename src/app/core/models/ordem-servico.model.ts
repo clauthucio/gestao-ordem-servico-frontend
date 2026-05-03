@@ -37,7 +37,7 @@ export interface CriarOrdemServicoPayload {
   prioridadeOrdemServico: PrioridadeType;
   statusOrdemServico: OrdemStatus;
   descricaoFalha: string;
-  idTecnico?: string;
+  idTecnico: string;
   descricaoServico?: string;
   pecasUtilizadas?: string;
   horasTrabalhadas?: number;

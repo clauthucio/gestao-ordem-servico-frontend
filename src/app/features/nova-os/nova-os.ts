@@ -16,8 +16,14 @@ export interface AtivoOption {
   templateUrl: './nova-os.html'
 })
 export class NovaOs {
-  // Header
-  osNumber = 'OS-2026-0482';
+  /** Exemplo de numeração: `OS` + YYMMDD + `-` + sequencial (apenas demonstração na UI). */
+  get osNumber(): string {
+    const d = new Date();
+    const yy = String(d.getFullYear()).slice(-2);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `OS${yy}${mm}${dd}-01`;
+  }
 
   // Form data
   ativoSelecionado = '';

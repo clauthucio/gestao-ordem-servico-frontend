@@ -6,7 +6,8 @@ import { OrdemServicoService } from '../../core/http/ordem-servico.service';
 import { UsuarioService } from '../../core/http/usuario.service';
 import { OrdemServico } from '../../core/models/ordem-servico.model';
 import { UserRole } from '../../core/enums/roles.enum';
-import { OrdemStatus, STATUS_COLORS, STATUS_LABELS } from '../../core/enums/status.enum';
+import { OrdemStatus, STATUS_LABELS } from '../../core/enums/status.enum';
+import { statusOrdemBadgeColorClasses } from '../../core/utils/status-badge.util';
 
 export interface DiaAtividade {
   dia: string;
@@ -162,14 +163,7 @@ export class Dashboard implements OnInit {
 
   // Retorna classes CSS do badge conforme o status da OS
   getStatusClass(status: OrdemStatus): string {
-    const map: Record<OrdemStatus, string> = {
-      [OrdemStatus.ABERTO]:          'bg-slate-100 text-slate-600',
-      [OrdemStatus.EM_ANDAMENTO]:    'bg-blue-50 text-blue-600',
-      [OrdemStatus.AGUARDANDO_PECA]: 'bg-orange-50 text-orange-600',
-      [OrdemStatus.CONCLUIDO]:       'bg-emerald-50 text-emerald-600',
-      [OrdemStatus.CANCELADO]:       'bg-red-50 text-red-600',
-    };
-    return `inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold uppercase ${map[status]}`;
+    return `inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold uppercase ${statusOrdemBadgeColorClasses(status)}`;
   }
 
   // Retorna o label em português do status usando o enum

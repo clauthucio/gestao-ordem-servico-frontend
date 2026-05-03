@@ -13,9 +13,22 @@ import { UsuarioService } from '../../core/http/usuario.service';
 import { AuthService } from '../../core/services/auth.service';
 import { OrdemServico } from '../../core/models/ordem-servico.model';
 import { EquipamentoService } from '../../core/http/equipamento.service';
+import { compararNumeroOrdemServico } from '../../core/utils/numero-ordem-servico.util';
+import { statusOsViewBadgeColorClasses } from '../../core/utils/status-badge.util';
+import { appendOsTimelineEvent } from '../../core/storage/os-timeline-local.storage';
+import { usuarioPodeAcaoComoAdminOuTecnicoAtribuido } from '../../core/utils/os-acoes-permissao.util';
 
 export type PrioridadeOS = 'baixa' | 'media' | 'alta' | 'critica';
 export type StatusOS = 'aberto' | 'execucao' | 'pendente' | 'finalizada' | 'cancelada';
+
+export type ColunaOrdenacaoOs =
+  | 'numero'
+  | 'equipamento'
+  | 'tipo'
+  | 'prioridade'
+  | 'status'
+  | 'tecnico'
+  | 'abertura';
 
 export interface OrdemServicoTabela {
   id: string;
@@ -28,6 +41,8 @@ export interface OrdemServicoTabela {
   tecnico: string | null;
   idTecnico: string | null; // Para validação de permissão
   dataAbertura: string;
+  /** Epoch ms para ordenação sem parsear texto formatado */
+  aberturaTimestamp: number;
 }
 
 @Component({
@@ -53,6 +68,9 @@ export class OsList implements OnInit {
   carregando = true;
   erro: string | null = null;
   showModal = false;
+
+  ordenacaoColuna: ColunaOrdenacaoOs = 'abertura';
+  ordenacaoDirecao: 'asc' | 'desc' = 'desc';
 
   paginaAtual = 1;
   itensPorPagina = 10;
@@ -130,7 +148,7 @@ export class OsList implements OnInit {
   get ordensFiltradas(): OrdemServicoTabela[] {
     const termo = this.busca.trim().toLocaleLowerCase();
 
-    return this.ordens.filter((ordem) => {
+    const filtradas = this.ordens.filter((ordem) => {
       const atendeBusca = !termo || [
         ordem.numero,
         ordem.equipamento,
@@ -143,6 +161,102 @@ export class OsList implements OnInit {
 
       return atendeBusca && atendeStatus && atendePrioridade;
     });
+
+    const lista = [...filtradas];
+    this.ordenarListaOs(lista, this.ordenacaoColuna, this.ordenacaoDirecao);
+    return lista;
+  }
+
+  onFiltroAlterado(): void {
+    this.paginaAtual = 1;
+  }
+
+  onToggleOrdenacao(col: ColunaOrdenacaoOs, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.ordenacaoColuna === col) {
+      this.ordenacaoDirecao = this.ordenacaoDirecao === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.ordenacaoColuna = col;
+      this.ordenacaoDirecao = 'asc';
+    }
+    this.paginaAtual = 1;
+    this.cdr.markForCheck();
+  }
+
+  iconeOrdenacaoColuna(col: ColunaOrdenacaoOs): string {
+    if (this.ordenacaoColuna !== col) return 'unfold_more';
+    return this.ordenacaoDirecao === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  ordenacaoColunaAtiva(col: ColunaOrdenacaoOs): boolean {
+    return this.ordenacaoColuna === col;
+  }
+
+  limparFiltrosEOrdenacao(): void {
+    this.busca = '';
+    this.filtroStatus = 'todos';
+    this.filtroPrioridade = 'todas';
+    this.ordenacaoColuna = 'abertura';
+    this.ordenacaoDirecao = 'desc';
+    this.paginaAtual = 1;
+    this.cdr.markForCheck();
+  }
+
+  private ordenarListaOs(lista: OrdemServicoTabela[], col: ColunaOrdenacaoOs, dir: 'asc' | 'desc'): void {
+    const m = dir === 'asc' ? 1 : -1;
+    const cmpStr = (a: string, b: string) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
+
+    lista.sort((x, y) => {
+      let c = 0;
+      switch (col) {
+        case 'numero':
+          c = compararNumeroOrdemServico(x.numero, y.numero);
+          break;
+        case 'equipamento':
+          c = cmpStr(x.equipamento, y.equipamento);
+          break;
+        case 'tipo':
+          c = cmpStr(x.tipo, y.tipo);
+          break;
+        case 'prioridade':
+          c = this.prioridadeNivel(x.prioridade) - this.prioridadeNivel(y.prioridade);
+          break;
+        case 'status':
+          c = this.statusNivel(x.status) - this.statusNivel(y.status);
+          break;
+        case 'tecnico': {
+          const ta = (x.tecnico ?? '\uffff').toLocaleLowerCase();
+          const tb = (y.tecnico ?? '\uffff').toLocaleLowerCase();
+          c = cmpStr(ta, tb);
+          break;
+        }
+        case 'abertura':
+          c = x.aberturaTimestamp - y.aberturaTimestamp;
+          break;
+        default:
+          c = 0;
+      }
+      if (c === 0) {
+        c = x.id.localeCompare(y.id);
+      }
+      return c * m;
+    });
+  }
+
+  private prioridadeNivel(p: PrioridadeOS): number {
+    const n: Record<PrioridadeOS, number> = { baixa: 0, media: 1, alta: 2, critica: 3 };
+    return n[p];
+  }
+
+  private statusNivel(s: StatusOS): number {
+    const n: Record<StatusOS, number> = {
+      aberto: 0,
+      execucao: 1,
+      pendente: 2,
+      finalizada: 3,
+      cancelada: 4,
+    };
+    return n[s];
   }
 
   get ordensPaginadas(): OrdemServicoTabela[] {
@@ -175,6 +289,7 @@ export class OsList implements OnInit {
   }
 
   private mapearOrdem(ordem: OrdemServico): OrdemServicoTabela {
+    const ts = ordem.aberturaEm ? new Date(ordem.aberturaEm).getTime() : 0;
     return {
       id: ordem.idOrdemServico,
       numero: ordem.numeroOrdemServico,
@@ -188,6 +303,7 @@ export class OsList implements OnInit {
       tecnico: ordem.idTecnico ? this.tecnicoNomeMap.get(ordem.idTecnico) ?? ordem.tecnicoNome ?? null : null,
       idTecnico: ordem.idTecnico ?? null,
       dataAbertura: ordem.aberturaEm ? this.formatarData(ordem.aberturaEm) : 'N/D',
+      aberturaTimestamp: Number.isFinite(ts) ? ts : 0,
     };
   }
 
@@ -241,14 +357,7 @@ export class OsList implements OnInit {
   }
 
   getStatusClass(status: StatusOS): string {
-    const map: Record<StatusOS, string> = {
-      aberto: 'bg-on-surface-variant/10 text-on-surface-variant',
-      execucao: 'bg-secondary-container text-on-secondary-container',
-      pendente: 'bg-error-container text-on-error-container',
-      finalizada: 'bg-tertiary/10 text-tertiary',
-      cancelada: 'bg-error/10 text-error'
-    };
-    return `px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${map[status]}`;
+    return `px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${statusOsViewBadgeColorClasses(status)}`;
   }
 
   getStatusLabel(status: StatusOS): string {
@@ -277,7 +386,7 @@ export class OsList implements OnInit {
 
   onOsSalva(): void {
     this.showModal = false;
-    this.recarregar();
+    this.recarregar('Ordem de serviço cadastrada com sucesso.');
   }
 
   onOsAtualizada(): void {
@@ -294,7 +403,7 @@ export class OsList implements OnInit {
   onOsIniciada(): void {
     this.showModalIniciar = false;
     this.osParaIniciar = null;
-    this.recarregar();
+    this.recarregar('A ordem de serviço foi iniciada com sucesso.');
   }
 
   onModalEncerrarFechar(): void {
@@ -309,17 +418,8 @@ export class OsList implements OnInit {
   }
 
   isUserAdminOrAssignedTecnico(os: OrdemServico | OrdemServicoTabela): boolean {
-    const usuario = this.authService.getCurrentUser();
-    if (!usuario) return false;
-
-    // ADMIN sempre pode encerrar
-    if (usuario.perfilUsuario === UserRole.ADMIN) return true;
-
-    // Técnico só pode encerrar se for o atribuído à OS
     const idTecnico = 'idTecnico' in os ? os.idTecnico : (os as OrdemServico).idTecnico;
-    if (usuario.perfilUsuario === UserRole.TECNICO && usuario.idUsuario === idTecnico) return true;
-
-    return false;
+    return usuarioPodeAcaoComoAdminOuTecnicoAtribuido(this.authService.getCurrentUser(), idTecnico);
   }
 
   onIniciarOS(osId: string, event: MouseEvent): void {
@@ -352,11 +452,27 @@ export class OsList implements OnInit {
     this.showModalEncerrar = true;
   }
 
+  private nomeParaTimeline(): string {
+    return this.authService.getCurrentUser()?.nomeUsuario?.trim() || 'Usuário';
+  }
+
   onAguardarPecaOS(osId: string, event: MouseEvent): void {
     event.stopPropagation();
     this.acaoAbertaId = null;
     const os = this.ordensRaw.find(o => o.idOrdemServico === osId);
     if (!os) return;
+    if (os.statusOrdemServico !== OrdemStatus.EM_ANDAMENTO) return;
+
+    if (!this.isUserAdminOrAssignedTecnico(os)) {
+      this.dialogTitulo = 'Permissão negada';
+      this.dialogMensagem =
+        'Somente o técnico atribuído e administradores podem marcar a ordem como aguardando peça.';
+      this.dialogTipo = 'erro';
+      this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+      this.dialogCallback = null;
+      this.dialogVisivel = true;
+      return;
+    }
 
     this.dialogTitulo = 'Marcar como Aguardando Peça';
     this.dialogMensagem = 'Deseja marcar esta ordem de serviço como aguardando peça?';
@@ -371,12 +487,62 @@ export class OsList implements OnInit {
       };
       this.ordemService.atualizar(osId, payload).subscribe({
         next: () => {
-          this.recarregar();
+          appendOsTimelineEvent(osId, 'AGUARDANDO_PECA', this.nomeParaTimeline());
+          this.recarregar('A ordem foi marcada como aguardando peça.');
           this.cdr.markForCheck();
         },
         error: (err) => {
           this.dialogTitulo = 'Erro';
           this.dialogMensagem = err?.error?.message ?? 'Não foi possível marcar como aguardando peça.';
+          this.dialogTipo = 'erro';
+          this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+          this.dialogCallback = null;
+          this.dialogVisivel = true;
+          this.cdr.markForCheck();
+        },
+      });
+    };
+    this.dialogVisivel = true;
+  }
+
+  onRetomarAtendimentoOS(osId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.acaoAbertaId = null;
+    const os = this.ordensRaw.find((o) => o.idOrdemServico === osId);
+    if (!os) return;
+    if (os.statusOrdemServico !== OrdemStatus.AGUARDANDO_PECA) return;
+
+    if (!this.isUserAdminOrAssignedTecnico(os)) {
+      this.dialogTitulo = 'Permissão negada';
+      this.dialogMensagem =
+        'Somente o técnico atribuído e administradores podem retomar o atendimento.';
+      this.dialogTipo = 'erro';
+      this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+      this.dialogCallback = null;
+      this.dialogVisivel = true;
+      return;
+    }
+
+    this.dialogTitulo = 'Retomar atendimento';
+    this.dialogMensagem = 'Deseja retomar o atendimento desta ordem de serviço?';
+    this.dialogTipo = 'confirmacao';
+    this.dialogBotoes = [
+      { label: 'Não', acao: 'cancelar', estilo: 'neutro' },
+      { label: 'Sim', acao: 'confirmar', estilo: 'primario' },
+    ];
+    this.dialogCallback = () => {
+      const payload: { statusOrdemServico: OrdemStatus } = {
+        statusOrdemServico: OrdemStatus.EM_ANDAMENTO,
+      };
+      this.ordemService.atualizar(osId, payload).subscribe({
+        next: () => {
+          appendOsTimelineEvent(osId, 'RETOMADA', this.nomeParaTimeline());
+          this.recarregar('O atendimento foi retomado com sucesso.');
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.dialogTitulo = 'Erro';
+          this.dialogMensagem = err?.error?.message ?? 'Não foi possível retomar o atendimento.';
           this.dialogTipo = 'erro';
           this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
           this.dialogCallback = null;
@@ -455,7 +621,7 @@ export class OsList implements OnInit {
     this.dialogCallback = null;
   }
 
-  private recarregar(): void {
+  private recarregar(mensagemSucesso?: string): void {
     this.carregando = true;
     this.erro = null;
     forkJoin({
@@ -474,6 +640,14 @@ export class OsList implements OnInit {
         this.ordens = ordens.map((o) => this.mapearOrdem(o));
         this.paginaAtual = 1;
         this.carregando = false;
+        if (mensagemSucesso !== undefined) {
+          this.dialogTitulo = 'Sucesso';
+          this.dialogMensagem = mensagemSucesso;
+          this.dialogTipo = 'info';
+          this.dialogBotoes = [{ label: 'OK', acao: 'ok', estilo: 'primario' }];
+          this.dialogCallback = null;
+          this.dialogVisivel = true;
+        }
         this.cdr.markForCheck();
       },
       error: (err) => {
@@ -485,7 +659,9 @@ export class OsList implements OnInit {
     });
   }
 
-  onVerDetalhes(id: string): void {
+  onVerDetalhes(id: string, event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.acaoAbertaId = null;
     this.router.navigate(['/app/ordens', id]);
   }
 

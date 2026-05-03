@@ -13,7 +13,7 @@ import { AuthService } from './core/services/auth.service';
         <!-- Sidebar -->
         <app-navbar></app-navbar>
         <!-- Main Content -->
-        <div class="flex-1 overflow-auto">
+        <div class="flex-1 min-h-0 overflow-auto flex flex-col">
           <router-outlet></router-outlet>
         </div>
       </div>
