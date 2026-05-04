@@ -26,9 +26,19 @@ function pickOptionalStr(r: Record<string, unknown>, ...keys: string[]): string 
   return s === '' ? undefined : s;
 }
 
+/** BSON / Extended JSON numérico → valor primitivo legível por `pickNum`. */
+function unwrapNumericLeaf(v: unknown): unknown {
+  const rec = asRecord(v);
+  if (!rec) return v;
+  for (const k of ['$numberDouble', '$numberInt', '$numberLong', '$numberDecimal'] as const) {
+    if (k in rec && rec[k] !== undefined) return rec[k];
+  }
+  return v;
+}
+
 function pickNum(r: Record<string, unknown>, ...keys: string[]): number | undefined {
   for (const k of keys) {
-    const v = r[k];
+    const v = unwrapNumericLeaf(r[k]);
     if (typeof v === 'number' && !Number.isNaN(v)) return v;
     if (typeof v === 'string' && v.trim() !== '') {
       const n = Number(v.replace(',', '.'));
@@ -137,7 +147,13 @@ export function mapBrutoParaOrdemServico(raw: unknown): OrdemServico {
   if (dServ) o.descricaoServico = dServ;
   const pecas = pickOptionalStr(r, 'pecasUtilizadas', 'pecas_utilizadas');
   if (pecas) o.pecasUtilizadas = pecas;
-  const h = pickNum(r, 'horasTrabalhadas', 'horas_trabalhadas');
+  const h = pickNum(
+    r,
+    'horasTrabalhadas',
+    'horas_trabalhadas',
+    'tempoAtendimentoHoras',
+    'tempo_atendimento_horas',
+  );
   if (h !== undefined) o.horasTrabalhadas = h;
   const conc = pickOptionalDate(
     r,
@@ -150,7 +166,7 @@ export function mapBrutoParaOrdemServico(raw: unknown): OrdemServico {
     'data_fechamento',
   );
   if (conc) o.conclusaoEm = conc;
-  const iniEm = pickOptionalDate(r, 'inicioEm', 'inicio_em');
+  const iniEm = pickOptionalDate(r, 'inicioEm', 'inicio_em', 'dataInicio', 'data_inicio');
   if (iniEm) o.inicioEm = iniEm;
   return o;
 }

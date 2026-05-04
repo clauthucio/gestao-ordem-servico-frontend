@@ -78,15 +78,9 @@ export class CadastroUsuario implements OnInit {
           this.emailsExistentes.clear();
           lista.forEach((u) => this.emailsExistentes.add(u.emailUsuario.toLowerCase().trim()));
           this.carregandoEmails = false;
-          // #region agent log
-          fetch('http://127.0.0.1:7317/ingest/a62d4b2b-ea8d-4391-b0fa-1b7a4d9fed7f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'319ff8'},body:JSON.stringify({sessionId:'319ff8',location:'cadastro-usuario.ts:listar_next',message:'listar_ok',data:{count:lista.length,carregandoEmails:this.carregandoEmails},timestamp:Date.now(),hypothesisId:'H3',runId:'pre-fix'})}).catch(()=>{});
-          // #endregion
         },
         error: () => {
           this.carregandoEmails = false;
-          // #region agent log
-          fetch('http://127.0.0.1:7317/ingest/a62d4b2b-ea8d-4391-b0fa-1b7a4d9fed7f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'319ff8'},body:JSON.stringify({sessionId:'319ff8',location:'cadastro-usuario.ts:listar_error',message:'listar_fail',data:{carregandoEmails:this.carregandoEmails},timestamp:Date.now(),hypothesisId:'H3',runId:'pre-fix'})}).catch(()=>{});
-          // #endregion
         },
       });
   }
@@ -114,9 +108,6 @@ export class CadastroUsuario implements OnInit {
   }
 
   onCadastrar(): void {
-    // #region agent log
-    fetch('http://127.0.0.1:7317/ingest/a62d4b2b-ea8d-4391-b0fa-1b7a4d9fed7f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'319ff8'},body:JSON.stringify({sessionId:'319ff8',location:'cadastro-usuario.ts:onCadastrar_entry',message:'submit',data:{salvando:this.salvando,carregandoEmails:this.carregandoEmails,invalid:this.form.invalid},timestamp:Date.now(),hypothesisId:'H4',runId:'pre-fix'})}).catch(()=>{});
-    // #endregion
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -140,18 +131,12 @@ export class CadastroUsuario implements OnInit {
       status: raw.status,
       senhaTemporaria,
     };
-    // #region agent log
-    fetch('http://127.0.0.1:7317/ingest/a62d4b2b-ea8d-4391-b0fa-1b7a4d9fed7f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'319ff8'},body:JSON.stringify({sessionId:'319ff8',location:'cadastro-usuario.ts:before_post',message:'cadastrar_payload_shape',data:{keys:Object.keys(payload),perfil:payload.perfil,status:payload.status,emailLen:payload.email.length,senhaLen:payload.senhaTemporaria.length,nomeLen:payload.nome.length},timestamp:Date.now(),hypothesisId:'H1',runId:'pre-fix'})}).catch(()=>{});
-    // #endregion
 
     this.usuarioService
       .cadastrar(payload)
       .pipe(take(1))
       .subscribe({
         next: () => {
-          // #region agent log
-          fetch('http://127.0.0.1:7317/ingest/a62d4b2b-ea8d-4391-b0fa-1b7a4d9fed7f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'319ff8'},body:JSON.stringify({sessionId:'319ff8',location:'cadastro-usuario.ts:cadastrar_next',message:'post_ok',data:{salvando:this.salvando},timestamp:Date.now(),hypothesisId:'H2',runId:'post-fix'})}).catch(()=>{});
-          // #endregion
           this.emailsExistentes.add(emailCompleto);
           this.form.reset();
           this.salvando = false;
@@ -170,9 +155,6 @@ export class CadastroUsuario implements OnInit {
               : typeof body === 'string'
                 ? body
                 : '';
-          // #region agent log
-          fetch('http://127.0.0.1:7317/ingest/a62d4b2b-ea8d-4391-b0fa-1b7a4d9fed7f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'319ff8'},body:JSON.stringify({sessionId:'319ff8',location:'cadastro-usuario.ts:cadastrar_error',message:'post_fail',data:{status,bodyType:typeof body,msgSnippet:msg.slice(0,120),bodyPreview:typeof body==='string'?body.slice(0,240):(body&&typeof body==='object'?JSON.stringify(body).slice(0,320):''),salvandoBeforeClear:this.salvando},timestamp:Date.now(),hypothesisId:'H1',runId:'pre-fix'})}).catch(()=>{});
-          // #endregion
           if (status === 409 || (typeof msg === 'string' && /e-?mail|email|duplicad|já existe|cadastrado/i.test(msg))) {
             this.erroApi = msg || 'Este e-mail já está cadastrado no sistema.';
             this.form.controls.emailLocal.setErrors({ duplicado: true });
@@ -183,9 +165,6 @@ export class CadastroUsuario implements OnInit {
               'Não foi possível cadastrar o usuário. Tente novamente.';
           }
           this.salvando = false;
-          // #region agent log
-          fetch('http://127.0.0.1:7317/ingest/a62d4b2b-ea8d-4391-b0fa-1b7a4d9fed7f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'319ff8'},body:JSON.stringify({sessionId:'319ff8',location:'cadastro-usuario.ts:after_error_handler',message:'salvando_cleared',data:{salvando:this.salvando,erroApiLen:(this.erroApi??'').length},timestamp:Date.now(),hypothesisId:'H2',runId:'pre-fix'})}).catch(()=>{});
-          // #endregion
         },
       });
   }

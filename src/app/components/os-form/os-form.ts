@@ -20,6 +20,7 @@ import { UserRole } from '../../core/enums/roles.enum';
 import { Equipamento } from '../../core/models/equipamento.model';
 import { Usuario } from '../../core/models/usuario.model';
 import {
+  AtualizarOrdemServicoPayload,
   CriarOrdemServicoPayload,
   OrdemServico,
 } from '../../core/models/ordem-servico.model';
@@ -394,9 +395,10 @@ export class OsFormComponent implements OnInit {
 
     // Armazenar callback para executar após confirmação
     const callback = () => {
-      const payload: any = {
+      const payload: AtualizarOrdemServicoPayload = {
         statusOrdemServico: OrdemStatus.EM_ANDAMENTO,
-        conclusaoEm: raw.conclusaoEm,
+        conclusaoEm: raw.conclusaoEm!.trim(),
+        inicioEm: new Date().toISOString(),
       };
       this.ordemService.atualizar(this.osParaIniciar!.idOrdemServico, payload).subscribe({
         next: () => {

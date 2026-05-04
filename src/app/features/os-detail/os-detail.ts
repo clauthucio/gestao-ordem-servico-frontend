@@ -242,22 +242,24 @@ export class OsDetail implements OnInit, OnDestroy {
       entries.push({ ts, ev });
     };
 
-    push(this.parseTs(os.dataCriacao), {
+    const refAbertura = this.dataAberturaParaExibicao(os);
+
+    push(this.parseTs(refAbertura), {
       icon: 'add_alert',
       filled: false,
       title: 'Ordem de Serviço Criada',
-      timestamp: this.formatarData(os.dataCriacao),
+      timestamp: this.formatarData(refAbertura),
       author: this.nomeSolicitanteResolvido(os),
       iconBg: 'bg-surface-container-highest',
       iconColor: 'text-primary',
     });
 
     if (os.idTecnico) {
-      push(this.parseTs(os.dataCriacao), {
+      push(this.parseTs(refAbertura), {
         icon: 'person_check',
         filled: false,
         title: `Técnico ${this.nomeTecnicoResolvido(os)} atribuído`,
-        timestamp: this.formatarData(os.dataCriacao),
+        timestamp: this.formatarData(refAbertura),
         author: 'Sistema',
         iconBg: 'bg-primary/10',
         iconColor: 'text-primary',
@@ -334,6 +336,16 @@ export class OsDetail implements OnInit, OnDestroy {
 
     entries.sort((a, b) => a.ts - b.ts);
     return entries.map((e) => e.ev);
+  }
+
+  /**
+   * Data de abertura (`data_abertura` / `aberturaEm` na API) — usada no cabeçalho como "Data de criação"
+   * e nos primeiros eventos da timeline. Fallback para `dataCriacao` se abertura vier vazia.
+   */
+  dataAberturaParaExibicao(os: OrdemServico): Date | string | undefined {
+    const a = os.aberturaEm;
+    if (a !== undefined && a !== null && String(a).trim() !== '') return a;
+    return os.dataCriacao;
   }
 
   formatarData(data: Date | string | undefined): string {

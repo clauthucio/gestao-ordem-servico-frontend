@@ -4,7 +4,11 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  ElementRef,
+  HostListener,
+  NgZone,
   OnInit,
+  ViewChild,
   inject,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -22,6 +26,8 @@ import {
   type TecnicoProdutividadeAgg,
   calcularResumoGlobal,
   computarProdutividadePorTecnico,
+  horasContabilizadasRelatorio,
+  mapearStatusOrdemParaEnum,
   montarDadosGraficoTopOs,
 } from '../../core/utils/produtividade-tecnicos.util';
 
@@ -36,31 +42,36 @@ export class RelatoriosOs implements OnInit {
   private readonly ordemServicoService = inject(OrdemServicoService);
   private readonly usuarioService = inject(UsuarioService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly ngZone = inject(NgZone);
 
   readonly titulo = 'Relatório de Produtividade por Técnico';
   readonly subtitulo =
-    'Acompanhe a quantidade de ordens de serviço concluídas, horas trabalhadas e média de esforço por técnico no período selecionado.';
+    'Acompanhe a quantidade de ordens de serviço, horas trabalhadas e média de esforço por técnico no período e nos status selecionados.';
 
-  readonly tipoOpcoes: { value: ManutencaoType | ''; label: string }[] = [
-    { value: '', label: 'Todos os tipos' },
-    { value: 'CORRETIVA', label: 'Corretiva' },
-    { value: 'PREVENTIVA', label: 'Preventiva' },
-    { value: 'PREDITIVA', label: 'Preditiva' },
+  /** Ordem fixa das opções do filtro (dropdown). */
+  readonly statusRelatorioOpcoes: OrdemStatus[] = [
+    OrdemStatus.ABERTO,
+    OrdemStatus.EM_ANDAMENTO,
+    OrdemStatus.AGUARDANDO_PECA,
+    OrdemStatus.CONCLUIDO,
+    OrdemStatus.CANCELADO,
   ];
 
-  readonly prioridadeOpcoes: { value: PrioridadeType | ''; label: string }[] = [
-    { value: '', label: 'Todas as prioridades' },
-    { value: 'BAIXA', label: 'Baixa' },
-    { value: 'MEDIA', label: 'Média' },
-    { value: 'ALTA', label: 'Alta' },
-    { value: 'CRITICA', label: 'Crítica' },
-  ];
+  private readonly statusPadraoRelatorio: OrdemStatus[] = [OrdemStatus.CONCLUIDO];
+
+  /** Pelo menos um status deve permanecer selecionado (valor aplicado ao relatório). */
+  statusSelecionados: OrdemStatus[] = [...this.statusPadraoRelatorio];
+
+  /** Cópia de trabalho no painel de status até o utilizador confirmar. */
+  statusSelecionadosPendente: OrdemStatus[] = [...this.statusPadraoRelatorio];
+
+  painelStatusAberto = false;
+
+  @ViewChild('statusFiltroRoot', { read: ElementRef }) statusFiltroRoot?: ElementRef<HTMLElement>;
 
   todasOrdens: OrdemServico[] = [];
   dataInicio = '';
   dataFim = '';
-  filtroTipo: ManutencaoType | '' = '';
-  filtroPrioridade: PrioridadeType | '' = '';
 
   agregados: TecnicoProdutividadeAgg[] = [];
   resumo: ResumoProdutividadeGlobal = {
@@ -69,6 +80,8 @@ export class RelatoriosOs implements OnInit {
     mediaHorasPorOsGlobal: null,
     tecnicosComOs: 0,
   };
+  /** Um conjunto de cartões (resumo) por cada status atualmente marcado no filtro. */
+  resumosPorStatus: { status: OrdemStatus; resumo: ResumoProdutividadeGlobal }[] = [];
   chartData: GraficoBarraItem[] = [];
 
   carregando = true;
@@ -78,16 +91,26 @@ export class RelatoriosOs implements OnInit {
   tecnicoDetalhe: TecnicoProdutividadeAgg | null = null;
 
   ngOnInit(): void {
-    const fim = new Date();
-    const ini = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate());
-    ini.setFullYear(ini.getFullYear() - 1);
-    this.dataInicio = RelatoriosOs.ymd(ini);
-    this.dataFim = RelatoriosOs.ymd(fim);
+    this.aplicarPeriodoPadraoCampos();
     this.carregar();
   }
 
   private static ymd(date: Date): string {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  /** Data final = dia civil corrente; data inicial = 7 dias antes (calendário local). */
+  private static periodoPadraoRelatorio(ref: Date = new Date()): { dataInicio: string; dataFim: string } {
+    const fim = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate());
+    const ini = new Date(fim);
+    ini.setDate(ini.getDate() - 7);
+    return { dataInicio: RelatoriosOs.ymd(ini), dataFim: RelatoriosOs.ymd(fim) };
+  }
+
+  private aplicarPeriodoPadraoCampos(): void {
+    const p = RelatoriosOs.periodoPadraoRelatorio();
+    this.dataInicio = p.dataInicio;
+    this.dataFim = p.dataFim;
   }
 
   carregar(): void {
@@ -108,10 +131,7 @@ export class RelatoriosOs implements OnInit {
         this.erro = this.mensagemErroCarregar(err);
         this.carregando = false;
         this.todasOrdens = [];
-        this.agregados = [];
-        this.resumo = calcularResumoGlobal([]);
-        this.chartData = [];
-        this.cdr.markForCheck();
+        this.recomputar();
       },
     });
   }
@@ -126,7 +146,87 @@ export class RelatoriosOs implements OnInit {
     return { ...o, tecnicoNome: nome.trim() };
   }
 
-  aplicarFiltros(): void {
+  limparFiltros(): void {
+    this.aplicarPeriodoPadraoCampos();
+    this.statusSelecionados = [...this.statusPadraoRelatorio];
+    this.statusSelecionadosPendente = [...this.statusPadraoRelatorio];
+    this.painelStatusAberto = false;
+    this.erro = null;
+    this.recomputar();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(ev: MouseEvent): void {
+    if (!this.painelStatusAberto) return;
+    const root = this.statusFiltroRoot?.nativeElement;
+    const t = ev.target;
+    if (root && t instanceof Node && root.contains(t)) return;
+    this.cancelarPainelStatus();
+  }
+
+  /** Abre ou fecha o painel; ao fechar pelo gatilho, descarta alterações pendentes (igual a Cancelar). */
+  togglePainelStatusFiltro(ev: Event): void {
+    ev.stopPropagation();
+    if (this.painelStatusAberto) {
+      this.cancelarPainelStatus();
+    } else {
+      this.statusSelecionadosPendente = [...this.statusSelecionados];
+      this.painelStatusAberto = true;
+    }
+    this.cdr.markForCheck();
+  }
+
+  cancelarPainelStatus(ev?: Event): void {
+    ev?.stopPropagation();
+    this.statusSelecionadosPendente = [...this.statusSelecionados];
+    this.painelStatusAberto = false;
+    this.cdr.markForCheck();
+  }
+
+  confirmarSelecaoStatus(ev?: Event): void {
+    ev?.stopPropagation();
+    if (this.statusSelecionadosPendente.length === 0) {
+      this.erro = 'Selecione pelo menos um status antes de confirmar.';
+      this.cdr.markForCheck();
+      return;
+    }
+    this.erro = null;
+    this.statusSelecionados = [...this.statusSelecionadosPendente];
+    this.painelStatusAberto = false;
+    this.recomputar();
+  }
+
+  statusMarcadoPendente(s: OrdemStatus): boolean {
+    return this.statusSelecionadosPendente.includes(s);
+  }
+
+  aoAlterarCheckboxPendente(s: OrdemStatus, ev: Event): void {
+    const t = ev.target;
+    const marcado = t instanceof HTMLInputElement ? t.checked : false;
+    this.alternarStatusPendente(s, marcado);
+  }
+
+  alternarStatusPendente(s: OrdemStatus, marcado: boolean): void {
+    if (marcado) {
+      if (!this.statusSelecionadosPendente.includes(s)) {
+        this.statusSelecionadosPendente = [...this.statusSelecionadosPendente, s];
+      }
+      this.erro = null;
+      this.cdr.markForCheck();
+      return;
+    }
+    if (this.statusSelecionadosPendente.length === 1 && this.statusSelecionadosPendente[0] === s) {
+      this.erro = 'Selecione pelo menos um status.';
+      this.cdr.markForCheck();
+      return;
+    }
+    this.statusSelecionadosPendente = this.statusSelecionadosPendente.filter((x) => x !== s);
+    this.erro = null;
+    this.cdr.markForCheck();
+  }
+
+  /** Recalcula o relatório quando as datas mudam. */
+  aoAlterarFiltro(): void {
     if (!this.dataInicio || !this.dataFim) {
       return;
     }
@@ -144,12 +244,32 @@ export class RelatoriosOs implements OnInit {
       this.todasOrdens,
       this.dataInicio,
       this.dataFim,
-      this.filtroTipo,
-      this.filtroPrioridade,
+      [...this.statusSelecionados],
     );
     this.resumo = calcularResumoGlobal(this.agregados);
+    const ordemStatus = (a: OrdemStatus, b: OrdemStatus) =>
+      this.statusRelatorioOpcoes.indexOf(a) - this.statusRelatorioOpcoes.indexOf(b);
+    this.resumosPorStatus = [...this.statusSelecionados].sort(ordemStatus).map((status) => ({
+      status,
+      resumo: calcularResumoGlobal(
+        computarProdutividadePorTecnico(this.todasOrdens, this.dataInicio, this.dataFim, [status]),
+      ),
+    }));
     this.chartData = montarDadosGraficoTopOs(this.agregados, 5);
     this.cdr.markForCheck();
+  }
+
+  /** Primeira linha dos PDF/Excel exportados. */
+  tituloPrincipalExportacao(): string {
+    return 'Relatório de ordens de serviço — Produtividade por técnico';
+  }
+
+  /** Metadados: status atualmente incluídos no relatório. */
+  textoFiltroStatusExportacao(): string {
+    const ordem = (a: OrdemStatus, b: OrdemStatus) =>
+      this.statusRelatorioOpcoes.indexOf(a) - this.statusRelatorioOpcoes.indexOf(b);
+    const labels = [...this.statusSelecionados].sort(ordem).map((st) => STATUS_LABELS[st]);
+    return `Status no filtro: ${labels.join(', ')}`;
   }
 
   /** Lista vazia retornada pela API (sem erro HTTP). */
@@ -157,7 +277,7 @@ export class RelatoriosOs implements OnInit {
     return !this.carregando && !this.erro && this.todasOrdens.length === 0;
   }
 
-  /** Há ordens carregadas, mas nenhuma entra no relatório (período / só concluídas / filtros). */
+  /** Há ordens carregadas, mas nenhuma entra no período com os status selecionados. */
   avisoFiltroSemResultado(): boolean {
     return !this.carregando && !this.erro && this.todasOrdens.length > 0 && this.agregados.length === 0;
   }
@@ -240,9 +360,26 @@ export class RelatoriosOs implements OnInit {
     }).format(new Date(iso));
   }
 
+  /** Data e hora em que o relatório foi gerado/exportado (pt-BR). */
+  formatarMomentoGeracao(ref: Date = new Date()): string {
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }).format(ref);
+  }
+
   formatarHoras(n: number | null | undefined): string {
     if (n === null || n === undefined || Number.isNaN(n)) return '—';
     return `${n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} h`;
+  }
+
+  /** Mesma regra de soma do relatório (campo explícito ou estimativa por intervalo). */
+  horasRelatorio(o: OrdemServico): number {
+    return horasContabilizadasRelatorio(o);
   }
 
   resumoTitulo(os: OrdemServico): string {
@@ -253,7 +390,8 @@ export class RelatoriosOs implements OnInit {
   }
 
   statusLabel(s: OrdemStatus): string {
-    return STATUS_LABELS[s] ?? String(s);
+    const st = mapearStatusOrdemParaEnum(s);
+    return STATUS_LABELS[st] ?? String(s);
   }
 
   async exportarExcel(): Promise<void> {
@@ -264,13 +402,37 @@ export class RelatoriosOs implements OnInit {
       const XLSX = await import('xlsx');
       const wb = XLSX.utils.book_new();
 
-      const resumoRows = this.agregados.map((a) => ({
-        Técnico: a.nomeExibicao,
-        'OS concluídas': a.osConcluidas,
-        'Horas totais': a.horasTotais,
-        'Média h/OS': a.mediaHorasPorOs ?? '—',
-      }));
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumoRows), 'Resumo por técnico');
+      const gerado = this.formatarMomentoGeracao();
+      const mediaGeralNum =
+        this.resumo.mediaHorasPorOsGlobal != null && !Number.isNaN(this.resumo.mediaHorasPorOsGlobal)
+          ? Number(this.resumo.mediaHorasPorOsGlobal.toFixed(2))
+          : '—';
+
+      const resumoAoa: (string | number)[][] = [
+        [this.tituloPrincipalExportacao()],
+        [this.textoFiltroStatusExportacao()],
+        [`Gerado em: ${gerado}`],
+        [`Período: ${this.dataInicio} a ${this.dataFim}`],
+        [this.titulo],
+        [],
+        ['Totais gerais (período)', '', '', ''],
+        [
+          'OS no período',
+          this.resumo.totalOs,
+          'Horas totais',
+          this.resumo.totalHoras.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
+        ],
+        ['Média geral h/OS', mediaGeralNum, 'Técnicos com OS', this.resumo.tecnicosComOs],
+        [],
+        ['Técnico', 'OS no período', 'Horas totais', 'Média h/OS'],
+        ...this.agregados.map((a) => [
+          a.nomeExibicao,
+          a.osConcluidas,
+          a.horasTotais,
+          a.mediaHorasPorOs != null ? Number(a.mediaHorasPorOs.toFixed(2)) : '—',
+        ]),
+      ];
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumoAoa), 'Resumo por técnico');
 
       const detalheRows: Record<string, string | number>[] = [];
       for (const a of this.agregados) {
@@ -283,7 +445,7 @@ export class RelatoriosOs implements OnInit {
             Prioridade: this.prioridadeLabel(o.prioridadeOrdemServico),
             'Data abertura': this.formatarDataHora(o.aberturaEm),
             'Data conclusão': this.formatarDataHora(o.conclusaoEm),
-            'Tempo gasto (h)': o.horasTrabalhadas ?? 0,
+            'Tempo gasto (h)': this.horasRelatorio(o),
             Status: this.statusLabel(o.statusOrdemServico),
           });
         }
@@ -293,8 +455,10 @@ export class RelatoriosOs implements OnInit {
       const nome = `produtividade-tecnicos_${this.dataInicio}_${this.dataFim}.xlsx`;
       XLSX.writeFile(wb, nome);
     } finally {
-      this.exportando = false;
-      this.cdr.markForCheck();
+      this.ngZone.run(() => {
+        this.exportando = false;
+        this.cdr.markForCheck();
+      });
     }
   }
 
@@ -310,19 +474,32 @@ export class RelatoriosOs implements OnInit {
         lastAutoTable?: { finalY: number };
       };
 
-      doc.setFontSize(14);
-      doc.text(this.titulo, 40, 36);
+      const geradoPdf = this.formatarMomentoGeracao();
+      const mediaGeralPdf = this.formatarHoras(this.resumo.mediaHorasPorOsGlobal);
+
+      const lineH = 14;
+      let yHead = 32;
+      doc.setFontSize(16);
+      doc.text(this.tituloPrincipalExportacao(), 40, yHead);
+      yHead += 22;
       doc.setFontSize(10);
-      doc.text(`Período: ${this.dataInicio} a ${this.dataFim}`, 40, 52);
-      doc.text(
-        `Tipo: ${this.filtroTipo || 'Todos'} | Prioridade: ${this.filtroPrioridade || 'Todas'}`,
-        40,
-        66,
-      );
+      const filterLines = doc.splitTextToSize(this.textoFiltroStatusExportacao(), 720);
+      doc.text(filterLines, 40, yHead);
+      yHead += filterLines.length * lineH + 4;
+      doc.text(this.titulo, 40, yHead);
+      yHead += lineH;
+      doc.text(`Período: ${this.dataInicio} a ${this.dataFim}`, 40, yHead);
+      yHead += lineH;
+      doc.text(`Gerado em: ${geradoPdf}`, 40, yHead);
+      yHead += lineH;
+      const totaisLinha = `Totais gerais: ${this.resumo.totalOs} OS no período | ${this.resumo.totalHoras.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} h totais | Média geral h/OS: ${mediaGeralPdf} | ${this.resumo.tecnicosComOs} técnico(s)`;
+      const totaisLines = doc.splitTextToSize(totaisLinha, 720);
+      doc.text(totaisLines, 40, yHead);
+      yHead += totaisLines.length * lineH + 12;
 
       autoTable(doc, {
-        startY: 78,
-        head: [['Técnico', 'OS concluídas', 'Horas totais', 'Média h/OS']],
+        startY: yHead,
+        head: [['Técnico', 'OS no período', 'Horas totais', 'Média h/OS']],
         body: this.agregados.map((a) => [
           a.nomeExibicao,
           String(a.osConcluidas),
@@ -355,7 +532,7 @@ export class RelatoriosOs implements OnInit {
             this.prioridadeLabel(o.prioridadeOrdemServico),
             this.formatarDataCurta(o.aberturaEm),
             this.formatarDataCurta(o.conclusaoEm),
-            String(o.horasTrabalhadas ?? 0),
+            String(this.horasRelatorio(o)),
             this.statusLabel(o.statusOrdemServico),
           ]);
         }
@@ -383,8 +560,10 @@ export class RelatoriosOs implements OnInit {
 
       doc.save(`produtividade-tecnicos_${this.dataInicio}_${this.dataFim}.pdf`);
     } finally {
-      this.exportando = false;
-      this.cdr.markForCheck();
+      this.ngZone.run(() => {
+        this.exportando = false;
+        this.cdr.markForCheck();
+      });
     }
   }
 }

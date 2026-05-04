@@ -193,6 +193,20 @@ describe('OsDetail', () => {
     expect(btn?.disabled).toBe(false);
   });
 
+  it('dataAberturaParaExibicao prefere aberturaEm (data_abertura) a dataCriacao quando ambos existem', () => {
+    const os: OrdemServico = {
+      ...mockOs,
+      aberturaEm: '2024-11-10T12:00:00.000Z',
+      dataCriacao: '2025-03-01T12:00:00.000Z',
+    };
+    expect(fixture.componentInstance.dataAberturaParaExibicao(os)).toBe(os.aberturaEm);
+  });
+
+  it('dataAberturaParaExibicao usa dataCriacao quando aberturaEm está vazia', () => {
+    const os: OrdemServico = { ...mockOs, aberturaEm: '', dataCriacao: '2025-03-01T10:00:00.000Z' };
+    expect(fixture.componentInstance.dataAberturaParaExibicao(os)).toBe('2025-03-01T10:00:00.000Z');
+  });
+
   it('como técnico não atribuído exibe Aguardar Peça desativado', async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
