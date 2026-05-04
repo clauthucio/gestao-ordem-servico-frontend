@@ -300,12 +300,61 @@
         Tentar novamente
       </button>
     } @else {
+      <!-- Filtros (layout alinhado à lista de OS / Usuários) -->
+      <div
+        class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-5 mb-6 flex flex-wrap items-center gap-4"
+      >
+        <div class="flex-1 min-w-[300px] relative">
+          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+          <input
+            type="text"
+            class="w-full bg-surface-container-low border border-outline-variant/20 rounded-lg pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-primary/20"
+            placeholder="Pesquisar por código, nome, localização, fabricante ou modelo..."
+            [(ngModel)]="busca"
+            (ngModelChange)="onFiltroAlterado()"
+            name="buscaEquipamentos"
+          />
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <select
+            class="bg-surface-container-low border border-outline-variant/20 rounded-lg px-4 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none min-w-[160px]"
+            [(ngModel)]="filtroTipo"
+            (ngModelChange)="onFiltroAlterado()"
+            name="filtroTipoEquip"
+          >
+            <option value="">Tipo: Todos</option>
+            @for (op of tipoOpcoes; track op.value) {
+              <option [value]="op.value">{{ op.label }}</option>
+            }
+          </select>
+          <select
+            class="bg-surface-container-low border border-outline-variant/20 rounded-lg px-4 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 appearance-none min-w-[180px]"
+            [(ngModel)]="filtroStatusExibicao"
+            (ngModelChange)="onFiltroAlterado()"
+            name="filtroStatusEquip"
+          >
+            <option value="todos">Status: Todos</option>
+            <option value="ativo">Ativo</option>
+            <option value="emManutencao">Em manutenção</option>
+            <option value="inativo">Inativo</option>
+          </select>
+          <button
+            type="button"
+            class="bg-surface-container-high text-on-surface px-4 py-3 rounded-lg text-sm font-medium hover:bg-surface-variant transition-colors flex items-center gap-2"
+            (click)="limparFiltros()"
+          >
+            <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+            Limpar filtros
+          </button>
+        </div>
+      </div>
+
       <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm min-w-[960px]">
             <thead>
               <tr class="border-b border-outline-variant/15 bg-surface-container-low/50">
-                <th class="px-3 py-2 align-top min-w-[100px]">
+                <th class="px-4 py-3 align-top min-w-[100px]">
                   <div class="flex items-center justify-between gap-1">
                     <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Código</span>
                     <button
@@ -322,7 +371,7 @@
                     </button>
                   </div>
                 </th>
-                <th class="px-3 py-2 align-top min-w-[120px]">
+                <th class="px-4 py-3 align-top min-w-[120px]">
                   <div class="flex items-center justify-between gap-1">
                     <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Equipamento</span>
                     <button
@@ -339,7 +388,7 @@
                     </button>
                   </div>
                 </th>
-                <th class="px-3 py-2 align-top min-w-[110px]">
+                <th class="px-4 py-3 align-top min-w-[110px]">
                   <div class="flex items-center justify-between gap-1">
                     <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Tipo</span>
                     <button
@@ -356,7 +405,7 @@
                     </button>
                   </div>
                 </th>
-                <th class="px-3 py-2 align-top min-w-[110px]">
+                <th class="px-4 py-3 align-top min-w-[110px]">
                   <div class="flex items-center justify-between gap-1">
                     <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Localização</span>
                     <button
@@ -373,7 +422,7 @@
                     </button>
                   </div>
                 </th>
-                <th class="px-3 py-2 align-top min-w-[100px]">
+                <th class="px-4 py-3 align-top min-w-[100px]">
                   <div class="flex items-center justify-between gap-1">
                     <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Fabricante</span>
                     <button
@@ -390,7 +439,7 @@
                     </button>
                   </div>
                 </th>
-                <th class="px-3 py-2 align-top min-w-[100px]">
+                <th class="px-4 py-3 align-top min-w-[100px]">
                   <div class="flex items-center justify-between gap-1">
                     <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Modelo</span>
                     <button
@@ -407,7 +456,7 @@
                     </button>
                   </div>
                 </th>
-                <th class="px-3 py-2 align-top min-w-[120px]">
+                <th class="px-4 py-3 align-top min-w-[120px]">
                   <div class="flex items-center justify-between gap-1">
                     <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Status</span>
                     <button
@@ -424,93 +473,9 @@
                     </button>
                   </div>
                 </th>
-                <th class="px-3 py-2 align-top text-right min-w-[72px]">
+                <th class="px-4 py-3 align-top text-right min-w-[72px]">
                   <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Ações</span>
                 </th>
-              </tr>
-              <tr class="border-b border-outline-variant/15 bg-surface-container-low/30">
-                <th class="px-3 pb-2 pt-0 align-top font-normal">
-                  <input
-                    type="search"
-                    [(ngModel)]="filtroCodigo"
-                    (ngModelChange)="onFiltroAlterado()"
-                    placeholder="Filtrar…"
-                    class="w-full min-w-0 px-2 py-1.5 rounded-md border border-outline-variant/20 bg-surface-container-low text-xs"
-                  />
-                </th>
-                <th class="px-3 pb-2 pt-0 align-top font-normal">
-                  <input
-                    type="search"
-                    [(ngModel)]="filtroNome"
-                    (ngModelChange)="onFiltroAlterado()"
-                    placeholder="Filtrar…"
-                    class="w-full min-w-0 px-2 py-1.5 rounded-md border border-outline-variant/20 bg-surface-container-low text-xs"
-                  />
-                </th>
-                <th class="px-3 pb-2 pt-0 align-top font-normal">
-                  <div class="relative">
-                    <select
-                      [(ngModel)]="filtroTipo"
-                      (ngModelChange)="onFiltroAlterado()"
-                      class="w-full min-w-0 pl-2 pr-7 py-1.5 rounded-md border border-outline-variant/20 bg-surface-container-low text-xs appearance-none"
-                    >
-                      <option value="">Todos</option>
-                      @for (op of tipoOpcoes; track op.value) {
-                        <option [value]="op.value">{{ op.label }}</option>
-                      }
-                    </select>
-                    <span
-                      class="absolute right-1 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant pointer-events-none text-sm"
-                      >unfold_more</span
-                    >
-                  </div>
-                </th>
-                <th class="px-3 pb-2 pt-0 align-top font-normal">
-                  <input
-                    type="search"
-                    [(ngModel)]="filtroLocalizacao"
-                    (ngModelChange)="onFiltroAlterado()"
-                    placeholder="Filtrar…"
-                    class="w-full min-w-0 px-2 py-1.5 rounded-md border border-outline-variant/20 bg-surface-container-low text-xs"
-                  />
-                </th>
-                <th class="px-3 pb-2 pt-0 align-top font-normal">
-                  <input
-                    type="search"
-                    [(ngModel)]="filtroFabricante"
-                    (ngModelChange)="onFiltroAlterado()"
-                    placeholder="Filtrar…"
-                    class="w-full min-w-0 px-2 py-1.5 rounded-md border border-outline-variant/20 bg-surface-container-low text-xs"
-                  />
-                </th>
-                <th class="px-3 pb-2 pt-0 align-top font-normal">
-                  <input
-                    type="search"
-                    [(ngModel)]="filtroModelo"
-                    (ngModelChange)="onFiltroAlterado()"
-                    placeholder="Filtrar…"
-                    class="w-full min-w-0 px-2 py-1.5 rounded-md border border-outline-variant/20 bg-surface-container-low text-xs"
-                  />
-                </th>
-                <th class="px-3 pb-2 pt-0 align-top font-normal">
-                  <div class="relative">
-                    <select
-                      [(ngModel)]="filtroStatusExibicao"
-                      (ngModelChange)="onFiltroAlterado()"
-                      class="w-full min-w-0 pl-2 pr-7 py-1.5 rounded-md border border-outline-variant/20 bg-surface-container-low text-xs appearance-none"
-                    >
-                      <option value="todos">Todos</option>
-                      <option value="ativo">Ativo</option>
-                      <option value="emManutencao">Em manutenção</option>
-                      <option value="inativo">Inativo</option>
-                    </select>
-                    <span
-                      class="absolute right-1 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant pointer-events-none text-sm"
-                      >unfold_more</span
-                    >
-                  </div>
-                </th>
-                <th class="px-3 pb-2 pt-0 align-top text-right font-normal text-on-surface-variant text-xs">—</th>
               </tr>
             </thead>
             <tbody>
@@ -576,7 +541,13 @@
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="8" class="px-4 py-12 text-center text-on-surface-variant text-sm">Nenhum equipamento cadastrado.</td>
+                  <td colspan="8" class="px-4 py-12 text-center text-on-surface-variant text-sm">
+                    @if (equipamentos.length === 0) {
+                      Nenhum equipamento cadastrado.
+                    } @else {
+                      Nenhum equipamento encontrado com os filtros atuais.
+                    }
+                  </td>
                 </tr>
               }
             </tbody>

@@ -1,3 +1,23 @@
+@if (showModalEdicao && osEmEdicao) {
+  <app-modal-container titulo="Editar Ordem de Serviço" (fechar)="onModalEdicaoFechar()">
+    <app-os-form
+      [osParaEditar]="osEmEdicao"
+      (salvo)="onOsAtualizada()"
+      (cancelado)="onModalEdicaoFechar()"
+    />
+  </app-modal-container>
+}
+
+@if (showModalIniciar && osParaIniciar) {
+  <app-modal-container titulo="Iniciar Atendimento" (fechar)="onModalIniciarFechar()">
+    <app-os-form
+      [osParaIniciar]="osParaIniciar"
+      (salvo)="onOsIniciada()"
+      (cancelado)="onModalIniciarFechar()"
+    />
+  </app-modal-container>
+}
+
 @if (carregando) {
   <div class="flex items-center justify-center py-16 text-on-surface-variant gap-2">
     <span class="material-symbols-outlined animate-spin">hourglass_bottom</span>
@@ -13,277 +33,355 @@
     Voltar
   </button>
 } @else if (os) {
-  <!-- Header Section -->
-  <div class="mb-8 flex flex-wrap items-end justify-between gap-6">
-    <div>
-      <div class="flex items-center gap-3 mb-2">
-        <span class="bg-primary/12 text-primary px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">{{ tipoManutencaoLabels[os.tipoManutencao] }}</span>
-        <span class="bg-error/12 text-error px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">{{ prioridadeLabels[os.prioridadeOrdemServico] }}</span>
-      </div>
-      <h2 class="text-3xl font-black tracking-tight text-on-background">{{ os.numeroOrdemServico }}</h2>
-      <p class="text-on-surface-variant flex items-center gap-2 mt-1">
-        <span class="material-symbols-outlined text-sm">calendar_today</span>
-        Criada em {{ formatarData(os.dataCriacao) }}
-      </p>
-    </div>
-    <div class="flex items-center gap-3">
-      <div class="flex flex-col items-end mr-4">
-        <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Status Atual</span>
-        <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full animate-pulse" [class]="statusColorMap[os.statusOrdemServico]"></span>
-          <span class="font-bold text-on-background">{{ statusLabels[os.statusOrdemServico] }}</span>
+  @if (dialogVisivel) {
+    <app-dialog
+      [titulo]="dialogTitulo"
+      [mensagem]="dialogMensagem"
+      [tipo]="dialogTipo"
+      [botoes]="dialogBotoes"
+      (acao)="onDialogAcao($event)"
+    />
+  }
+
+  <div class="h-full min-h-0 flex flex-col gap-5 lg:gap-6 overflow-hidden px-3 py-3 lg:px-6 lg:py-4 max-w-[1600px] mx-auto w-full box-border">
+    <div class="shrink-0 w-full flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+      <div class="flex flex-wrap items-center gap-3 lg:gap-4 min-w-0">
+        <button
+          type="button"
+          (click)="onVoltar()"
+          class="bg-surface-container px-3 py-2 text-on-surface rounded-lg font-semibold text-sm shadow-sm hover:bg-surface-container-high transition flex items-center gap-2 shrink-0"
+        >
+          <span class="material-symbols-outlined text-sm">arrow_back</span>
+          Voltar
+        </button>
+        <div
+          class="w-fit max-w-full flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-x-4 gap-y-2 rounded-lg border border-outline-variant/25 bg-surface-container-low px-3 py-2.5 shadow-sm"
+        >
+          <div class="shrink-0">
+            <span class="text-[10px] font-bold text-on-background uppercase tracking-widest block leading-tight">Ordem de Serviço</span>
+            <span class="text-lg sm:text-xl font-black tracking-tight text-on-background tabular-nums leading-tight">{{ os.numeroOrdemServico }}</span>
+          </div>
+          <div class="hidden sm:block w-px h-9 shrink-0 bg-outline-variant/35 self-end mb-0.5"></div>
+          <div class="flex flex-col gap-0.5 min-w-0">
+            <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest leading-tight">Data de criação</span>
+            <span class="inline-flex items-center gap-1 text-on-background text-sm font-medium leading-tight">
+              <span class="material-symbols-outlined text-on-surface-variant text-[18px] shrink-0">calendar_today</span>
+              {{ formatarData(dataAberturaParaExibicao(os)) }}
+            </span>
+          </div>
         </div>
       </div>
-      <button
-        (click)="onVoltar()"
-        class="bg-surface-container px-6 py-2.5 text-on-surface rounded-lg font-semibold shadow-sm hover:bg-surface-container-high transition flex items-center gap-2"
+      <div
+        class="inline-flex items-center gap-2 rounded-lg bg-surface-container-low border border-outline-variant/25 px-3 py-2 shadow-sm shrink-0 sm:ml-4 lg:ml-8 max-sm:ml-auto max-sm:w-fit"
       >
-        <span class="material-symbols-outlined text-sm">arrow_back</span>
-        Voltar
-      </button>
-    </div>
-  </div>
-
-  <!-- Bento Grid Layout -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-    <!-- Left Column: Primary Details -->
-    <div class="lg:col-span-2 space-y-6">
-
-      <!-- Equipment & Request Card -->
-      <div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/10">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <!-- Equipment -->
-          <div>
-            <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-4">Equipamento</h3>
-            <div class="flex items-start gap-4">
-              <div class="w-12 h-12 bg-surface-container-high rounded-lg flex items-center justify-center">
-                <span class="material-symbols-outlined text-primary text-2xl">precision_manufacturing</span>
-              </div>
-              <div>
-                <h4 class="font-bold text-lg text-on-background">{{ equipamento?.nome || os.idEquipamento }}</h4>
-                <p class="text-on-surface-variant text-sm">
-                  @if (equipamento?.codigo) { Cód: {{ equipamento!.codigo }} }
-                  @if (equipamento?.localizacao) { | {{ equipamento!.localizacao }} }
-                </p>
-              </div>
-            </div>
-          </div>
-          <!-- Requester -->
-          <div>
-            <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-4">Solicitante</h3>
-            <div class="flex items-center gap-4">
-              <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <span class="material-symbols-outlined text-primary">person</span>
-              </div>
-              <div>
-                <h4 class="font-bold text-on-background">{{ nomeSolicitanteExibicao }}</h4>
-                <p class="text-on-surface-variant text-sm">{{ formatarData(os.dataCriacao) }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Description -->
-        <div class="mt-8 pt-8 border-t border-outline-variant/10">
-          <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-3">Descrição da Falha</h3>
-          <p class="text-on-background leading-relaxed whitespace-pre-wrap">{{ os.descricaoFalha }}</p>
-        </div>
+        <span
+          class="w-2.5 h-2.5 rounded-full shrink-0"
+          [ngClass]="statusColorMap[os.statusOrdemServico]"
+          [class.animate-pulse]="os.statusOrdemServico === 'EM_ANDAMENTO'"
+        ></span>
+        <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Status</span>
+        <span class="text-sm font-semibold text-on-background">{{ statusLabels[os.statusOrdemServico] }}</span>
       </div>
+    </div>
 
-      <!-- Execution & Timeline Card -->
-      <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden">
-        <div class="p-6 border-b border-outline-variant/10 flex justify-between items-center">
-          <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Execução e Histórico</h3>
-          <span class="text-xs text-on-surface-variant">{{ timelineEvents.length }} Eventos registrados</span>
-        </div>
-        <div class="p-8">
-          <div class="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:h-full before:w-0.5 before:bg-surface-container-high">
-            @for (event of timelineEvents; track $index) {
-              <div class="relative flex items-start gap-6">
-                <div
-                  class="absolute left-0 w-10 h-10 rounded-full flex items-center justify-center z-10 border-4 border-surface-container-lowest {{ event.iconBg }}"
-                >
-                  <span
-                    class="material-symbols-outlined text-sm"
-                    [class]="event.iconColor"
-                    [style.font-variation-settings]="getIconSettings(event.filled)">
-                    {{ event.icon }}
-                  </span>
-                </div>
-                <div class="ml-10">
-                  <p class="text-sm font-bold text-on-background">{{ event.title }}</p>
-                  <p class="text-xs text-on-surface-variant">{{ event.timestamp }} por {{ event.author }}</p>
-                  @if (event.note) {
-                    <div class="mt-2 bg-surface-container-low p-3 rounded-lg text-xs italic text-on-surface-variant">
-                      "{{ event.note }}"
-                    </div>
+    <div class="shrink-0 w-full flex flex-wrap gap-2">
+      @if (os.statusOrdemServico === 'ABERTO') {
+        <button
+          type="button"
+          (click)="abrirModalIniciar()"
+          title="Iniciar o atendimento"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-outline-variant/30 bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors"
+        >
+          <span class="material-symbols-outlined text-[18px] text-success">play_arrow</span>
+          Iniciar
+        </button>
+      }
+      @if (os.statusOrdemServico !== 'CONCLUIDO') {
+        <button
+          type="button"
+          (click)="abrirModalEditar()"
+          title="Editar ordem"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-outline-variant/30 bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors"
+        >
+          <span class="material-symbols-outlined text-[18px] text-primary">edit</span>
+          Editar
+        </button>
+      }
+      @if (os.statusOrdemServico === 'EM_ANDAMENTO') {
+        @if (podeAcaoComoAdminOuTecnicoAtribuido) {
+          <button
+            type="button"
+            (click)="onAguardarPeca()"
+            title="Marcar como aguardando peça"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-outline-variant/30 bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors"
+          >
+            <span class="material-symbols-outlined text-[18px] text-info">schedule</span>
+            Aguardar Peça
+          </button>
+        } @else {
+          <button
+            type="button"
+            disabled
+            title="Somente admin ou técnico atribuído podem aguardar peça"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-outline-variant/30 bg-surface-container-low text-on-surface-variant/40 cursor-not-allowed opacity-50"
+          >
+            <span class="material-symbols-outlined text-[18px]">schedule</span>
+            Aguardar Peça
+          </button>
+        }
+      }
+      @if (os.statusOrdemServico === 'AGUARDANDO_PECA') {
+        @if (podeAcaoComoAdminOuTecnicoAtribuido) {
+          <button
+            type="button"
+            (click)="onRetomarAtendimento()"
+            title="Retomar o atendimento"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-outline-variant/30 bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors"
+          >
+            <span class="material-symbols-outlined text-[18px] text-success">play_circle</span>
+            Retomar
+          </button>
+        } @else {
+          <button
+            type="button"
+            disabled
+            title="Somente admin ou técnico atribuído podem retomar o atendimento"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-outline-variant/30 bg-surface-container-low text-on-surface-variant/40 cursor-not-allowed opacity-50"
+          >
+            <span class="material-symbols-outlined text-[18px]">play_circle</span>
+            Retomar
+          </button>
+        }
+      }
+    </div>
+
+    <div class="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-5 pt-1">
+      <div class="xl:col-span-8 flex flex-col min-h-0 gap-4 overflow-hidden">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 shrink-0">
+          <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-4 min-w-0 flex flex-col">
+            <h3 class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1 shrink-0">Tipo de manutenção</h3>
+            <p
+              class="text-sm font-semibold leading-snug"
+              [ngClass]="classeCorValorTipoManutencao(os.tipoManutencao)"
+            >
+              {{ tipoManutencaoLabels[os.tipoManutencao] }}
+            </p>
+          </div>
+          <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-4 min-w-0 flex flex-col">
+            <h3 class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1 shrink-0">Prioridade</h3>
+            <p
+              class="text-sm font-semibold leading-snug"
+              [ngClass]="classeCorValorPrioridade(os.prioridadeOrdemServico)"
+            >
+              {{ prioridadeLabels[os.prioridadeOrdemServico] }}
+            </p>
+          </div>
+          <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-4 min-w-0 flex flex-col sm:col-span-2 xl:col-span-1">
+            <h3 class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1 shrink-0 flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] opacity-90">precision_manufacturing</span>
+              Equipamento
+            </h3>
+            <p class="text-sm text-on-background leading-snug font-medium">{{ equipamento?.nome || os.idEquipamento }}</p>
+            @if (equipamento?.codigo || equipamento?.localizacao) {
+              <p class="text-on-surface-variant text-xs mt-1.5 leading-snug">
+                @if (equipamento?.codigo) {
+                  <span>Cód. {{ equipamento!.codigo }}</span>
+                }
+                @if (equipamento?.localizacao) {
+                  @if (equipamento?.codigo) {
+                    <span class="text-outline-variant mx-1">·</span>
                   }
+                  <span>{{ equipamento!.localizacao }}</span>
+                }
+              </p>
+            }
+          </div>
+          <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-4 min-w-0 flex flex-col sm:col-span-2 xl:col-span-1">
+            <h3 class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1 shrink-0 flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] opacity-90">person</span>
+              Solicitante
+            </h3>
+            <p class="text-sm text-on-background leading-snug break-words">{{ nomeSolicitanteExibicao }}</p>
+          </div>
+        </div>
+
+        <div class="shrink-0 bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-4 flex flex-col min-h-0 max-h-[min(200px,28vh)]">
+          <h3 class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1 shrink-0">Descrição da Falha</h3>
+          <div class="overflow-y-auto text-sm text-on-background leading-snug whitespace-pre-wrap flex-1 min-h-0 pr-1">
+            {{ os.descricaoFalha }}
+          </div>
+        </div>
+
+        <div class="flex-1 min-h-0 flex flex-col bg-surface-container-lowest rounded-lg border border-outline-variant/10 overflow-hidden">
+          <div class="shrink-0 px-4 py-3 border-b border-outline-variant/10 flex justify-between items-center gap-2">
+            <h3 class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Execução e Histórico</h3>
+            <span class="text-[10px] text-on-surface-variant whitespace-nowrap">{{ timelineEvents.length }} eventos</span>
+          </div>
+          <div class="flex-1 min-h-0 overflow-y-auto p-4">
+            <div class="relative space-y-3 before:absolute before:inset-0 before:ml-4 before:h-[calc(100%-0.5rem)] before:w-px before:bg-outline-variant/25">
+              @for (event of timelineEvents; track $index) {
+                <div class="relative flex items-start gap-3">
+                  <div
+                    class="absolute left-0 w-8 h-8 rounded-full flex items-center justify-center z-10 border-2 border-surface-container-lowest shrink-0 {{ event.iconBg }}"
+                  >
+                    <span
+                      class="material-symbols-outlined text-[14px]"
+                      [class]="event.iconColor"
+                      [style.font-variation-settings]="getIconSettings(event.filled)"
+                    >{{ event.icon }}</span>
+                  </div>
+                  <div class="ml-10 pt-0.5 min-w-0">
+                    <p class="text-xs font-bold text-on-background leading-tight">{{ event.title }}</p>
+                    <p class="text-[10px] text-on-surface-variant mt-0.5">{{ event.timestamp }} · {{ event.author }}</p>
+                    @if (event.note) {
+                      <div class="mt-1 bg-surface-container-low px-2 py-1 rounded text-[10px] italic text-on-surface-variant line-clamp-2">
+                        "{{ event.note }}"
+                      </div>
+                    }
+                  </div>
                 </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        @if (os.descricaoServico) {
+          <div class="shrink-0 bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-4 max-h-[min(160px,22vh)] flex flex-col min-h-0">
+            <h3 class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1 shrink-0">Descrição do Serviço</h3>
+            <div class="overflow-y-auto text-sm text-on-background leading-snug whitespace-pre-wrap flex-1 min-h-0 pr-1">
+              {{ os.descricaoServico }}
+            </div>
+            @if (os.pecasUtilizadas || (os.horasTrabalhadas !== null && os.horasTrabalhadas !== undefined)) {
+              <div class="mt-2 pt-2 border-t border-outline-variant/10 grid grid-cols-2 gap-2 text-xs shrink-0">
+                @if (os.pecasUtilizadas) {
+                  <div>
+                    <span class="text-[10px] font-bold text-on-surface-variant uppercase">Peças</span>
+                    <p class="text-on-background">{{ os.pecasUtilizadas }}</p>
+                  </div>
+                }
+                @if (os.horasTrabalhadas !== null && os.horasTrabalhadas !== undefined) {
+                  <div>
+                    <span class="text-[10px] font-bold text-on-surface-variant uppercase">Horas</span>
+                    <p class="text-on-background">{{ os.horasTrabalhadas }}h</p>
+                  </div>
+                }
               </div>
             }
           </div>
-        </div>
+        }
       </div>
 
-      <!-- Descrição do Serviço (apenas se encerrada) -->
-      @if (os.descricaoServico) {
-        <div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/10">
-          <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-4">Descrição do Serviço</h3>
-          <p class="text-on-background leading-relaxed whitespace-pre-wrap">{{ os.descricaoServico }}</p>
-          @if (os.pecasUtilizadas || os.horasTrabalhadas !== null && os.horasTrabalhadas !== undefined) {
-            <div class="mt-6 pt-6 border-t border-outline-variant/10 grid grid-cols-2 gap-4">
-              @if (os.pecasUtilizadas) {
-                <div>
-                  <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1">Peças Utilizadas</label>
-                  <p class="text-on-background">{{ os.pecasUtilizadas }}</p>
-                </div>
-              }
-              @if (os.horasTrabalhadas !== null && os.horasTrabalhadas !== undefined) {
-                <div>
-                  <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1">Horas Trabalhadas</label>
-                  <p class="text-on-background">{{ os.horasTrabalhadas }}h</p>
-                </div>
-              }
+      <div class="xl:col-span-4 flex flex-col min-h-0 gap-4 overflow-y-auto xl:max-h-full">
+        <div class="shrink-0 bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-4">
+          <h3 class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-3">Equipe</h3>
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-secondary text-lg">engineering</span>
             </div>
+            <p class="font-semibold text-on-background text-sm">{{ nomeTecnicoExibicao }}</p>
+          </div>
+          @if (isEditTechnicianAllowed) {
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Alterar técnico</label>
+            <div class="relative mb-2">
+              <select
+                class="w-full pl-3 pr-9 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm focus:ring-2 focus:ring-primary/20 appearance-none"
+                [(ngModel)]="selectedTecnico"
+              >
+                @if (!os.idTecnico?.trim()) {
+                  <option value="" disabled>Selecione um técnico...</option>
+                }
+                @for (tec of tecnicos; track tec.idUsuario) {
+                  <option [value]="tec.idUsuario">{{ tec.nomeUsuario }}</option>
+                }
+              </select>
+              <span class="absolute right-2 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 pointer-events-none text-lg">unfold_more</span>
+            </div>
+            <button
+              type="button"
+              class="w-full py-2 bg-surface-container-high text-on-surface font-semibold rounded-lg hover:bg-surface-container-highest transition text-xs flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              (click)="onAtualizarTecnico()"
+              [disabled]="atualizandoTecnico || !podeAtualizarTecnico"
+            >
+              @if (atualizandoTecnico) {
+                <span class="material-symbols-outlined animate-spin text-base">hourglass_bottom</span>
+                Atualizando...
+              } @else {
+                <span class="material-symbols-outlined text-base">sync</span>
+                Atualizar técnico responsável
+              }
+            </button>
           }
         </div>
-      }
-    </div>
 
-    <!-- Right Column -->
-    <div class="space-y-6">
-
-      <!-- Técnico Responsável (leitura) -->
-      <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
-        <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-4">Técnico Responsável</h3>
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center">
-            <span class="material-symbols-outlined text-secondary">engineering</span>
-          </div>
-          <p class="font-semibold text-on-background">{{ nomeTecnicoExibicao }}</p>
-        </div>
-      </div>
-
-      <!-- Controle de Atribuição (ADMIN / SOLICITANTE) -->
-      @if (isEditTechnicianAllowed) {
-        <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
-          <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-6">Controle de Atribuição</h3>
-          <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-2">Técnico Responsável</label>
-          <div class="relative mb-6">
-            <select
-              class="w-full pl-4 pr-10 py-3 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm font-medium focus:ring-2 focus:ring-primary/20 appearance-none"
-              [(ngModel)]="selectedTecnico"
-            >
-              <option [value]="null">Sem atribuição</option>
-              @for (tec of tecnicos; track tec.idUsuario) {
-                <option [value]="tec.idUsuario">{{ tec.nomeUsuario }}</option>
+        @if (isClosureAllowed) {
+          <div class="shrink-0 bg-surface-container-lowest rounded-xl border border-secondary/30 p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Fechamento</h3>
+              <span class="material-symbols-outlined text-secondary text-lg">lock_open</span>
+            </div>
+            <div class="space-y-2">
+              <div>
+                <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-0.5">Serviço realizado</label>
+                <textarea
+                  [(ngModel)]="fechamentoForm.descricaoServico"
+                  rows="2"
+                  placeholder="Descrição..."
+                  class="w-full bg-surface-container-low rounded border border-outline-variant/20 px-2 py-1.5 text-xs text-on-surface placeholder:text-outline-variant/60 resize-none focus:ring-2 focus:ring-primary/20"
+                ></textarea>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-0.5">Peças</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="fechamentoForm.pecasUtilizadas"
+                    placeholder="Peças..."
+                    class="w-full bg-surface-container-low rounded border border-outline-variant/20 px-2 py-1.5 text-xs"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-0.5">Horas</label>
+                  <input
+                    type="number"
+                    min="0"
+                    [(ngModel)]="fechamentoForm.horasTrabalhadas"
+                    placeholder="0"
+                    class="w-full bg-surface-container-low rounded border border-outline-variant/20 px-2 py-1.5 text-xs"
+                  />
+                </div>
+              </div>
+              @if (fechamentoErro) {
+                <p class="text-[10px] text-error">{{ fechamentoErro }}</p>
               }
-            </select>
-            <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 pointer-events-none">unfold_more</span>
-          </div>
-          <button
-            class="w-full py-3 bg-surface-container-high text-on-surface font-bold rounded-lg hover:bg-surface-container-highest transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-            (click)="onAtualizarTecnico()"
-            [disabled]="atualizandoTecnico"
-          >
-            @if (atualizandoTecnico) {
-              <span class="material-symbols-outlined animate-spin text-lg">hourglass_bottom</span>
-              Atualizando...
-            } @else {
-              <span class="material-symbols-outlined text-lg">sync</span>
-              Atualizar Técnico Responsável
-            }
-          </button>
-        </div>
-      }
-
-      <!-- Fechamento de OS -->
-      @if (isClosureAllowed) {
-        <div class="bg-surface-container-lowest p-6 rounded-xl border border-secondary/30">
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Fechamento de OS</h3>
-            <span class="material-symbols-outlined text-secondary">lock_open</span>
-          </div>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Serviço Realizado</label>
-              <textarea
-                [(ngModel)]="fechamentoForm.descricaoServico"
-                rows="3"
-                placeholder="Descreva o serviço realizado..."
-                class="w-full bg-surface-container-low rounded border border-outline-variant/20 px-3 py-2 text-sm text-on-surface placeholder:text-outline-variant/60 resize-none focus:ring-2 focus:ring-primary/20"
-              ></textarea>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Peças Utilizadas</label>
-                <input
-                  type="text"
-                  [(ngModel)]="fechamentoForm.pecasUtilizadas"
-                  placeholder="Ex: Rolamento..."
-                  class="w-full bg-surface-container-low rounded border border-outline-variant/20 px-3 py-2 text-sm text-on-surface placeholder:text-outline-variant/60 focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-              <div>
-                <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Horas Trabalhadas</label>
-                <input
-                  type="number"
-                  min="0"
-                  [(ngModel)]="fechamentoForm.horasTrabalhadas"
-                  placeholder="0"
-                  class="w-full bg-surface-container-low rounded border border-outline-variant/20 px-3 py-2 text-sm text-on-surface placeholder:text-outline-variant/60 focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-            </div>
-            @if (fechamentoErro) {
-              <p class="text-xs text-error">{{ fechamentoErro }}</p>
-            }
-            <div class="pt-2">
               <button
-                class="w-full py-3 bg-secondary text-on-secondary font-bold rounded-lg hover:bg-secondary/90 transition text-sm flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                type="button"
+                class="w-full py-2 bg-secondary text-on-secondary font-bold rounded-lg hover:bg-secondary/90 transition text-xs flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 (click)="onEncerrar()"
                 [disabled]="encerrando"
               >
                 @if (encerrando) {
-                  <span class="material-symbols-outlined animate-spin text-lg">hourglass_bottom</span>
+                  <span class="material-symbols-outlined animate-spin text-base">hourglass_bottom</span>
                   Encerrando...
                 } @else {
-                  <span class="material-symbols-outlined text-lg">check_circle</span>
-                  Encerrar Ordem de Serviço
+                  <span class="material-symbols-outlined text-base">check_circle</span>
+                  Encerrar ordem de serviço
                 }
               </button>
             </div>
           </div>
-        </div>
-      } @else {
-        <div class="bg-surface-container-low p-6 rounded-xl border border-dashed border-outline-variant opacity-60 grayscale cursor-not-allowed">
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Fechamento de OS</h3>
-            <span class="material-symbols-outlined text-on-surface-variant">lock</span>
+        } @else {
+          <div class="shrink-0 bg-surface-container-low rounded-xl border border-dashed border-outline-variant opacity-60 grayscale p-4 cursor-not-allowed">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Fechamento</h3>
+              <span class="material-symbols-outlined text-on-surface-variant text-lg">lock</span>
+            </div>
+            <p class="text-[10px] text-on-surface-variant">Disponível quando a OS estiver em andamento.</p>
+            <button type="button" class="w-full mt-2 py-2 bg-slate-300 text-slate-500 font-bold rounded-lg cursor-not-allowed text-xs" disabled>
+              Encerrar ordem de serviço
+            </button>
           </div>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Serviço Realizado</label>
-              <div class="w-full h-20 bg-surface-container-lowest/50 rounded border border-outline-variant/10"></div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Peças Utilizadas</label>
-                <div class="w-full h-10 bg-surface-container-lowest/50 rounded border border-outline-variant/10"></div>
-              </div>
-              <div>
-                <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Horas Trabalhadas</label>
-                <div class="w-full h-10 bg-surface-container-lowest/50 rounded border border-outline-variant/10"></div>
-              </div>
-            </div>
-            <div class="pt-4">
-              <button class="w-full py-3 bg-slate-300 text-slate-500 font-bold rounded-lg cursor-not-allowed text-sm" disabled>
-                Encerrar Ordem de Serviço
-              </button>
-            </div>
-          </div>
-        </div>
-      }
+        }
+      </div>
     </div>
   </div>
 }

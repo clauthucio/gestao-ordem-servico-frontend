@@ -53,12 +53,9 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
   /** Lista após filtros — mesma ideia da tela de usuários. */
   equipamentosFiltradosList: EquipamentoListItem[] = [];
 
-  filtroCodigo = '';
-  filtroNome = '';
+  /** Pesquisa global: código, nome, localização, fabricante, modelo. */
+  busca = '';
   filtroTipo: TipoEquipamento | '' = '';
-  filtroLocalizacao = '';
-  filtroFabricante = '';
-  filtroModelo = '';
   filtroStatusExibicao: 'todos' | StatusEquipamentoExibicao = 'todos';
 
   ordenacaoColuna: ColunaOrdenacaoEquipamento | null = null;
@@ -161,6 +158,15 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
     this.cdr.markForCheck();
   }
 
+  limparFiltros(): void {
+    this.busca = '';
+    this.filtroTipo = '';
+    this.filtroStatusExibicao = 'todos';
+    this.paginaAtual = 1;
+    this.recomputarListaFiltrada();
+    this.cdr.markForCheck();
+  }
+
   onToggleOrdenacao(col: ColunaOrdenacaoEquipamento, event: MouseEvent): void {
     event.stopPropagation();
     if (this.ordenacaoColuna === col) {
@@ -184,28 +190,25 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
 
   private recomputarListaFiltrada(): void {
     let lista = [...this.equipamentos];
-    const cod = this.filtroCodigo.trim().toLowerCase();
-    if (cod) {
-      lista = lista.filter((e) => (e.codigo ?? '').toLowerCase().includes(cod));
-    }
-    const nome = this.filtroNome.trim().toLowerCase();
-    if (nome) {
-      lista = lista.filter((e) => (e.nome ?? '').toLowerCase().includes(nome));
+    const termo = this.busca.trim().toLowerCase();
+    if (termo) {
+      lista = lista.filter((e) => {
+        const cod = (e.codigo ?? '').toLowerCase();
+        const nome = (e.nome ?? '').toLowerCase();
+        const loc = (e.localizacao ?? '').toLowerCase();
+        const fab = (e.fabricante ?? '').toLowerCase();
+        const mod = (e.modelo ?? '').toLowerCase();
+        return (
+          cod.includes(termo) ||
+          nome.includes(termo) ||
+          loc.includes(termo) ||
+          fab.includes(termo) ||
+          mod.includes(termo)
+        );
+      });
     }
     if (this.filtroTipo) {
       lista = lista.filter((e) => e.tipo === this.filtroTipo);
-    }
-    const loc = this.filtroLocalizacao.trim().toLowerCase();
-    if (loc) {
-      lista = lista.filter((e) => (e.localizacao ?? '').toLowerCase().includes(loc));
-    }
-    const fab = this.filtroFabricante.trim().toLowerCase();
-    if (fab) {
-      lista = lista.filter((e) => (e.fabricante ?? '').toLowerCase().includes(fab));
-    }
-    const mod = this.filtroModelo.trim().toLowerCase();
-    if (mod) {
-      lista = lista.filter((e) => (e.modelo ?? '').toLowerCase().includes(mod));
     }
     if (this.filtroStatusExibicao !== 'todos') {
       lista = lista.filter((e) => this.statusExibicao(e) === this.filtroStatusExibicao);

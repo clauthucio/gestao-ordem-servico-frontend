@@ -138,7 +138,11 @@ export class ListaUsuarios implements OnInit {
     let lista = [...this.usuarios];
     const termo = this.filtroNome.trim().toLowerCase();
     if (termo) {
-      lista = lista.filter((u) => (u.nomeUsuario ?? '').toLowerCase().includes(termo));
+      lista = lista.filter((u) => {
+        const nome = (u.nomeUsuario ?? '').toLowerCase();
+        const email = (u.emailUsuario ?? '').toLowerCase();
+        return nome.includes(termo) || email.includes(termo);
+      });
     }
     if (this.filtroPerfil) {
       lista = lista.filter((u) => u.perfilUsuario === this.filtroPerfil);
@@ -157,6 +161,15 @@ export class ListaUsuarios implements OnInit {
   }
 
   onFiltroAlterado(): void {
+    this.paginaAtual = 1;
+    this.recomputarListaFiltrada();
+    this.cdr.markForCheck();
+  }
+
+  limparFiltros(): void {
+    this.filtroNome = '';
+    this.filtroPerfil = '';
+    this.filtroStatus = 'todos';
     this.paginaAtual = 1;
     this.recomputarListaFiltrada();
     this.cdr.markForCheck();

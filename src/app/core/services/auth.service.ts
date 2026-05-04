@@ -162,6 +162,12 @@ export class AuthService {
     return this.tokenService.hasToken() && this.getCurrentUser() !== null;
   }
 
+  /** Limpa tokens e estado do usuário sem chamar a API (ex.: interceptor após falha de refresh). */
+  clearSessionLocal(): void {
+    this.tokenService.clear();
+    this.currentUserSubject.next(null);
+  }
+
   //OBTER TOKEN
   getToken(): string | null {
     return this.tokenService.getAccessToken();

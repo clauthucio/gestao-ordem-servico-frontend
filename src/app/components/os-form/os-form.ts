@@ -19,7 +19,11 @@ import { OrdemStatus } from '../../core/enums/status.enum';
 import { UserRole } from '../../core/enums/roles.enum';
 import { Equipamento } from '../../core/models/equipamento.model';
 import { Usuario } from '../../core/models/usuario.model';
-import { OrdemServico } from '../../core/models/ordem-servico.model';
+import {
+  AtualizarOrdemServicoPayload,
+  CriarOrdemServicoPayload,
+  OrdemServico,
+} from '../../core/models/ordem-servico.model';
 import { DialogComponent, DialogBotao } from '../dialog/dialog.component';
 
 @Component({
@@ -45,6 +49,27 @@ export class OsFormComponent implements OnInit {
 
   get modoEncerrar(): boolean {
     return this.osParaEncerrar !== null;
+  }
+
+  /** Nova OS (modal sem `osPara*`). */
+  get modoCriacao(): boolean {
+    return (
+      this.osParaEditar === null &&
+      this.osParaIniciar === null &&
+      this.osParaEncerrar === null
+    );
+  }
+
+  /** Técnico obrigatório: criação ou edição de OS em status ABERTO. */
+  get requerTecnico(): boolean {
+    if (this.modoCriacao) return true;
+    if (
+      this.modoEdicao &&
+      this.osParaEditar?.statusOrdemServico === OrdemStatus.ABERTO
+    ) {
+      return true;
+    }
+    return false;
   }
 
   private readonly fb = inject(FormBuilder);
@@ -93,6 +118,8 @@ export class OsFormComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.aplicarValidadorTecnico();
+
     forkJoin({
       equipamentos: this.equipamentoService.listar(),
       usuarios: this.usuarioService.listar(),
@@ -146,6 +173,8 @@ export class OsFormComponent implements OnInit {
           this.form.get('horasTrabalhadas')?.clearAsyncValidators();
           // descricaoServico, pecasUtilizadas, horasTrabalhadas ficam editáveis (com requisitos)
         }
+
+        this.aplicarValidadorTecnico();
 
         this.cdr.markForCheck();
       },
@@ -228,9 +257,40 @@ export class OsFormComponent implements OnInit {
     return !!(ctrl && ctrl.invalid && ctrl.touched);
   }
 
+  private aplicarValidadorTecnico(): void {
+    const ctrl = this.form.get('idTecnico');
+    if (!ctrl) return;
+    if (this.requerTecnico) {
+      ctrl.setValidators([Validators.required]);
+    } else {
+      ctrl.clearValidators();
+    }
+    ctrl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private mostrarDialogValidacaoFormulario(): void {
+    const idTecnicoCtrl = this.form.get('idTecnico');
+    if (this.requerTecnico && idTecnicoCtrl?.invalid) {
+      this.dialogTitulo = 'Campo obrigatório';
+      this.dialogMensagem =
+        'Técnico responsável é obrigatório.';
+    } else {
+      this.dialogTitulo = 'Campos obrigatórios';
+      this.dialogMensagem =
+        'Preencha todos os campos obrigatórios marcados com * antes de salvar.';
+    }
+    this.dialogTipo = 'erro';
+    this.dialogBotoes = [{ label: 'Entendi', acao: 'ok', estilo: 'primario' }];
+    this.dialogVisivel = true;
+    this.cdr.markForCheck();
+  }
+
   onSalvar(): void {
     this.form.markAllAsTouched();
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.mostrarDialogValidacaoFormulario();
+      return;
+    }
 
     const usuario = this.authService.getCurrentUser();
     if (!usuario) {
@@ -254,16 +314,17 @@ export class OsFormComponent implements OnInit {
   }
 
   private salvarCriacao(raw: ReturnType<typeof this.form.getRawValue>, usuario: NonNullable<ReturnType<typeof this.authService.getCurrentUser>>): void {
-    const payload: any = {
+    const payload: CriarOrdemServicoPayload = {
       idEquipamento: raw.idEquipamento!,
       idSolicitante: usuario.idUsuario,
-      tipoManutencao: raw.tipoManutencao as any,
-      prioridadeOrdemServico: raw.prioridadeOrdemServico as any,
+      tipoManutencao: raw.tipoManutencao as CriarOrdemServicoPayload['tipoManutencao'],
+      prioridadeOrdemServico:
+        raw.prioridadeOrdemServico as CriarOrdemServicoPayload['prioridadeOrdemServico'],
       statusOrdemServico: OrdemStatus.ABERTO,
       descricaoFalha: raw.descricaoFalha!,
+      idTecnico: raw.idTecnico!.trim(),
     };
 
-    if (raw.idTecnico?.trim()) payload.idTecnico = raw.idTecnico;
     if (raw.descricaoServico?.trim()) payload.descricaoServico = raw.descricaoServico;
     if (raw.pecasUtilizadas?.trim()) payload.pecasUtilizadas = raw.pecasUtilizadas;
     if (raw.horasTrabalhadas) payload.horasTrabalhadas = Number(raw.horasTrabalhadas);
@@ -286,8 +347,15 @@ export class OsFormComponent implements OnInit {
       descricaoFalha: raw.descricaoFalha!,
     };
 
-    if (raw.idTecnico?.trim()) payload.idTecnico = raw.idTecnico;
-    else payload.idTecnico = null;
+    const osAberta =
+      this.osParaEditar!.statusOrdemServico === OrdemStatus.ABERTO;
+    if (osAberta) {
+      payload.idTecnico = raw.idTecnico!.trim();
+    } else if (raw.idTecnico?.trim()) {
+      payload.idTecnico = raw.idTecnico;
+    } else {
+      payload.idTecnico = null;
+    }
     if (raw.descricaoServico?.trim()) payload.descricaoServico = raw.descricaoServico;
     if (raw.pecasUtilizadas?.trim()) payload.pecasUtilizadas = raw.pecasUtilizadas;
     if (raw.horasTrabalhadas) payload.horasTrabalhadas = Number(raw.horasTrabalhadas);
@@ -327,9 +395,10 @@ export class OsFormComponent implements OnInit {
 
     // Armazenar callback para executar após confirmação
     const callback = () => {
-      const payload: any = {
+      const payload: AtualizarOrdemServicoPayload = {
         statusOrdemServico: OrdemStatus.EM_ANDAMENTO,
-        conclusaoEm: raw.conclusaoEm,
+        conclusaoEm: raw.conclusaoEm!.trim(),
+        inicioEm: new Date().toISOString(),
       };
       this.ordemService.atualizar(this.osParaIniciar!.idOrdemServico, payload).subscribe({
         next: () => {

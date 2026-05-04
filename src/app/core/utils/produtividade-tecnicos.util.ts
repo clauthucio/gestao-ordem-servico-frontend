@@ -83,14 +83,38 @@ const STATUS_CONCLUIDO_EQUIV = new Set([
   'CONCLUIDA',
 ]);
 
-export function statusOrdemEhConcluida(raw: unknown): boolean {
-  if (raw === OrdemStatus.CONCLUIDO) return true;
-  const s = String(raw ?? '')
+function normTokenStatus(raw: unknown): string {
+  return String(raw ?? '')
     .trim()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase();
-  return STATUS_CONCLUIDO_EQUIV.has(s);
+}
+
+const VALORES_ORDEM_STATUS = new Set(Object.values(OrdemStatus) as string[]);
+
+/**
+ * Normaliza o valor de `statusOrdemServico` (enum ou string da API) para `OrdemStatus`.
+ * Alinhado às regras de `ordem-servico-api-normalize` para sinónimos de concluído.
+ */
+export function mapearStatusOrdemParaEnum(raw: unknown): OrdemStatus {
+  if (raw === OrdemStatus.ABERTO) return OrdemStatus.ABERTO;
+  if (raw === OrdemStatus.EM_ANDAMENTO) return OrdemStatus.EM_ANDAMENTO;
+  if (raw === OrdemStatus.AGUARDANDO_PECA) return OrdemStatus.AGUARDANDO_PECA;
+  if (raw === OrdemStatus.CONCLUIDO) return OrdemStatus.CONCLUIDO;
+  if (raw === OrdemStatus.CANCELADO) return OrdemStatus.CANCELADO;
+  const s = normTokenStatus(raw);
+  if (VALORES_ORDEM_STATUS.has(s)) return s as OrdemStatus;
+  if (STATUS_CONCLUIDO_EQUIV.has(s)) return OrdemStatus.CONCLUIDO;
+  if (s === 'COMPLETED' || s === 'DONE' || s === 'CLOSED' || s === 'ENCERRADA' || s === 'ENCERRADO') {
+    return OrdemStatus.CONCLUIDO;
+  }
+  return OrdemStatus.ABERTO;
+}
+
+export function statusOrdemEhConcluida(raw: unknown): boolean {
+  if (raw === OrdemStatus.CONCLUIDO) return true;
+  return STATUS_CONCLUIDO_EQUIV.has(normTokenStatus(raw));
 }
 
 /**
@@ -108,18 +132,72 @@ export function instanteReferenciaConclusao(o: OrdemServico): number | null {
   return parseDataReferenciaMs(o.aberturaEm);
 }
 
-/** OS com status concluído e instante de referência dentro do intervalo (inclusive). */
+/**
+ * Instante usado para **inclusão no relatório por período**: apenas `conclusaoEm` em OS concluídas.
+ * Sem fallback — a data inicial/final da página aplica-se à data de conclusão registada.
+ */
+export function instanteConclusaoParaPeriodoRelatorio(o: OrdemServico): number | null {
+  if (!statusOrdemEhConcluida(o.statusOrdemServico)) return null;
+  return parseConclusaoMs(o.conclusaoEm);
+}
+
+/**
+ * Instante usado para **inclusão no período** e ordenação no relatório:
+ * — OS com status mapeado para **Concluído**: só `conclusaoEm` (sem fallback).
+ * — Demais status: `dataAtualizacao` → `inicioEm` → `aberturaEm`.
+ */
+export function instanteParaFiltroPeriodoRelatorio(o: OrdemServico): number | null {
+  if (mapearStatusOrdemParaEnum(o.statusOrdemServico) === OrdemStatus.CONCLUIDO) {
+    return parseConclusaoMs(o.conclusaoEm);
+  }
+  return (
+    parseDataReferenciaMs(o.dataAtualizacao) ??
+    parseDataReferenciaMs(o.inicioEm) ??
+    parseDataReferenciaMs(o.aberturaEm)
+  );
+}
+
+/**
+ * Horas para o relatório: usa `horasTrabalhadas` quando é número válido (inclui 0).
+ * Se estiver ausente, estima pelo intervalo entre início da OS (`inicioEm` ou `aberturaEm`) e o instante de referência de conclusão.
+ */
+export function horasContabilizadasRelatorio(o: OrdemServico): number {
+  const h = o.horasTrabalhadas;
+  if (typeof h === 'number' && !Number.isNaN(h)) {
+    return h;
+  }
+  const fim = instanteReferenciaConclusao(o);
+  const ini = parseDataReferenciaMs(o.inicioEm) ?? parseDataReferenciaMs(o.aberturaEm);
+  if (fim === null || ini === null) return 0;
+  const derivado = (fim - ini) / (3600 * 1000);
+  return derivado > 0 && Number.isFinite(derivado) ? derivado : 0;
+}
+
+/** OS cujo status está em `statusPermitidos` e cujo instante de período cai em `[inicioMs, fimMs]`. */
+export function filtrarOrdensRelatorioNoPeriodo(
+  ordens: OrdemServico[],
+  inicioMs: number,
+  fimMs: number,
+  statusPermitidos: OrdemStatus[],
+): OrdemServico[] {
+  if (statusPermitidos.length === 0) return [];
+  const permitidos = new Set(statusPermitidos);
+  return ordens.filter((o) => {
+    const st = mapearStatusOrdemParaEnum(o.statusOrdemServico);
+    if (!permitidos.has(st)) return false;
+    const t = instanteParaFiltroPeriodoRelatorio(o);
+    if (t === null) return false;
+    return t >= inicioMs && t <= fimMs;
+  });
+}
+
+/** OS concluídas cuja **data de conclusão** (`conclusaoEm`) está dentro do intervalo (inclusive). */
 export function filtrarOsConcluidasNoPeriodo(
   ordens: OrdemServico[],
   inicioMs: number,
   fimMs: number,
 ): OrdemServico[] {
-  return ordens.filter((o) => {
-    if (!statusOrdemEhConcluida(o.statusOrdemServico)) return false;
-    const t = instanteReferenciaConclusao(o);
-    if (t === null) return false;
-    return t >= inicioMs && t <= fimMs;
-  });
+  return filtrarOrdensRelatorioNoPeriodo(ordens, inicioMs, fimMs, [OrdemStatus.CONCLUIDO]);
 }
 
 export function aplicarFiltrosTipoPrioridade(
@@ -161,12 +239,12 @@ export function agruparPorTecnico(ordens: OrdemServico[]): TecnicoProdutividadeA
 
   const aggs: TecnicoProdutividadeAgg[] = [];
   for (const [chaveTecnico, { nome, ordens: lista }] of map) {
-    const horasTotais = lista.reduce((s, x) => s + (x.horasTrabalhadas ?? 0), 0);
+    const horasTotais = lista.reduce((s, x) => s + horasContabilizadasRelatorio(x), 0);
     const osConcluidas = lista.length;
     const mediaHorasPorOs = osConcluidas > 0 ? horasTotais / osConcluidas : null;
     const ordensOrdenadas = [...lista].sort(
       (a, b) =>
-        (instanteReferenciaConclusao(a) ?? 0) - (instanteReferenciaConclusao(b) ?? 0),
+        (instanteParaFiltroPeriodoRelatorio(a) ?? 0) - (instanteParaFiltroPeriodoRelatorio(b) ?? 0),
     );
     aggs.push({
       chaveTecnico,
@@ -202,16 +280,17 @@ export function montarDadosGraficoTopOs(aggs: TecnicoProdutividadeAgg[], topN: n
   }));
 }
 
-/** Pipeline: período (conclusão) → opcional tipo/prioridade → agrupamento. */
+/**
+ * Pipeline: OS com status em `statusPermitidos` e instante de período no intervalo → agrupamento por técnico.
+ * @param statusPermitidos omisso = apenas **Concluído** (comportamento legado).
+ */
 export function computarProdutividadePorTecnico(
   todasOrdens: OrdemServico[],
   dataInicio: string,
   dataFim: string,
-  tipo: ManutencaoType | '',
-  prioridade: PrioridadeType | '',
+  statusPermitidos: OrdemStatus[] = [OrdemStatus.CONCLUIDO],
 ): TecnicoProdutividadeAgg[] {
   const { inicioMs, fimMs } = criarLimitesPeriodoLocal(dataInicio, dataFim);
-  let base = filtrarOsConcluidasNoPeriodo(todasOrdens, inicioMs, fimMs);
-  base = aplicarFiltrosTipoPrioridade(base, tipo, prioridade);
+  const base = filtrarOrdensRelatorioNoPeriodo(todasOrdens, inicioMs, fimMs, statusPermitidos);
   return agruparPorTecnico(base);
 }

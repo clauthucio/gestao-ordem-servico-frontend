@@ -22,8 +22,13 @@ export interface EquipamentoListItem extends Equipamento {
   idUsuarioUltimaModificacao?: string | null;
 }
 
-/** Corpo do POST /app/equipamentos (código gerado pelo backend). */
+/**
+ * Corpo lógico do POST /app/equipamentos.
+ * `codigo` é opcional: se ausente ou vazio, `toCriarEquipamentoApiBody` gera `YYYYMMDD-` + sequência (ver `gerarCodigoEquipamento`).
+ */
 export interface CriarEquipamentoPayload {
+  /** Se não informado, o front gera automaticamente em `toCriarEquipamentoApiBody`. */
+  codigo?: string;
   nome: string;
   tipo: TipoEquipamento;
   localizacao: string;

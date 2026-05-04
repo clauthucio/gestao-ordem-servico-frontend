@@ -7,6 +7,10 @@ import {
   CriarEquipamentoPayload,
   EquipamentoListItem,
 } from '../models/equipamento.model';
+import {
+  toAtualizarEquipamentoApiBody,
+  toCriarEquipamentoApiBody,
+} from './equipamento-api-body';
 
 @Injectable({
   providedIn: 'root',
@@ -19,8 +23,14 @@ export class EquipamentoService {
     return this.http.get<EquipamentoListItem[]>(`${this.API_URL}/app/equipamentos`);
   }
 
+  /**
+   * POST /app/equipamentos — corpo serializado sem `null` em opcionais (evita 400 em validadores strict).
+   */
   criar(body: CriarEquipamentoPayload): Observable<EquipamentoListItem> {
-    return this.http.post<EquipamentoListItem>(`${this.API_URL}/app/equipamentos`, body);
+    return this.http.post<EquipamentoListItem>(
+      `${this.API_URL}/app/equipamentos`,
+      toCriarEquipamentoApiBody(body)
+    );
   }
 
   buscarPorId(id: string): Observable<EquipamentoListItem> {
@@ -28,7 +38,10 @@ export class EquipamentoService {
   }
 
   atualizar(id: string, body: AtualizarEquipamentoPayload): Observable<EquipamentoListItem> {
-    return this.http.put<EquipamentoListItem>(`${this.API_URL}/app/equipamentos/${id}`, body);
+    return this.http.put<EquipamentoListItem>(
+      `${this.API_URL}/app/equipamentos/${id}`,
+      toAtualizarEquipamentoApiBody(body)
+    );
   }
 
   deletar(id: string): Observable<void> {

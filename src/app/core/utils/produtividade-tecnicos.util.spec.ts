@@ -6,7 +6,9 @@ import {
   calcularResumoGlobal,
   computarProdutividadePorTecnico,
   criarLimitesPeriodoLocal,
+  filtrarOrdensRelatorioNoPeriodo,
   filtrarOsConcluidasNoPeriodo,
+  horasContabilizadasRelatorio,
   parseConclusaoMs,
   parseDataReferenciaMs,
 } from './produtividade-tecnicos.util';
@@ -49,7 +51,7 @@ describe('produtividade-tecnicos.util', () => {
     expect(d1.getMinutes()).toBe(59);
   });
 
-  it('filtra CONCLUIDO no período por conclusaoEm ou dataAtualizacao', () => {
+  it('filtra só OS concluídas cuja data de conclusão está no período', () => {
     const { inicioMs, fimMs } = criarLimitesPeriodoLocal('2024-06-01', '2024-06-30');
     const lista: OrdemServico[] = [
       os({
@@ -74,10 +76,81 @@ describe('produtividade-tecnicos.util', () => {
         conclusaoEm: undefined,
         dataAtualizacao: '2024-06-20T12:00:00',
       }),
+      os({
+        idOrdemServico: '6',
+        statusOrdemServico: OrdemStatus.CONCLUIDO,
+        conclusaoEm: '2024-06-20T12:00:00',
+      }),
     ];
     const r = filtrarOsConcluidasNoPeriodo(lista, inicioMs, fimMs);
     const ids = r.map((x) => x.idOrdemServico).sort();
-    expect(ids).toEqual(['1', '5']);
+    expect(ids).toEqual(['1', '6']);
+  });
+
+  it('filtrarOrdensRelatorioNoPeriodo inclui EM_ANDAMENTO pela dataAtualizacao', () => {
+    const { inicioMs, fimMs } = criarLimitesPeriodoLocal('2024-06-01', '2024-06-30');
+    const lista: OrdemServico[] = [
+      os({
+        idOrdemServico: '1',
+        statusOrdemServico: OrdemStatus.EM_ANDAMENTO,
+        dataAtualizacao: '2024-06-15T10:00:00',
+        aberturaEm: '2024-01-01',
+      }),
+      os({
+        idOrdemServico: '2',
+        statusOrdemServico: OrdemStatus.EM_ANDAMENTO,
+        dataAtualizacao: '2024-07-01T10:00:00',
+        aberturaEm: '2024-06-01',
+      }),
+    ];
+    const r = filtrarOrdensRelatorioNoPeriodo(lista, inicioMs, fimMs, [OrdemStatus.EM_ANDAMENTO]);
+    expect(r.map((x) => x.idOrdemServico)).toEqual(['1']);
+  });
+
+  it('computarProdutividadePorTecnico com status EM_ANDAMENTO usa dataAtualizacao no período', () => {
+    const aggs = computarProdutividadePorTecnico(
+      [
+        os({
+          idOrdemServico: '1',
+          idTecnico: 't1',
+          tecnicoNome: 'Um',
+          statusOrdemServico: OrdemStatus.EM_ANDAMENTO,
+          dataAtualizacao: '2024-06-15',
+          horasTrabalhadas: 3,
+        }),
+      ],
+      '2024-06-01',
+      '2024-06-30',
+      [OrdemStatus.EM_ANDAMENTO],
+    );
+    expect(aggs).toHaveLength(1);
+    expect(aggs[0].osConcluidas).toBe(1);
+    expect(aggs[0].horasTotais).toBe(3);
+  });
+
+  it('computarProdutividadePorTecnico inclui todos os tipos no mesmo período', () => {
+    const aggs = computarProdutividadePorTecnico(
+      [
+        os({
+          idOrdemServico: '1',
+          idTecnico: 't1',
+          tecnicoNome: 'Um',
+          tipoManutencao: 'PREVENTIVA',
+          conclusaoEm: '2024-06-05',
+        }),
+        os({
+          idOrdemServico: '2',
+          idTecnico: 't1',
+          tecnicoNome: 'Um',
+          tipoManutencao: 'CORRETIVA',
+          conclusaoEm: '2024-06-10',
+        }),
+      ],
+      '2024-06-01',
+      '2024-06-30',
+    );
+    expect(aggs).toHaveLength(1);
+    expect(aggs[0].osConcluidas).toBe(2);
   });
 
   it('aplicarFiltrosTipoPrioridade respeita tipo e prioridade', () => {
@@ -105,13 +178,40 @@ describe('produtividade-tecnicos.util', () => {
         idTecnico: undefined,
         tecnicoNome: undefined,
         horasTrabalhadas: 2,
+        conclusaoEm: '2024-06-01T10:00:00',
       }),
     ];
-    const aggs = computarProdutividadePorTecnico(lista, '2024-01-01', '2024-12-31', '', '');
+    const aggs = computarProdutividadePorTecnico(lista, '2024-01-01', '2024-12-31');
     expect(aggs).toHaveLength(1);
     expect(aggs[0].chaveTecnico).toBe(CHAVE_SEM_TECNICO);
     expect(aggs[0].horasTotais).toBe(2);
     expect(aggs[0].mediaHorasPorOs).toBe(2);
+  });
+
+  it('horasContabilizadasRelatorio usa intervalo quando horasTrabalhadas está ausente', () => {
+    const o = os({
+      idOrdemServico: 'z',
+      statusOrdemServico: OrdemStatus.CONCLUIDO,
+      aberturaEm: '2024-06-10T08:00:00',
+      inicioEm: '2024-06-10T08:00:00',
+      conclusaoEm: '2024-06-10T13:00:00',
+    });
+    expect(horasContabilizadasRelatorio(o)).toBe(5);
+  });
+
+  it('computarProdutividadePorTecnico soma horas derivadas quando API omite horasTrabalhadas', () => {
+    const o = os({
+      idOrdemServico: '1',
+      idTecnico: 't1',
+      tecnicoNome: 'Um',
+      statusOrdemServico: OrdemStatus.CONCLUIDO,
+      aberturaEm: '2024-06-10T08:00:00',
+      inicioEm: '2024-06-10T08:00:00',
+      conclusaoEm: '2024-06-10T13:00:00',
+    });
+    const aggs = computarProdutividadePorTecnico([o], '2024-06-01', '2024-06-30');
+    expect(aggs[0].horasTotais).toBe(5);
+    expect(aggs[0].mediaHorasPorOs).toBe(5);
   });
 
   it('calcularResumoGlobal soma técnicos', () => {
@@ -134,8 +234,6 @@ describe('produtividade-tecnicos.util', () => {
       ],
       '2024-03-01',
       '2024-03-31',
-      '',
-      '',
     );
     const res = calcularResumoGlobal(aggs);
     expect(res.totalOs).toBe(2);

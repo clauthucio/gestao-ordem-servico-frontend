@@ -1,7 +1,8 @@
 @if (tecnicoDetalhe) {
   <app-modal-container [titulo]="'Detalhamento — ' + tecnicoDetalhe.nomeExibicao" (fechar)="fecharDetalheTecnico()">
     <p class="text-xs text-on-surface-variant mb-4">
-      Ordens de serviço concluídas no período ({{ dataInicio }} a {{ dataFim }}), conforme filtros aplicados.
+      Ordens no período ({{ dataInicio }} a {{ dataFim }}), conforme o filtro de status da página: para OS concluídas usa-se a
+      data de conclusão; para os demais status, a data de atualização (ou início/abertura) para enquadrar no intervalo.
     </p>
     <div class="overflow-x-auto rounded-xl border border-outline-variant/15">
       <table class="w-full text-left text-xs min-w-[880px]">
@@ -26,7 +27,7 @@
               <td class="px-3 py-2 text-on-surface-variant">{{ prioridadeLabel(o.prioridadeOrdemServico) }}</td>
               <td class="px-3 py-2 text-on-surface-variant whitespace-nowrap">{{ formatarDataHora(o.aberturaEm) }}</td>
               <td class="px-3 py-2 text-on-surface-variant whitespace-nowrap">{{ formatarDataHora(o.conclusaoEm) }}</td>
-              <td class="px-3 py-2 text-on-surface-variant whitespace-nowrap">{{ formatarHoras(o.horasTrabalhadas) }}</td>
+              <td class="px-3 py-2 text-on-surface-variant whitespace-nowrap">{{ formatarHoras(horasRelatorio(o)) }}</td>
               <td class="px-3 py-2 text-on-surface-variant">{{ statusLabel(o.statusOrdemServico) }}</td>
             </tr>
           } @empty {
@@ -54,9 +55,9 @@
       </div>
     } @else {
       <div
-        class="bg-surface-container-lowest p-4 sm:p-5 rounded-xl border border-outline-variant/10 shadow-sm mb-6 flex flex-col xl:flex-row xl:flex-wrap xl:items-end gap-4"
+        class="bg-surface-container-lowest p-4 sm:p-5 rounded-xl border border-outline-variant/10 shadow-sm mb-6 flex flex-col xl:flex-row xl:flex-wrap xl:items-end gap-4 overflow-visible"
       >
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 flex-1">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 min-w-0">
           <div>
             <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5"
               >Data inicial</label
@@ -64,6 +65,7 @@
             <input
               type="date"
               [(ngModel)]="dataInicio"
+              (ngModelChange)="aoAlterarFiltro()"
               class="w-full px-3 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm"
             />
           </div>
@@ -74,50 +76,81 @@
             <input
               type="date"
               [(ngModel)]="dataFim"
+              (ngModelChange)="aoAlterarFiltro()"
               class="w-full px-3 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm"
             />
           </div>
-          <div>
-            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5"
-              >Tipo de serviço</label
+          <div #statusFiltroRoot class="min-w-[200px] max-w-full self-start relative z-40">
+            <span class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5"
+              >Status das OS</span
             >
-            <select
-              [(ngModel)]="filtroTipo"
-              class="w-full pl-3 pr-8 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm appearance-none"
+            <button
+              type="button"
+              (click)="togglePainelStatusFiltro($event)"
+              class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm text-left hover:bg-surface-container-high/40 transition-colors"
+              [ngClass]="{ 'ring-1 ring-primary/25': painelStatusAberto }"
+              aria-haspopup="listbox"
+              [attr.aria-expanded]="painelStatusAberto"
             >
-              @for (op of tipoOpcoes; track op.value) {
-                <option [value]="op.value">{{ op.label }}</option>
-              }
-            </select>
-          </div>
-          <div>
-            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5"
-              >Prioridade</label
-            >
-            <select
-              [(ngModel)]="filtroPrioridade"
-              class="w-full pl-3 pr-8 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm appearance-none"
-            >
-              @for (op of prioridadeOpcoes; track op.value) {
-                <option [value]="op.value">{{ op.label }}</option>
-              }
-            </select>
+              <span class="text-on-surface truncate">
+                {{ statusSelecionados.length }} selecionado(s)
+              </span>
+              <span
+                class="material-symbols-outlined text-lg text-on-surface-variant shrink-0 transition-transform"
+                [class.rotate-180]="painelStatusAberto"
+                >expand_more</span
+              >
+            </button>
+            @if (painelStatusAberto) {
+              <div
+                class="absolute left-0 right-0 top-full z-50 mt-1 max-h-[min(22rem,70vh)] overflow-y-auto overflow-x-hidden rounded-lg border border-outline-variant/20 bg-surface-container-lowest py-2 px-3 shadow-lg space-y-2"
+                role="listbox"
+              >
+                @for (st of statusRelatorioOpcoes; track st) {
+                  <label class="flex items-center gap-2 cursor-pointer text-on-surface hover:bg-surface-container-high/60 rounded-md px-1 py-0.5">
+                    <input
+                      type="checkbox"
+                      class="rounded border-outline-variant/40"
+                      [checked]="statusMarcadoPendente(st)"
+                      (change)="aoAlterarCheckboxPendente(st, $event)"
+                    />
+                    <span>{{ statusLabel(st) }}</span>
+                  </label>
+                }
+                <p class="text-[10px] text-on-surface-variant pt-1">Marque pelo menos um status. Confirme para aplicar ao relatório.</p>
+                <div class="flex flex-wrap gap-2 pt-2 border-t border-outline-variant/15">
+                  <button
+                    type="button"
+                    (click)="confirmarSelecaoStatus($event)"
+                    class="inline-flex items-center justify-center py-2 px-3 rounded-lg bg-primary text-on-primary font-bold text-xs hover:opacity-90"
+                  >
+                    Confirmar
+                  </button>
+                  <button
+                    type="button"
+                    (click)="cancelarPainelStatus($event)"
+                    class="inline-flex items-center justify-center py-2 px-3 rounded-lg bg-surface-container-high text-on-surface font-bold text-xs border border-outline-variant/20 hover:bg-surface-container-highest"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            }
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-2 shrink-0">
           <button
             type="button"
-            (click)="aplicarFiltros()"
+            (click)="limparFiltros()"
             class="inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-primary text-on-primary font-bold text-sm hover:opacity-90 transition-opacity"
           >
-            <span class="material-symbols-outlined text-lg">filter_alt</span>
-            Aplicar filtros
+            <span class="material-symbols-outlined text-lg">restart_alt</span>
+            Limpar
           </button>
           <button
             type="button"
             (click)="exportarExcel()"
-            [disabled]="exportando"
-            class="inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-surface-container-high text-on-surface font-bold text-sm border border-outline-variant/20 hover:bg-surface-container-highest disabled:opacity-50"
+            class="inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-surface-container-high text-on-surface font-bold text-sm border border-outline-variant/20 hover:bg-surface-container-highest"
           >
             <span class="material-symbols-outlined text-lg">table</span>
             Excel
@@ -125,8 +158,7 @@
           <button
             type="button"
             (click)="exportarPdf()"
-            [disabled]="exportando"
-            class="inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-surface-container-high text-on-surface font-bold text-sm border border-outline-variant/20 hover:bg-surface-container-highest disabled:opacity-50"
+            class="inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-surface-container-high text-on-surface font-bold text-sm border border-outline-variant/20 hover:bg-surface-container-highest"
           >
             <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
             PDF
@@ -154,31 +186,39 @@
         <div class="p-4 rounded-xl bg-primary/10 border border-primary/25 text-on-surface text-sm mb-6">
           <p class="font-semibold text-on-background mb-1">Dados carregados — relatório vazio</p>
           <p class="text-on-surface-variant">
-            Foram carregadas <strong>{{ todasOrdens.length }}</strong> ordem(ns); nenhuma entra no relatório com o período
-            e filtros atuais. Este relatório só conta OS <strong>concluídas</strong> cuja data de referência (conclusão,
-            ou atualização / início quando aplicável) está entre as datas indicadas. Alargue o período, limpe tipo e
-            prioridade ou confira no sistema se as OS estão com status concluído e datas corretas.
+            Foram carregadas <strong>{{ todasOrdens.length }}</strong> ordem(ns); nenhuma se enquadra no período com os
+            <strong>status selecionados</strong> (para concluídas, a data de conclusão; para os outros, atualização ou
+            início/abertura). Alargue o período, ajuste o filtro de status ou confira as datas na API.
           </p>
         </div>
       }
 
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-        <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
-          <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">OS concluídas (período)</p>
-          <p class="text-3xl font-black text-on-background mt-2">{{ resumo.totalOs }}</p>
-        </div>
-        <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
-          <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Horas trabalhadas</p>
-          <p class="text-3xl font-black text-on-background mt-2">{{ formatarHoras(resumo.totalHoras) }}</p>
-        </div>
-        <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
-          <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Média horas / OS</p>
-          <p class="text-3xl font-black text-on-background mt-2">{{ formatarHoras(resumo.mediaHorasPorOsGlobal) }}</p>
-        </div>
-        <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
-          <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Técnicos com OS</p>
-          <p class="text-3xl font-black text-on-background mt-2">{{ resumo.tecnicosComOs }}</p>
-        </div>
+      <div class="space-y-8 mb-8">
+        @for (bloco of resumosPorStatus; track bloco.status) {
+          <section class="space-y-3">
+            <h2 class="text-sm font-bold text-on-background tracking-tight">
+              {{ statusLabel(bloco.status) }}
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
+                <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">OS no período</p>
+                <p class="text-3xl font-black text-on-background mt-2">{{ bloco.resumo.totalOs }}</p>
+              </div>
+              <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
+                <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Horas trabalhadas</p>
+                <p class="text-3xl font-black text-on-background mt-2">{{ formatarHoras(bloco.resumo.totalHoras) }}</p>
+              </div>
+              <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
+                <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Média horas / OS</p>
+                <p class="text-3xl font-black text-on-background mt-2">{{ formatarHoras(bloco.resumo.mediaHorasPorOsGlobal) }}</p>
+              </div>
+              <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
+                <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Técnicos com OS</p>
+                <p class="text-3xl font-black text-on-background mt-2">{{ bloco.resumo.tecnicosComOs }}</p>
+              </div>
+            </div>
+          </section>
+        }
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -193,7 +233,7 @@
                 <tr class="border-b border-outline-variant/15 bg-surface-container-low/50">
                   <th class="px-4 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Técnico</th>
                   <th class="px-4 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant text-center">
-                    OS concluídas
+                    OS no período
                   </th>
                   <th class="px-4 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant text-center">
                     Horas totais
@@ -230,7 +270,7 @@
                 } @empty {
                   <tr>
                     <td colspan="4" class="px-4 py-12 text-center text-on-surface-variant text-sm">
-                      Nenhuma OS concluída no período com os filtros selecionados.
+                      Nenhuma OS com os status e datas selecionados neste período.
                     </td>
                   </tr>
                 }
@@ -265,10 +305,16 @@
       </div>
 
       <p class="text-xs text-on-surface-variant mt-8 max-w-3xl leading-relaxed">
-        <strong>Regras do relatório:</strong> apenas ordens <strong>concluídas</strong>. O período usa a data de
-        <strong>conclusão</strong>; se ela não existir na OS mas o status estiver concluído, usa-se a
-        <strong>última atualização</strong> como referência. Horas = soma de <strong>horas trabalhadas</strong> (vazio =
-        zero). Técnicos sem OS no período não aparecem.
+        <strong>Regras do relatório:</strong> entram ordens cujo <strong>status</strong> está entre os marcados no filtro
+        e cuja <strong>data de referência do período</strong> cai entre a data inicial e a final (horário local, dias
+        inteiros inclusive). Para status <strong>Concluído</strong>, a data de referência é só a
+        <strong>data de conclusão</strong> registada na OS. Para os demais status, usa-se
+        <strong>atualização</strong>, senão <strong>início</strong> ou <strong>abertura</strong>. É obrigatório manter
+        pelo menos um status selecionado; o padrão é <strong>Concluído</strong> apenas. Use
+        <strong>Confirmar</strong> no filtro de status para aplicar as alterações. Horas =
+        <strong>horas trabalhadas</strong> na OS; se estiverem em branco, estima-se pelo intervalo entre início ou
+        abertura e o instante de referência de conclusão (cálculo de horas). Técnicos sem OS no período não aparecem na
+        tabela.
       </p>
     }
   </div>

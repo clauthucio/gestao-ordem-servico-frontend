@@ -13,8 +13,9 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule],
   template: `
     <!-- Backdrop -->
+    <!-- items-start + padding: mais espaço abaixo dos campos → listas de <select> nativo tendem a abrir para baixo (heurística do SO/navegador). -->
     <div
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 backdrop-blur-sm p-4 pt-10 sm:pt-14 pb-8"
       (click)="onBackdropClick($event)"
     >
       <!-- Dialog -->

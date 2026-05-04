@@ -19,4 +19,8 @@ describe('NovaOs', () => {
   it('deve criar', () => {
     expect(component).toBeTruthy();
   });
+
+  it('osNumber segue formato OSyymmdd-nn', () => {
+    expect(component.osNumber).toMatch(/^OS\d{6}-\d{2}$/);
+  });
 });

@@ -37,7 +37,7 @@ export interface CriarOrdemServicoPayload {
   prioridadeOrdemServico: PrioridadeType;
   statusOrdemServico: OrdemStatus;
   descricaoFalha: string;
-  idTecnico?: string;
+  idTecnico: string;
   descricaoServico?: string;
   pecasUtilizadas?: string;
   horasTrabalhadas?: number;
@@ -53,5 +53,7 @@ export interface AtualizarOrdemServicoPayload {
   descricaoServico?: string;
   pecasUtilizadas?: string;
   horasTrabalhadas?: number;
+  /** Início do atendimento (API costuma persistir em `data_inicio`). */
+  inicioEm?: string;
   conclusaoEm?: string;
 }
