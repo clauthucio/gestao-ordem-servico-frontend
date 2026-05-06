@@ -377,6 +377,23 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
     this.cdr.markForCheck();
   }
 
+  private extrairErroZod(err: any, mensagemPadrao: string): string {
+    let msg = err?.error?.erro ?? err?.error?.message ?? mensagemPadrao;
+    const details = err?.error?.details;
+    if (details && typeof details === 'object') {
+      if (details.fieldErrors) {
+        const strErros = Object.entries(details.fieldErrors)
+          .map(([campo, erros]) => `${campo}: ${Array.isArray(erros) ? erros.join(', ') : erros}`)
+          .join(' | ');
+        if (strErros) msg += ` Detalhes: ${strErros}`;
+      } else if (Array.isArray(details)) {
+        const strErros = details.map((d: any) => `${d.path?.join('.')}: ${d.message}`).join(' | ');
+        if (strErros) msg += ` Detalhes: ${strErros}`;
+      }
+    }
+    return msg;
+  }
+
   onSalvarNovo(): void {
     if (this.formNovo.invalid) {
       this.formNovo.markAllAsTouched();
@@ -391,8 +408,8 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
         nome: v.nome.trim(),
         tipo: v.tipo as TipoEquipamento,
         localizacao: v.localizacao.trim(),
-        fabricante: v.fabricante.trim() || null,
-        modelo: v.modelo.trim() || null,
+        fabricante: v.fabricante.trim() || undefined,
+        modelo: v.modelo.trim() || undefined,
         ativo: v.ativo,
       })
       .pipe(take(1))
@@ -402,11 +419,10 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
           this.fecharModalNovo();
           this.carregar(`Equipamento "${criado.nome}" cadastrado com sucesso.`);
         },
-        error: (err: { error?: { erro?: string; message?: string } }) => {
+        error: (err: any) => {
           this.salvandoNovo = false;
           this.dialogTitulo = 'Erro';
-          this.dialogMensagem =
-            err?.error?.erro ?? err?.error?.message ?? 'Não foi possível cadastrar o equipamento.';
+          this.dialogMensagem = this.extrairErroZod(err, 'Não foi possível cadastrar o equipamento.');
           this.dialogTipo = 'erro';
           this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
           this.dialogCallback = null;
@@ -455,8 +471,8 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
         nome: v.nome.trim(),
         tipo: v.tipo as TipoEquipamento,
         localizacao: v.localizacao.trim(),
-        fabricante: v.fabricante.trim() || null,
-        modelo: v.modelo.trim() || null,
+        fabricante: v.fabricante.trim() || undefined,
+        modelo: v.modelo.trim() || undefined,
         ativo: v.ativo,
       })
       .pipe(take(1))
@@ -466,11 +482,10 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
           this.fecharModalEditar();
           this.carregar(mensagemSucesso);
         },
-        error: (err: { error?: { erro?: string; message?: string } }) => {
+        error: (err: any) => {
           this.salvandoEdicao = false;
           this.dialogTitulo = 'Erro';
-          this.dialogMensagem =
-            err?.error?.erro ?? err?.error?.message ?? 'Não foi possível salvar o equipamento.';
+          this.dialogMensagem = this.extrairErroZod(err, 'Não foi possível salvar o equipamento.');
           this.dialogTipo = 'erro';
           this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
           this.dialogCallback = null;
