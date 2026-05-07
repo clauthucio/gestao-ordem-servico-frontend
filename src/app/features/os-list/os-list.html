@@ -60,7 +60,7 @@
     </div>
 
     <div
-      class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-5 mb-6 flex flex-wrap items-center gap-4"
+      class="bg-slate-500 rounded-xl border border-outline-variant/10 shadow-sm p-5 mb-6 flex flex-wrap items-center gap-4"
     >
       <div class="flex-1 min-w-[300px] relative">
         <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
@@ -114,19 +114,19 @@
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm min-w-[960px]">
           <thead>
-            <tr class="border-b border-outline-variant/15 bg-surface-container-low/50">
+            <tr class="border-b border-outline-variant/15 bg-slate-500">
               <th class="px-4 py-3 align-top min-w-[100px]">
                 <div class="flex items-center justify-between gap-1">
-                  <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant"># OS</span>
+                  <span class="font-bold text-[10px] uppercase tracking-widest text-white"># OS</span>
                   <button
                     type="button"
                     title="Ordenar por número"
                     (click)="onToggleOrdenacao('numero', $event)"
-                    class="shrink-0 p-0.5 rounded hover:bg-surface-container-highest text-on-surface-variant transition-colors"
+                    class="shrink-0 p-0.5 rounded hover:bg-slate-200 text-white transition-colors"
                   >
                     <span
                       class="material-symbols-outlined text-base leading-none"
-                      [class.text-primary]="ordenacaoColunaAtiva('numero')"
+                      [class.text-white]="ordenacaoColunaAtiva('numero')"
                       >{{ iconeOrdenacaoColuna('numero') }}</span
                     >
                   </button>
@@ -134,16 +134,16 @@
               </th>
               <th class="px-4 py-3 align-top min-w-[140px]">
                 <div class="flex items-center justify-between gap-1">
-                  <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Equipamento</span>
+                  <span class="font-bold text-[10px] uppercase tracking-widest text-white">Equipamento</span>
                   <button
                     type="button"
                     title="Ordenar por equipamento"
                     (click)="onToggleOrdenacao('equipamento', $event)"
-                    class="shrink-0 p-0.5 rounded hover:bg-surface-container-highest text-on-surface-variant transition-colors"
+                    class="shrink-0 p-0.5 rounded hover:bg-slate-200 text-white transition-colors"
                   >
                     <span
                       class="material-symbols-outlined text-base leading-none"
-                      [class.text-primary]="ordenacaoColunaAtiva('equipamento')"
+                      [class.text-white]="ordenacaoColunaAtiva('equipamento')"
                       >{{ iconeOrdenacaoColuna('equipamento') }}</span
                     >
                   </button>
@@ -151,16 +151,16 @@
               </th>
               <th class="px-4 py-3 align-top min-w-[100px]">
                 <div class="flex items-center justify-between gap-1">
-                  <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Tipo</span>
+                  <span class="font-bold text-[10px] uppercase tracking-widest text-white">Tipo</span>
                   <button
                     type="button"
                     title="Ordenar por tipo"
                     (click)="onToggleOrdenacao('tipo', $event)"
-                    class="shrink-0 p-0.5 rounded hover:bg-surface-container-highest text-on-surface-variant transition-colors"
+                    class="shrink-0 p-0.5 rounded hover:bg-slate-200 text-white transition-colors"
                   >
                     <span
                       class="material-symbols-outlined text-base leading-none"
-                      [class.text-primary]="ordenacaoColunaAtiva('tipo')"
+                      [class.text-white]="ordenacaoColunaAtiva('tipo')"
                       >{{ iconeOrdenacaoColuna('tipo') }}</span
                     >
                   </button>
@@ -168,16 +168,16 @@
               </th>
               <th class="px-4 py-3 align-top min-w-[110px]">
                 <div class="flex items-center justify-between gap-1">
-                  <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Prioridade</span>
+                  <span class="font-bold text-[10px] uppercase tracking-widest text-white">Prioridade</span>
                   <button
                     type="button"
                     title="Ordenar por prioridade"
                     (click)="onToggleOrdenacao('prioridade', $event)"
-                    class="shrink-0 p-0.5 rounded hover:bg-surface-container-highest text-on-surface-variant transition-colors"
+                    class="shrink-0 p-0.5 rounded hover:bg-slate-200 text-white transition-colors"
                   >
                     <span
                       class="material-symbols-outlined text-base leading-none"
-                      [class.text-primary]="ordenacaoColunaAtiva('prioridade')"
+                      [class.text-white]="ordenacaoColunaAtiva('prioridade')"
                       >{{ iconeOrdenacaoColuna('prioridade') }}</span
                     >
                   </button>
@@ -185,16 +185,16 @@
               </th>
               <th class="px-4 py-3 align-top min-w-[120px]">
                 <div class="flex items-center justify-between gap-1">
-                  <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Status</span>
+                  <span class="font-bold text-[10px] uppercase tracking-widest text-white">Status</span>
                   <button
                     type="button"
                     title="Ordenar por status"
                     (click)="onToggleOrdenacao('status', $event)"
-                    class="shrink-0 p-0.5 rounded hover:bg-surface-container-highest text-on-surface-variant transition-colors"
+                    class="shrink-0 p-0.5 rounded hover:bg-slate-200  text-white transition-colors"
                   >
                     <span
                       class="material-symbols-outlined text-base leading-none"
-                      [class.text-primary]="ordenacaoColunaAtiva('status')"
+                      [class.text-white]="ordenacaoColunaAtiva('status')"
                       >{{ iconeOrdenacaoColuna('status') }}</span
                     >
                   </button>
@@ -202,16 +202,16 @@
               </th>
               <th class="px-4 py-3 align-top min-w-[120px]">
                 <div class="flex items-center justify-between gap-1">
-                  <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Técnico</span>
+                  <span class="font-bold text-[10px] uppercase tracking-widest text-white ">Técnico</span>
                   <button
                     type="button"
                     title="Ordenar por técnico"
                     (click)="onToggleOrdenacao('tecnico', $event)"
-                    class="shrink-0 p-0.5 rounded hover:bg-surface-container-highest text-on-surface-variant transition-colors"
+                    class="shrink-0 p-0.5 rounded hover:bg-slate-200 text-white transition-colors"
                   >
                     <span
                       class="material-symbols-outlined text-base leading-none"
-                      [class.text-primary]="ordenacaoColunaAtiva('tecnico')"
+                      [class.text-white]="ordenacaoColunaAtiva('tecnico')"
                       >{{ iconeOrdenacaoColuna('tecnico') }}</span
                     >
                   </button>
@@ -219,23 +219,23 @@
               </th>
               <th class="px-4 py-3 align-top min-w-[120px]">
                 <div class="flex items-center justify-between gap-1">
-                  <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Abertura</span>
+                  <span class="font-bold text-[10px] uppercase tracking-widest text-white">Abertura</span>
                   <button
                     type="button"
                     title="Ordenar por data de abertura"
                     (click)="onToggleOrdenacao('abertura', $event)"
-                    class="shrink-0 p-0.5 rounded hover:bg-surface-container-highest text-on-surface-variant transition-colors"
+                    class="shrink-0 p-0.5 rounded hover:bg-slate-200 text-white transition-colors"
                   >
                     <span
                       class="material-symbols-outlined text-base leading-none"
-                      [class.text-primary]="ordenacaoColunaAtiva('abertura')"
+                      [class.text-white]="ordenacaoColunaAtiva('abertura')"
                       >{{ iconeOrdenacaoColuna('abertura') }}</span
                     >
                   </button>
                 </div>
               </th>
               <th class="px-4 py-3 align-top text-right min-w-[72px]">
-                <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Ações</span>
+                <span class="font-bold text-[10px] uppercase tracking-widest text-slate-200 ">Ações</span>
               </th>
             </tr>
           </thead>

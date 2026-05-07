@@ -199,6 +199,7 @@ export class OsList implements OnInit {
     this.ordenacaoColuna = 'abertura';
     this.ordenacaoDirecao = 'desc';
     this.paginaAtual = 1;
+    this.onFiltroAlterado();
     this.cdr.markForCheck();
   }
 
