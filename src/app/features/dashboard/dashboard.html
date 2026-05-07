@@ -1,5 +1,5 @@
 <!-- Metric Grid -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-4 max-w-7xl mx-auto mt-6">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6 mb-4 max-w-7xl mx-auto mt-6">
 
   <!-- Card 1: OS Abertas Hoje -->
   <div class="bg-slate-50 p-2 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
@@ -38,7 +38,7 @@
     </div>
   </div>
 
-  <!-- Card 5: Aguardando Peça -->
+  <!-- Card 3: Aguardando Peça -->
   <div class="bg-yellow-50 p-6 rounded-xl shadow-sm border border-yellow-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
        [ngClass]="{'ring-2 ring-yellow-400 ring-offset-2': filtroAtivo === 'AGUARDANDO_PECA'}"
        (click)="selecionarFiltro('AGUARDANDO_PECA')">
@@ -56,24 +56,24 @@
     </div>
   </div>
 
-  <!-- Card 3: Prioridade Crítica -->
-  <div class="bg-red-50 p-4 rounded-xl shadow-sm border border-red-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
+  <!-- Card 4: Prioridade Crítica -->
+  <div class="bg-orange-200 p-4 rounded-xl shadow-sm border border-red-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
        [ngClass]="{'ring-2 ring-red-400 ring-offset-2': filtroAtivo === 'CRITICA'}"
        (click)="selecionarFiltro('CRITICA')">
     <div>
       <div class="flex justify-between items-start mb-4">
-        <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-          <span class="material-symbols-outlined text-red-600" style="font-variation-settings: 'FILL' 1;">priority_high</span>
+        <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
+          <span class="material-symbols-outlined text-orange-600" style="font-variation-settings: 'FILL' 1;">priority_high</span>
         </div>
-        <span class="px-2 py-0. rounded text-[10px] font-bold bg-red-600 text-white uppercase">Crítico</span>
+        <span class="px-2 py-0. rounded text-[10px] font-bold bg-orange-600 text-white uppercase">Crítico</span>
       </div>
       <h3 class="text-red-600 text-xs font-semibold uppercase tracking-wider mb-1">Crítica - Não Iniciado </h3>
-      <p class="text-3xl font-black text-red-800 tracking-tighter">{{ osCriticas }}</p>
+      <p class="text-3xl font-black text-orange-800 tracking-tighter">{{ osCriticas }}</p>
     </div>
-    <span class="material-symbols-outlined text-2xl text-red-600">e911_emergency</span>
+    <span class="material-symbols-outlined text-2xl text-orange-600">e911_emergency</span>
   </div>
 
-  <!-- Card 4: Concluídas -->
+  <!-- Card 5: Concluídas -->
   <div class="bg-emerald-50 p-6 rounded-xl shadow-sm border border-emerald-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
        [ngClass]="{'ring-2 ring-emerald-400 ring-offset-2': filtroAtivo === 'CONCLUIDO'}"
        (click)="selecionarFiltro('CONCLUIDO')">
@@ -91,6 +91,24 @@
     </div>
   </div>
 
+  <!-- Card 6: Canceladas -->
+  <div class="bg-red-50 p-6 rounded-xl shadow-sm border border-red-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
+       [ngClass]="{'ring-2 ring-red-400 ring-offset-2': filtroAtivo === 'CANCELADAS'}"
+       (click)="selecionarFiltro('CANCELADAS')">
+    <div>
+      <div class="flex justify-between items-start mb-4">
+        <div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+          <span class="material-symbols-outlined text-xl text-red-600">cancel</span>
+        </div>
+      </div>
+      <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Canceladas</h3>
+      <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ canceladas }}</p>
+    </div>
+    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-[11px] text-red-600 font-medium">
+      <span class="material-symbols-outlined text-xl mr-1">block</span>
+    </div>
+  </div>
+
   
   
 
@@ -102,16 +120,16 @@
   <!-- Main OS Table -->
   <section class="col-span-12 xl:col-span-8 ml-6">
     <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-      <div class="px-6 py-5 flex items-center justify-between border-b border-slate-100">
+      <div class="bg-slate-500 px-6 py-5 flex items-center justify-between border-b border-slate-100">
         <div class="flex items-center gap-2">
-          <h2 class="text-sm font-bold text-slate-800">Ordens de Serviço Recentes</h2>
+          <h2 class="text-white text-sm font-bold text-slate-800">Ordens de Serviço Recentes</h2>
           @if (filtroAtivo) {
             <span class="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full uppercase">
               {{ filtroLabels[filtroAtivo] }}
             </span>
           }
         </div>
-        <button class="text-slate-600 text-xs font-semibold hover:underline" (click)="selecionarFiltro(null)">Ver todas</button>
+        <button class="text-slate-100 text-xs font-semibold hover:underline" (click)="selecionarFiltro(null)">Ver todas</button>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
@@ -183,9 +201,9 @@
 
     <!-- Disponibilidade Técnica -->
     <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-      <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
-        <h2 class="text-sm font-bold text-slate-800">Disponibilidade técnica</h2>
-        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">OS ativas</span>
+      <div class="bg-slate-500 px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+        <h2 class="text-white text-sm font-bold text-slate-800">Disponibilidade técnica</h2>
+        <span class="text-[10px] font-bold text-white uppercase tracking-widest">OS ativas</span>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
@@ -254,15 +272,15 @@
     </div>
 
     <!-- Activity Chart -->
-    <div class="bg-white p-6 rounded-xl shadow-sm">
+    <div class="bg-slate-500 p-6 rounded-xl shadow-sm">
       <div class="flex justify-between items-center mb-6">
-        <h2 class="text-sm font-bold text-slate-800">Atividade Semanal</h2>
-        <span class="text-[10px] font-bold text-slate-400">ÚLTIMOS 7 DIAS</span>
+        <h2 class="text-white text-sm font-bold text-slate-800">Atividade Semanal</h2>
+        <span class="text-[10px] font-bold text-slate-100">ÚLTIMOS 7 DIAS</span>
       </div>
       <div class="flex flex-col gap-2 mt-2">
         @for (dia of atividadeSemanal; track dia.dia) {
           <div class="flex items-center gap-2">
-            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter w-6 shrink-0 text-right">
+            <span class="text-[9px] font-bold text-slate-100 uppercase tracking-tighter w-6 shrink-0 text-right">
               {{ dia.dia }}
             </span>
             <div class="flex-1 h-5 bg-slate-50 rounded-sm overflow-hidden">
@@ -272,24 +290,24 @@
                 [style.width.%]="dia.porcentagem">
               </div>
             </div>
-            <span class="text-[9px] font-medium text-slate-400 w-4 text-right">{{ dia.valor }}</span>
+            <span class="text-[9px] font-medium text-slate-100 w-4 text-right">{{ dia.valor }}</span>
           </div>
         }
       </div>
       <div class="mt-6 flex items-center justify-between">
         <div class="text-center">
-          <p class="text-xs text-slate-400 font-medium">Concluídas</p>
-          <p class="text-lg font-bold text-slate-800">{{ osConcluidas }} concluídas</p>
+          <p class="text-xs text-slate-100 font-medium">Concluídas</p>
+          <p class="text-lg font-bold text-emerald-500">{{ osConcluidas }} Concluídas</p>
         </div>
         <div class="w-[1px] h-8 bg-slate-100"></div>
         <div class="text-center">
-          <p class="text-xs text-slate-400 font-medium">Canceladas</p>
+          <p class="text-xs text-slate-100 font-medium">Canceladas</p>
           <p class="text-lg font-bold text-red-600">{{ canceladas }}</p>
         </div>
         <div class="w-[1px] h-8 bg-slate-100"></div>
         <div class="text-center">
-          <p class="text-xs text-slate-400 font-medium">Eficiência</p>
-          <p class="text-lg font-bold text-emerald-600">{{ eficiencia }}</p>
+          <p class="text-xs text-slate-100 font-medium">Eficiência</p>
+          <p class="text-lg font-bold text-blue-400">{{ eficiencia }}</p>
         </div>
       </div>
     </div>

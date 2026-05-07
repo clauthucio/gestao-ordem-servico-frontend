@@ -57,7 +57,8 @@ export class Dashboard implements OnInit {
     'CRITICA': 'Alta Prioridade',
     'CONCLUIDO': 'Concluídas',
     'CANCELADO': 'Canceladas',
-    'AGUARDANDO_PECA': 'Aguardando Peça'
+    'AGUARDANDO_PECA': 'Aguardando Peça',
+    'CANCELADAS': 'Canceladas'
     
   };
 
@@ -103,6 +104,7 @@ export class Dashboard implements OnInit {
         this.osConcluidas = this.ordens.filter(o => o.statusOrdemServico === OrdemStatus.CONCLUIDO).length;
         this.canceladas = this.ordens.filter(o => o.statusOrdemServico === OrdemStatus.CANCELADO).length;
         this.osAguardandopeca = this.ordens.filter(o => o.statusOrdemServico === OrdemStatus.AGUARDANDO_PECA).length;
+        this.canceladas = this.ordens.filter(o => o.statusOrdemServico === OrdemStatus.CANCELADO).length;
         const total = this.ordens.length;
         this.eficiencia = total > 0 ? Math.round((this.osConcluidas / total) * 100) + '%' : '--';
 
