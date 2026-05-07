@@ -47,6 +47,7 @@ export class Dashboard implements OnInit {
   canceladas = 0;
   eficiencia = '--';
   tempoMedioConclusao = '--';
+  osAguardandopeca = 0;
 
   // Filtro ativo pelos cards
   filtroAtivo: string | null = null;
@@ -54,7 +55,10 @@ export class Dashboard implements OnInit {
     'ABERTO': 'Abertas',
     'EM_ANDAMENTO': 'Em Andamento',
     'CRITICA': 'Alta Prioridade',
-    'CONCLUIDO': 'Concluídas'
+    'CONCLUIDO': 'Concluídas',
+    'CANCELADO': 'Canceladas',
+    'AGUARDANDO_PECA': 'Aguardando Peça'
+    
   };
 
   // Estado da tabela
@@ -98,6 +102,7 @@ export class Dashboard implements OnInit {
         ).length;
         this.osConcluidas = this.ordens.filter(o => o.statusOrdemServico === OrdemStatus.CONCLUIDO).length;
         this.canceladas = this.ordens.filter(o => o.statusOrdemServico === OrdemStatus.CANCELADO).length;
+        this.osAguardandopeca = this.ordens.filter(o => o.statusOrdemServico === OrdemStatus.AGUARDANDO_PECA).length;
         const total = this.ordens.length;
         this.eficiencia = total > 0 ? Math.round((this.osConcluidas / total) * 100) + '%' : '--';
 
@@ -123,7 +128,9 @@ export class Dashboard implements OnInit {
           osConcluidas: this.osConcluidas,
           canceladas: this.canceladas,
           eficiencia: this.eficiencia,
-          tempoMedioConclusao: this.tempoMedioConclusao
+          tempoMedioConclusao: this.tempoMedioConclusao,
+          osAguardandopeca: this.osAguardandopeca
+
         });
 
         this.carregando = false;

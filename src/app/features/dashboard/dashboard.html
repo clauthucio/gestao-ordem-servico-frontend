@@ -21,20 +21,38 @@
   </div>
 
   <!-- Card 2: OS em Andamento -->
-  <div class="bg-amber-50 p-4 rounded-xl shadow-sm border border-amber-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
-       [ngClass]="{'ring-2 ring-amber-400 ring-offset-2': filtroAtivo === 'EM_ANDAMENTO'}"
+  <div class="bg-blue-50 p-4 rounded-xl shadow-sm border border-blue-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
+       [ngClass]="{'ring-2 ring-blue-400 ring-offset-2': filtroAtivo === 'EM_ANDAMENTO'}"
        (click)="selecionarFiltro('EM_ANDAMENTO')">
     <div>
       <div class="flex justify-between items-start mb-4">
-        <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-          <span class="material-symbols-outlined text-amber-600">engineering</span>
+        <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+          <span class="material-symbols-outlined text-blue-600">engineering</span>
         </div>
       </div>
       <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Em Andamento</h3>
       <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ osEmAndamento }}</p>
     </div>
-    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 text-amber-600">
+    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 text-blue-600">
       <span class="material-symbols-outlined text-xl mr-1">cycle</span>
+    </div>
+  </div>
+
+  <!-- Card 5: Aguardando Peça -->
+  <div class="bg-yellow-50 p-6 rounded-xl shadow-sm border border-yellow-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
+       [ngClass]="{'ring-2 ring-yellow-400 ring-offset-2': filtroAtivo === 'AGUARDANDO_PECA'}"
+       (click)="selecionarFiltro('AGUARDANDO_PECA')">
+    <div>
+      <div class="flex justify-between items-start mb-4">
+        <div class="w-8 h-8 rounded-lg bg-yellow-50 flex items-center justify-center">
+          <span class="material-symbols-outlined text-xl text-yellow-600">inventory_2</span>
+        </div>
+      </div>
+      <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Aguardando Peça</h3>
+      <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ osAguardandopeca }}</p>
+    </div>
+    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-[11px] text-yellow-600 font-medium">
+      <span class="material-symbols-outlined text-xl mr-1">hourglass_empty</span>
     </div>
   </div>
 
@@ -73,21 +91,8 @@
     </div>
   </div>
 
-  <!-- Card 5: Tempo Médio -->
-  <div class="bg-blue-50 p-6 rounded-xl shadow-sm border border-blue-100 hover:shadow-md transition-all flex flex-col justify-between">
-    <div>
-      <div class="flex justify-between items-start mb-4">
-        <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-          <span class="material-symbols-outlined text-xl text-blue-600">schedule</span>
-        </div>
-      </div>
-      <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Tempo Médio de Conslusão</h3>
-      <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ tempoMedioConclusao }}</p>
-    </div>
-    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-[11px] text-blue-600 font-medium">
-      <span class="material-symbols-outlined text-xl mr-1">schedule</span>
-    </div>
-  </div>
+  
+  
 
 </div>
 
