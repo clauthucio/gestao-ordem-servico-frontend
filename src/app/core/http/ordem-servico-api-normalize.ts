@@ -170,6 +170,17 @@ export function mapBrutoParaOrdemServico(raw: unknown): OrdemServico {
   );
   if (hAg !== undefined) o.horasAguardandoPecaAcumuladas = hAg;
 
+  const hTotCancel = pickNum(
+    r,
+    'horasTotaisAteCancelamento',
+    'horas_totais_ate_cancelamento',
+    'horasTotaisCancelamento',
+    'horas_totais_cancelamento',
+    'horasDecorridasCancelamento',
+    'horas_decorridas_cancelamento',
+  );
+  if (hTotCancel !== undefined) o.horasTotaisAteCancelamento = hTotCancel;
+
   const agDesde = pickOptionalDate(
     r,
     'aguardandoPecaDesde',

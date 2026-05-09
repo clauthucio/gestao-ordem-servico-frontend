@@ -9,6 +9,7 @@ import {
   filtrarOrdensRelatorioNoPeriodo,
   filtrarOsConcluidasNoPeriodo,
   horasContabilizadasRelatorio,
+  instanteParaFiltroPeriodoRelatorio,
   parseConclusaoMs,
   parseDataReferenciaMs,
 } from './produtividade-tecnicos.util';
@@ -188,15 +189,16 @@ describe('produtividade-tecnicos.util', () => {
     expect(aggs[0].mediaHorasPorOs).toBe(2);
   });
 
-  it('horasContabilizadasRelatorio para CONCLUIDO sem horasTrabalhadas retorna 0 (sem estimativa por intervalo)', () => {
+  it('horasContabilizadasRelatorio para CONCLUIDO sem horasTrabalhadas estima líquido (elapsed menos aguardando peça)', () => {
     const o = os({
       idOrdemServico: 'z',
       statusOrdemServico: OrdemStatus.CONCLUIDO,
       aberturaEm: '2024-06-10T08:00:00',
       inicioEm: '2024-06-10T08:00:00',
       conclusaoEm: '2024-06-10T13:00:00',
+      horasAguardandoPecaAcumuladas: 1,
     });
-    expect(horasContabilizadasRelatorio(o)).toBe(0);
+    expect(horasContabilizadasRelatorio(o)).toBe(4);
   });
 
   it('horasContabilizadasRelatorio para CONCLUIDO com horasTrabalhadas usa o valor da API', () => {
@@ -222,7 +224,7 @@ describe('produtividade-tecnicos.util', () => {
     expect(horasContabilizadasRelatorio(o)).toBe(5);
   });
 
-  it('computarProdutividadePorTecnico soma 0 para CONCLUIDO sem horasTrabalhadas da API', () => {
+  it('computarProdutividadePorTecnico soma fallback líquido para CONCLUIDO sem horasTrabalhadas da API', () => {
     const o = os({
       idOrdemServico: '1',
       idTecnico: 't1',
@@ -233,8 +235,43 @@ describe('produtividade-tecnicos.util', () => {
       conclusaoEm: '2024-06-10T13:00:00',
     });
     const aggs = computarProdutividadePorTecnico([o], '2024-06-01', '2024-06-30');
-    expect(aggs[0].horasTotais).toBe(0);
-    expect(aggs[0].mediaHorasPorOs).toBe(0);
+    expect(aggs[0].horasTotais).toBe(5);
+    expect(aggs[0].mediaHorasPorOs).toBe(5);
+  });
+
+  it('horasContabilizadasRelatorio para CANCELADO usa horasTotaisAteCancelamento da API quando existir', () => {
+    const o = os({
+      idOrdemServico: 'c1',
+      statusOrdemServico: OrdemStatus.CANCELADO,
+      inicioEm: '2024-06-10T08:00:00',
+      dataAtualizacao: '2024-06-10T18:00:00',
+      horasTotaisAteCancelamento: 9.5,
+    });
+    expect(horasContabilizadasRelatorio(o)).toBe(9.5);
+  });
+
+  it('horasContabilizadasRelatorio para CANCELADO sem campo dedicado usa intervalo início até conclusão ou atualização (inclui aguardando)', () => {
+    const o = os({
+      idOrdemServico: 'c2',
+      statusOrdemServico: OrdemStatus.CANCELADO,
+      inicioEm: '2024-06-10T08:00:00',
+      conclusaoEm: '2024-06-10T18:00:00',
+      horasAguardandoPecaAcumuladas: 2,
+    });
+    expect(horasContabilizadasRelatorio(o)).toBe(10);
+  });
+
+  it('instanteParaFiltroPeriodoRelatorio para CANCELADO usa conclusaoEm ou dataAtualizacao', () => {
+    const { inicioMs, fimMs } = criarLimitesPeriodoLocal('2024-06-01', '2024-06-30');
+    const cancelada = os({
+      idOrdemServico: 'cx',
+      statusOrdemServico: OrdemStatus.CANCELADO,
+      conclusaoEm: '2024-06-15T12:00:00',
+      dataAtualizacao: '2024-07-01T12:00:00',
+    });
+    expect(instanteParaFiltroPeriodoRelatorio(cancelada)).toBe(parseDataReferenciaMs('2024-06-15T12:00:00'));
+    const lista = filtrarOrdensRelatorioNoPeriodo([cancelada], inicioMs, fimMs, [OrdemStatus.CANCELADO]);
+    expect(lista).toHaveLength(1);
   });
 
   it('calcularResumoGlobal soma técnicos', () => {

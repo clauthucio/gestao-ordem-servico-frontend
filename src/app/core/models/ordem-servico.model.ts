@@ -26,6 +26,10 @@ export interface OrdemServico {
   horasAguardandoPecaAcumuladas?: number;
   /** Início do período atual em aguardando peça (timestamptz), se a API expuser. */
   aguardandoPecaDesde?: Date | string;
+  /**
+   * Horas totais decorridas desde `inicioEm` até o cancelamento (inclui tempo em aguardando peça), quando a API informar.
+   */
+  horasTotaisAteCancelamento?: number;
   aberturaEm: Date | string;
   /** Início da execução pelo técnico (quando existir na API). */
   inicioEm?: Date | string;

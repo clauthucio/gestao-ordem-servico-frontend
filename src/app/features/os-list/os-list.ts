@@ -437,6 +437,7 @@ export class OsList implements OnInit {
     this.acaoAbertaId = null;
     const os = this.ordensRaw.find(o => o.idOrdemServico === osId);
     if (!os) return;
+    if (os.statusOrdemServico !== OrdemStatus.EM_ANDAMENTO) return;
 
     // Validar permissão
     if (!this.isUserAdminOrAssignedTecnico(os)) {
@@ -544,6 +545,52 @@ export class OsList implements OnInit {
         error: (err) => {
           this.dialogTitulo = 'Erro';
           this.dialogMensagem = err?.error?.message ?? 'Não foi possível retomar o atendimento.';
+          this.dialogTipo = 'erro';
+          this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+          this.dialogCallback = null;
+          this.dialogVisivel = true;
+          this.cdr.markForCheck();
+        },
+      });
+    };
+    this.dialogVisivel = true;
+  }
+
+  onCancelarOS(osId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.acaoAbertaId = null;
+    const os = this.ordensRaw.find((o) => o.idOrdemServico === osId);
+    if (!os) return;
+    if (os.statusOrdemServico !== OrdemStatus.AGUARDANDO_PECA) return;
+
+    if (!this.isUserAdminOrAssignedTecnico(os)) {
+      this.dialogTitulo = 'Permissão negada';
+      this.dialogMensagem =
+        'Somente o técnico atribuído e administradores podem cancelar a ordem de serviço.';
+      this.dialogTipo = 'erro';
+      this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+      this.dialogCallback = null;
+      this.dialogVisivel = true;
+      return;
+    }
+
+    this.dialogTitulo = 'Cancelar ordem de serviço';
+    this.dialogMensagem =
+      'Deseja cancelar esta ordem de serviço? O atendimento não será concluído e o status passará a Cancelado.';
+    this.dialogTipo = 'confirmacao';
+    this.dialogBotoes = [
+      { label: 'Não', acao: 'cancelar', estilo: 'neutro' },
+      { label: 'Sim, cancelar', acao: 'confirmar', estilo: 'perigo' },
+    ];
+    this.dialogCallback = () => {
+      this.ordemService.atualizar(osId, { statusOrdemServico: OrdemStatus.CANCELADO }).subscribe({
+        next: () => {
+          this.recarregar('A ordem de serviço foi cancelada.');
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.dialogTitulo = 'Erro';
+          this.dialogMensagem = err?.error?.message ?? 'Não foi possível cancelar a ordem de serviço.';
           this.dialogTipo = 'erro';
           this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
           this.dialogCallback = null;

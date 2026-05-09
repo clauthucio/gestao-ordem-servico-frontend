@@ -1,9 +1,9 @@
 @if (tecnicoDetalhe) {
   <app-modal-container [titulo]="'Detalhamento — ' + tecnicoDetalhe.nomeExibicao" (fechar)="fecharDetalheTecnico()">
     <p class="text-xs text-on-surface-variant mb-4">
-      Ordens no período ({{ dataInicio }} a {{ dataFim }}), conforme o filtro de status da página: para OS concluídas usa-se a
-      data de conclusão e as horas trabalhadas enviadas pelo servidor (líquido); para os demais status, a data de atualização
-      (ou início/abertura) para enquadrar no intervalo. A coluna "Aguardando peça" mostra o total acumulado nesse status quando a API informar.
+      Ordens no período ({{ dataInicio }} a {{ dataFim }}), conforme o filtro de status. OS concluídas: data de conclusão; coluna Tempo =
+      horas líquidas de trabalho (desconta aguardando peça quando necessário). OS canceladas: data de conclusão ou de atualização; coluna Tempo =
+      tempo total desde o início pelo técnico até o cancelamento, incluindo aguardando peça. Coluna Aguardando peça: total acumulado nesse status quando a API informar.
     </p>
     <div class="overflow-x-auto rounded-xl border border-outline-variant/15">
       <table class="w-full text-left text-xs min-w-[960px]">

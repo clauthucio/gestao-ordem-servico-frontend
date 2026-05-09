@@ -593,6 +593,55 @@ export class OsDetail implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  onCancelarOrdemServico(): void {
+    if (!this.os) return;
+    if (this.os.statusOrdemServico !== OrdemStatus.AGUARDANDO_PECA) return;
+
+    if (!this.podeAcaoComoAdminOuTecnicoAtribuido) {
+      this.dialogTitulo = 'Permissão negada';
+      this.dialogMensagem =
+        'Somente o técnico atribuído e administradores podem cancelar a ordem de serviço.';
+      this.dialogTipo = 'erro';
+      this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+      this.dialogCallback = null;
+      this.dialogVisivel = true;
+      this.cdr.markForCheck();
+      return;
+    }
+
+    const osId = this.os.idOrdemServico;
+    this.dialogTitulo = 'Cancelar ordem de serviço';
+    this.dialogMensagem =
+      'Deseja cancelar esta ordem de serviço? O atendimento não será concluído e o status passará a Cancelado.';
+    this.dialogTipo = 'confirmacao';
+    this.dialogBotoes = [
+      { label: 'Não', acao: 'cancelar', estilo: 'neutro' },
+      { label: 'Sim, cancelar', acao: 'confirmar', estilo: 'perigo' },
+    ];
+    this.dialogCallback = () => {
+      this.ordemService
+        .atualizar(osId, { statusOrdemServico: OrdemStatus.CANCELADO })
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.recarregarDetalhe('A ordem de serviço foi cancelada.');
+            this.cdr.markForCheck();
+          },
+          error: (err) => {
+            this.dialogTitulo = 'Erro';
+            this.dialogMensagem = err?.error?.message ?? 'Não foi possível cancelar a ordem de serviço.';
+            this.dialogTipo = 'erro';
+            this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+            this.dialogCallback = null;
+            this.dialogVisivel = true;
+            this.cdr.markForCheck();
+          },
+        });
+    };
+    this.dialogVisivel = true;
+    this.cdr.markForCheck();
+  }
+
   private nomeParaTimeline(): string {
     return this.authService.getCurrentUser()?.nomeUsuario?.trim() || 'Usuário';
   }

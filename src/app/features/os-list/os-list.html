@@ -343,7 +343,7 @@
                                 <span class="material-symbols-outlined text-[18px] text-primary">edit</span>
                                 Editar
                               </button>
-                              @if (os.statusOrdemServico === 'EM_ANDAMENTO' || os.statusOrdemServico === 'AGUARDANDO_PECA') {
+                              @if (os.statusOrdemServico === 'EM_ANDAMENTO') {
                                 @if (isUserAdminOrAssignedTecnico(os)) {
                                   <button
                                     type="button"
@@ -400,6 +400,15 @@
                                     <span class="material-symbols-outlined text-[18px] text-success">play_circle</span>
                                     Retomar
                                   </button>
+                                  <button
+                                    type="button"
+                                    class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-error hover:bg-error/5 transition-colors"
+                                    (click)="onCancelarOS(os.id, $event)"
+                                    title="Cancelar a ordem de serviço sem concluir"
+                                  >
+                                    <span class="material-symbols-outlined text-[18px]">cancel</span>
+                                    Cancelar OS
+                                  </button>
                                 } @else {
                                   <button
                                     type="button"
@@ -409,6 +418,15 @@
                                   >
                                     <span class="material-symbols-outlined text-[18px]">play_circle</span>
                                     Retomar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface-variant/40 cursor-not-allowed opacity-50"
+                                    [disabled]="true"
+                                    title="Somente admin ou técnico atribuído podem cancelar a ordem"
+                                  >
+                                    <span class="material-symbols-outlined text-[18px]">cancel</span>
+                                    Cancelar OS
                                   </button>
                                 }
                               }

@@ -46,7 +46,7 @@ export class RelatoriosOs implements OnInit {
 
   readonly titulo = 'Relatório de Produtividade por Técnico';
   readonly subtitulo =
-    'Acompanhe a quantidade de ordens de serviço e esforço por técnico. Para OS concluídas, as horas trabalhadas vêm do backend (líquido, já descontando o tempo em aguardando peça).';
+    'Acompanhe ordens e esforço por técnico. OS concluídas: horas trabalhadas são líquidas (desconta aguardando peça), via API ou estimativa. OS canceladas: tempo total desde o início pelo técnico até o cancelamento (inclui aguardando peça), via API ou datas. Outros status usam a data de atualização (ou início/abertura) para o período.';
 
   /** Ordem fixa das opções do filtro (dropdown). */
   readonly statusRelatorioOpcoes: OrdemStatus[] = [
@@ -377,7 +377,7 @@ export class RelatoriosOs implements OnInit {
     return `${n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} h`;
   }
 
-  /** Horas para soma/exportação: concluídas usam só `horasTrabalhadas` da API; demais mantêm heurística em `horasContabilizadasRelatorio`. */
+  /** Horas para soma/exportação: ver regras em `horasContabilizadasRelatorio`. */
   horasRelatorio(o: OrdemServico): number {
     return horasContabilizadasRelatorio(o);
   }
