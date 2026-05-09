@@ -46,7 +46,7 @@ export class RelatoriosOs implements OnInit {
 
   readonly titulo = 'Relatório de Produtividade por Técnico';
   readonly subtitulo =
-    'Acompanhe a quantidade de ordens de serviço, horas trabalhadas e média de esforço por técnico no período e nos status selecionados.';
+    'Acompanhe a quantidade de ordens de serviço e esforço por técnico. Para OS concluídas, as horas trabalhadas vêm do backend (líquido, já descontando o tempo em aguardando peça).';
 
   /** Ordem fixa das opções do filtro (dropdown). */
   readonly statusRelatorioOpcoes: OrdemStatus[] = [
@@ -377,9 +377,16 @@ export class RelatoriosOs implements OnInit {
     return `${n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} h`;
   }
 
-  /** Mesma regra de soma do relatório (campo explícito ou estimativa por intervalo). */
+  /** Horas para soma/exportação: concluídas usam só `horasTrabalhadas` da API; demais mantêm heurística em `horasContabilizadasRelatorio`. */
   horasRelatorio(o: OrdemServico): number {
     return horasContabilizadasRelatorio(o);
+  }
+
+  /** Total em aguardando peça (campo da API), quando existir. */
+  horasAguardandoPecaRelatorio(o: OrdemServico): number | null {
+    const v = o.horasAguardandoPecaAcumuladas;
+    if (typeof v !== 'number' || Number.isNaN(v)) return null;
+    return v;
   }
 
   resumoTitulo(os: OrdemServico): string {
@@ -446,6 +453,7 @@ export class RelatoriosOs implements OnInit {
             'Data abertura': this.formatarDataHora(o.aberturaEm),
             'Data conclusão': this.formatarDataHora(o.conclusaoEm),
             'Tempo gasto (h)': this.horasRelatorio(o),
+            'Aguardando peça (h)': this.horasAguardandoPecaRelatorio(o) ?? '—',
             Status: this.statusLabel(o.statusOrdemServico),
           });
         }
@@ -524,6 +532,7 @@ export class RelatoriosOs implements OnInit {
       const bodyDet: string[][] = [];
       for (const a of this.agregados) {
         for (const o of a.ordens) {
+          const hAg = this.horasAguardandoPecaRelatorio(o);
           bodyDet.push([
             a.nomeExibicao,
             o.numeroOrdemServico,
@@ -533,6 +542,7 @@ export class RelatoriosOs implements OnInit {
             this.formatarDataCurta(o.aberturaEm),
             this.formatarDataCurta(o.conclusaoEm),
             String(this.horasRelatorio(o)),
+            hAg != null ? String(hAg) : '—',
             this.statusLabel(o.statusOrdemServico),
           ]);
         }
@@ -549,7 +559,8 @@ export class RelatoriosOs implements OnInit {
             'Prior.',
             'Abertura',
             'Conclusão',
-            'h',
+            'h trab.',
+            'h aguard.',
             'Status',
           ],
         ],

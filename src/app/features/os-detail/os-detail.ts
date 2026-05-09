@@ -67,7 +67,6 @@ export class OsDetail implements OnInit, OnDestroy {
   fechamentoForm = {
     descricaoServico: '',
     pecasUtilizadas: '',
-    horasTrabalhadas: null as number | null,
   };
   fechamentoErro: string | null = null;
   encerrando = false;
@@ -358,6 +357,12 @@ export class OsDetail implements OnInit, OnDestroy {
     );
   }
 
+  /** Horas vindas da API (relatório / encerramento automático no backend). */
+  formatarHorasNumero(n: number | null | undefined): string {
+    if (n === null || n === undefined || Number.isNaN(n)) return '—';
+    return `${n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} h`;
+  }
+
   onAtualizarTecnico(): void {
     if (!this.os) return;
     const id = this.selectedTecnico?.trim();
@@ -402,11 +407,10 @@ export class OsDetail implements OnInit, OnDestroy {
   }
 
   onEncerrar(): void {
-    const { descricaoServico, pecasUtilizadas, horasTrabalhadas } = this.fechamentoForm;
+    const { descricaoServico, pecasUtilizadas } = this.fechamentoForm;
     const vazios: string[] = [];
     if (!descricaoServico?.trim()) vazios.push('Descrição do Serviço');
     if (!pecasUtilizadas?.trim()) vazios.push('Peças Utilizadas');
-    if (!horasTrabalhadas) vazios.push('Horas Trabalhadas');
     if (vazios.length > 0) {
       this.fechamentoErro = `${vazios.join(', ')} ${vazios.length === 1 ? 'é obrigatório' : 'são obrigatórios'}.`;
       return;
@@ -419,14 +423,13 @@ export class OsDetail implements OnInit, OnDestroy {
         statusOrdemServico: OrdemStatus.CONCLUIDO,
         descricaoServico,
         pecasUtilizadas,
-        horasTrabalhadas: Number(horasTrabalhadas),
       })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (osAtualizada) => {
           this.os = osAtualizada;
           this.timelineEvents = this.generateTimeline(osAtualizada);
-          this.fechamentoForm = { descricaoServico: '', pecasUtilizadas: '', horasTrabalhadas: null };
+          this.fechamentoForm = { descricaoServico: '', pecasUtilizadas: '' };
           this.encerrando = false;
           this.dialogTitulo = 'Sucesso';
           this.dialogMensagem = 'Ordem de serviço encerrada com sucesso.';

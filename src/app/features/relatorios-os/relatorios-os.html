@@ -2,10 +2,11 @@
   <app-modal-container [titulo]="'Detalhamento — ' + tecnicoDetalhe.nomeExibicao" (fechar)="fecharDetalheTecnico()">
     <p class="text-xs text-on-surface-variant mb-4">
       Ordens no período ({{ dataInicio }} a {{ dataFim }}), conforme o filtro de status da página: para OS concluídas usa-se a
-      data de conclusão; para os demais status, a data de atualização (ou início/abertura) para enquadrar no intervalo.
+      data de conclusão e as horas trabalhadas enviadas pelo servidor (líquido); para os demais status, a data de atualização
+      (ou início/abertura) para enquadrar no intervalo. A coluna "Aguardando peça" mostra o total acumulado nesse status quando a API informar.
     </p>
     <div class="overflow-x-auto rounded-xl border border-outline-variant/15">
-      <table class="w-full text-left text-xs min-w-[880px]">
+      <table class="w-full text-left text-xs min-w-[960px]">
         <thead>
           <tr class="border-b border-outline-variant/15 bg-surface-container-low/50">
             <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Nº OS</th>
@@ -15,6 +16,7 @@
             <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Abertura</th>
             <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Conclusão</th>
             <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Tempo</th>
+            <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Aguard. peça</th>
             <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Status</th>
           </tr>
         </thead>
@@ -28,11 +30,12 @@
               <td class="px-3 py-2 text-on-surface-variant whitespace-nowrap">{{ formatarDataHora(o.aberturaEm) }}</td>
               <td class="px-3 py-2 text-on-surface-variant whitespace-nowrap">{{ formatarDataHora(o.conclusaoEm) }}</td>
               <td class="px-3 py-2 text-on-surface-variant whitespace-nowrap">{{ formatarHoras(horasRelatorio(o)) }}</td>
+              <td class="px-3 py-2 text-on-surface-variant whitespace-nowrap">{{ formatarHoras(horasAguardandoPecaRelatorio(o)) }}</td>
               <td class="px-3 py-2 text-on-surface-variant">{{ statusLabel(o.statusOrdemServico) }}</td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="8" class="px-3 py-8 text-center text-on-surface-variant">Nenhuma OS neste agrupamento.</td>
+              <td colspan="9" class="px-3 py-8 text-center text-on-surface-variant">Nenhuma OS neste agrupamento.</td>
             </tr>
           }
         </tbody>

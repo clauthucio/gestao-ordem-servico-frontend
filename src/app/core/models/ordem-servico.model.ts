@@ -19,6 +19,13 @@ export interface OrdemServico {
   descricaoServico?: string;
   pecasUtilizadas?: string;
   horasTrabalhadas?: number;
+  /**
+   * Horas acumuladas em `AGUARDANDO_PECA` (somatório dos períodos), calculadas no backend.
+   * Aliases na API: ver `ordem-servico-api-normalize`.
+   */
+  horasAguardandoPecaAcumuladas?: number;
+  /** Início do período atual em aguardando peça (timestamptz), se a API expuser. */
+  aguardandoPecaDesde?: Date | string;
   aberturaEm: Date | string;
   /** Início da execução pelo técnico (quando existir na API). */
   inicioEm?: Date | string;

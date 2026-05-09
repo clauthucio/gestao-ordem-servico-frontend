@@ -155,6 +155,27 @@
       }
     </div>
 
+    @if (os.statusOrdemServico === 'CONCLUIDO') {
+      <div
+        class="shrink-0 w-full rounded-xl border border-outline-variant/15 bg-surface-container-low/80 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4"
+      >
+        <div>
+          <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest block"
+            >Horas trabalhadas (líquido)</span
+          >
+          <p class="text-sm font-semibold text-on-background mt-1 tabular-nums">{{ formatarHorasNumero(os.horasTrabalhadas) }}</p>
+          <p class="text-[10px] text-on-surface-variant mt-1 leading-snug">Calculadas no servidor com base em início, conclusão e tempo em aguardando peça.</p>
+        </div>
+        <div>
+          <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest block"
+            >Tempo em aguardando peça</span
+          >
+          <p class="text-sm font-semibold text-on-background mt-1 tabular-nums">{{ formatarHorasNumero(os.horasAguardandoPecaAcumuladas) }}</p>
+          <p class="text-[10px] text-on-surface-variant mt-1 leading-snug">Somatório dos períodos em que a OS esteve no status Aguardando peça.</p>
+        </div>
+      </div>
+    }
+
     <div class="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-5 pt-1">
       <div class="xl:col-span-8 flex flex-col min-h-0 gap-4 overflow-hidden">
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 shrink-0">
@@ -251,7 +272,7 @@
             <div class="overflow-y-auto text-sm text-on-background leading-snug whitespace-pre-wrap flex-1 min-h-0 pr-1">
               {{ os.descricaoServico }}
             </div>
-            @if (os.pecasUtilizadas || (os.horasTrabalhadas !== null && os.horasTrabalhadas !== undefined)) {
+            @if (os.pecasUtilizadas || (os.statusOrdemServico !== 'CONCLUIDO' && os.horasTrabalhadas !== null && os.horasTrabalhadas !== undefined)) {
               <div class="mt-2 pt-2 border-t border-outline-variant/10 grid grid-cols-2 gap-2 text-xs shrink-0">
                 @if (os.pecasUtilizadas) {
                   <div>
@@ -259,7 +280,7 @@
                     <p class="text-on-background">{{ os.pecasUtilizadas }}</p>
                   </div>
                 }
-                @if (os.horasTrabalhadas !== null && os.horasTrabalhadas !== undefined) {
+                @if (os.statusOrdemServico !== 'CONCLUIDO' && os.horasTrabalhadas !== null && os.horasTrabalhadas !== undefined) {
                   <div>
                     <span class="text-[10px] font-bold text-on-surface-variant uppercase">Horas</span>
                     <p class="text-on-background">{{ os.horasTrabalhadas }}h</p>
@@ -329,26 +350,14 @@
                   class="w-full bg-surface-container-low rounded border border-outline-variant/20 px-2 py-1.5 text-xs text-on-surface placeholder:text-outline-variant/60 resize-none focus:ring-2 focus:ring-primary/20"
                 ></textarea>
               </div>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-0.5">Peças</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="fechamentoForm.pecasUtilizadas"
-                    placeholder="Peças..."
-                    class="w-full bg-surface-container-low rounded border border-outline-variant/20 px-2 py-1.5 text-xs"
-                  />
-                </div>
-                <div>
-                  <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-0.5">Horas</label>
-                  <input
-                    type="number"
-                    min="0"
-                    [(ngModel)]="fechamentoForm.horasTrabalhadas"
-                    placeholder="0"
-                    class="w-full bg-surface-container-low rounded border border-outline-variant/20 px-2 py-1.5 text-xs"
-                  />
-                </div>
+              <div>
+                <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-0.5">Peças</label>
+                <input
+                  type="text"
+                  [(ngModel)]="fechamentoForm.pecasUtilizadas"
+                  placeholder="Peças..."
+                  class="w-full bg-surface-container-low rounded border border-outline-variant/20 px-2 py-1.5 text-xs"
+                />
               </div>
               @if (fechamentoErro) {
                 <p class="text-[10px] text-error">{{ fechamentoErro }}</p>

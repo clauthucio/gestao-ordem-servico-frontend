@@ -158,11 +158,18 @@ export function instanteParaFiltroPeriodoRelatorio(o: OrdemServico): number | nu
 }
 
 /**
- * Horas para o relatório: usa `horasTrabalhadas` quando é número válido (inclui 0).
- * Se estiver ausente, estima pelo intervalo entre início da OS (`inicioEm` ou `aberturaEm`) e o instante de referência de conclusão.
+ * Horas para o relatório:
+ * — OS **concluídas**: usa somente `horasTrabalhadas` vinda do backend (valor líquido; sem estimativa por intervalo).
+ * — Demais status: usa `horasTrabalhadas` quando é número válido; se ausente, estima pelo intervalo início → referência de conclusão.
  */
 export function horasContabilizadasRelatorio(o: OrdemServico): number {
   const h = o.horasTrabalhadas;
+  if (mapearStatusOrdemParaEnum(o.statusOrdemServico) === OrdemStatus.CONCLUIDO) {
+    if (typeof h === 'number' && !Number.isNaN(h)) {
+      return h;
+    }
+    return 0;
+  }
   if (typeof h === 'number' && !Number.isNaN(h)) {
     return h;
   }

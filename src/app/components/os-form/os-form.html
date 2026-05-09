@@ -191,25 +191,6 @@
             <p class="mt-1 text-[11px] text-error">Peças utilizadas é obrigatório.</p>
           }
         </div>
-
-        <!-- Horas Trabalhadas (obrigatório) -->
-        <div>
-          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
-            Horas Trabalhadas <span class="text-error">*</span>
-          </label>
-          <input
-            formControlName="horasTrabalhadas"
-            type="number"
-            min="0"
-            placeholder="0"
-            class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
-            [class.ring-2]="isInvalid('horasTrabalhadas')"
-            [class.ring-error]="isInvalid('horasTrabalhadas')"
-          />
-          @if (isInvalid('horasTrabalhadas')) {
-            <p class="mt-1 text-[11px] text-error">Horas trabalhadas é obrigatório.</p>
-          }
-        </div>
       </div>
     } @else {
       <!-- MODO EDIÇÃO / CRIAÇÃO (padrão) -->
@@ -367,48 +348,6 @@
             @if (isInvalid('idTecnico')) {
               <p class="mt-1 text-[11px] text-error">Selecione o técnico responsável.</p>
             }
-          </div>
-
-          <!-- Peças Utilizadas -->
-          <div>
-            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
-              Peças Utilizadas
-            </label>
-            <input
-              formControlName="pecasUtilizadas"
-              type="text"
-              placeholder="Ex: Rolamento 6205, correia V..."
-              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface placeholder:text-outline-variant/60 focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
-
-          <!-- Linha: Horas Trabalhadas + Data Conclusão -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
-                Horas Trabalhadas
-              </label>
-              <input
-                formControlName="horasTrabalhadas"
-                type="number"
-                min="0"
-                placeholder="0"
-                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
-              />
-              @if (isInvalid('horasTrabalhadas')) {
-                <p class="mt-1 text-[11px] text-error">Valor deve ser ≥ 0.</p>
-              }
-            </div>
-            <div>
-              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
-                Data Prevista de Conclusão
-              </label>
-              <input
-                formControlName="conclusaoEm"
-                type="date"
-                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
           </div>
 
         </div>

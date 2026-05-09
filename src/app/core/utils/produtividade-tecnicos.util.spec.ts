@@ -188,7 +188,7 @@ describe('produtividade-tecnicos.util', () => {
     expect(aggs[0].mediaHorasPorOs).toBe(2);
   });
 
-  it('horasContabilizadasRelatorio usa intervalo quando horasTrabalhadas está ausente', () => {
+  it('horasContabilizadasRelatorio para CONCLUIDO sem horasTrabalhadas retorna 0 (sem estimativa por intervalo)', () => {
     const o = os({
       idOrdemServico: 'z',
       statusOrdemServico: OrdemStatus.CONCLUIDO,
@@ -196,10 +196,33 @@ describe('produtividade-tecnicos.util', () => {
       inicioEm: '2024-06-10T08:00:00',
       conclusaoEm: '2024-06-10T13:00:00',
     });
+    expect(horasContabilizadasRelatorio(o)).toBe(0);
+  });
+
+  it('horasContabilizadasRelatorio para CONCLUIDO com horasTrabalhadas usa o valor da API', () => {
+    const o = os({
+      idOrdemServico: 'z',
+      statusOrdemServico: OrdemStatus.CONCLUIDO,
+      horasTrabalhadas: 8,
+      aberturaEm: '2024-06-10T08:00:00',
+      inicioEm: '2024-06-10T08:00:00',
+      conclusaoEm: '2024-06-10T13:00:00',
+    });
+    expect(horasContabilizadasRelatorio(o)).toBe(8);
+  });
+
+  it('horasContabilizadasRelatorio para status não concluído usa intervalo quando horasTrabalhadas está ausente', () => {
+    const o = os({
+      idOrdemServico: 'z',
+      statusOrdemServico: OrdemStatus.EM_ANDAMENTO,
+      aberturaEm: '2024-06-10T08:00:00',
+      inicioEm: '2024-06-10T08:00:00',
+      conclusaoEm: '2024-06-10T13:00:00',
+    });
     expect(horasContabilizadasRelatorio(o)).toBe(5);
   });
 
-  it('computarProdutividadePorTecnico soma horas derivadas quando API omite horasTrabalhadas', () => {
+  it('computarProdutividadePorTecnico soma 0 para CONCLUIDO sem horasTrabalhadas da API', () => {
     const o = os({
       idOrdemServico: '1',
       idTecnico: 't1',
@@ -210,8 +233,8 @@ describe('produtividade-tecnicos.util', () => {
       conclusaoEm: '2024-06-10T13:00:00',
     });
     const aggs = computarProdutividadePorTecnico([o], '2024-06-01', '2024-06-30');
-    expect(aggs[0].horasTotais).toBe(5);
-    expect(aggs[0].mediaHorasPorOs).toBe(5);
+    expect(aggs[0].horasTotais).toBe(0);
+    expect(aggs[0].mediaHorasPorOs).toBe(0);
   });
 
   it('calcularResumoGlobal soma técnicos', () => {

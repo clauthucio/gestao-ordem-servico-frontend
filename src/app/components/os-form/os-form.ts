@@ -164,14 +164,12 @@ export class OsFormComponent implements OnInit {
           }
         } else if (this.modoEncerrar) {
           this.popularFormParaEncerrar();
-          // Em modo encerrar, descricaoFalha é readonly, outros 3 campos são editáveis (obrigatórios)
+          // Em modo encerrar, descricaoFalha é readonly; descrição do serviço e peças editáveis (horas calculadas no backend).
           this.form.get('idEquipamento')?.disable();
           this.form.get('tipoManutencao')?.disable();
           this.form.get('prioridadeOrdemServico')?.disable();
           this.form.get('descricaoFalha')?.disable();
           this.form.get('idTecnico')?.disable();
-          this.form.get('horasTrabalhadas')?.clearAsyncValidators();
-          // descricaoServico, pecasUtilizadas, horasTrabalhadas ficam editáveis (com requisitos)
         }
 
         this.aplicarValidadorTecnico();
@@ -326,9 +324,6 @@ export class OsFormComponent implements OnInit {
     };
 
     if (raw.descricaoServico?.trim()) payload.descricaoServico = raw.descricaoServico;
-    if (raw.pecasUtilizadas?.trim()) payload.pecasUtilizadas = raw.pecasUtilizadas;
-    if (raw.horasTrabalhadas) payload.horasTrabalhadas = Number(raw.horasTrabalhadas);
-    if (raw.conclusaoEm?.trim()) payload.conclusaoEm = raw.conclusaoEm;
 
     this.ordemService.criar(payload).subscribe({
       next: () => { this.salvando = false; this.salvo.emit(); },
@@ -433,7 +428,6 @@ export class OsFormComponent implements OnInit {
     const camposObrigatorios = [
       { nome: 'Descrição do Serviço', valor: raw.descricaoServico?.trim() },
       { nome: 'Peças Utilizadas', valor: raw.pecasUtilizadas?.trim() },
-      { nome: 'Horas Trabalhadas', valor: raw.horasTrabalhadas },
     ];
 
     const camposVazios = camposObrigatorios.filter(c => !c.valor);
@@ -453,7 +447,6 @@ export class OsFormComponent implements OnInit {
       statusOrdemServico: OrdemStatus.CONCLUIDO,
       descricaoServico: raw.descricaoServico,
       pecasUtilizadas: raw.pecasUtilizadas,
-      horasTrabalhadas: Number(raw.horasTrabalhadas),
     };
 
     this.ordemService.atualizar(this.osParaEncerrar!.idOrdemServico, payload).subscribe({

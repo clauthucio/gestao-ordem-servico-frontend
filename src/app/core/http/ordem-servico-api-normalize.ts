@@ -88,6 +88,9 @@ function normPrioridade(raw: unknown): PrioridadeType {
 
 /**
  * Item da API (camelCase ou snake_case) → `OrdemServico` (igual ao padrão de `usuario-api-normalize`).
+ *
+ * Campos de rastreamento «aguardando peça»: aceita vários aliases alinhados ao TypeORM/backend
+ * (`horasAguardandoPecaAcumuladas` / `horas_aguardando_peca_acumuladas`, etc.).
  */
 export function mapBrutoParaOrdemServico(raw: unknown): OrdemServico {
   const r = asRecord(raw) ?? {};
@@ -155,6 +158,27 @@ export function mapBrutoParaOrdemServico(raw: unknown): OrdemServico {
     'tempo_atendimento_horas',
   );
   if (h !== undefined) o.horasTrabalhadas = h;
+
+  const hAg = pickNum(
+    r,
+    'horasAguardandoPecaAcumuladas',
+    'horas_aguardando_peca_acumuladas',
+    'totalHorasAguardandoPeca',
+    'total_horas_aguardando_peca',
+    'horasEmAguardandoPeca',
+    'horas_em_aguardando_peca',
+  );
+  if (hAg !== undefined) o.horasAguardandoPecaAcumuladas = hAg;
+
+  const agDesde = pickOptionalDate(
+    r,
+    'aguardandoPecaDesde',
+    'aguardando_peca_desde',
+    'inicioAguardandoPecaAt',
+    'inicio_aguardando_peca_at',
+  );
+  if (agDesde) o.aguardandoPecaDesde = agDesde;
+
   const conc = pickOptionalDate(
     r,
     'conclusaoEm',
