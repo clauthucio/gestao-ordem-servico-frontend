@@ -523,8 +523,19 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
   onExcluir(eq: EquipamentoListItem, event: MouseEvent): void {
     event.stopPropagation();
     this.acaoAbertaId = null;
+    if (this.statusExibicao(eq) === 'emManutencao') {
+      this.dialogTitulo = 'Não é possível excluir';
+      this.dialogMensagem =
+        'Equipamento vinculado a uma Ordem de Serviço em aberto. Finalize a Ordem de Serviço para prosseguir';
+      this.dialogTipo = 'erro';
+      this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+      this.dialogCallback = null;
+      this.dialogVisivel = true;
+      this.cdr.markForCheck();
+      return;
+    }
     this.dialogTitulo = 'Confirmar exclusão';
-    this.dialogMensagem = `Deseja realmente excluir o equipamento "${eq.nome}" (${eq.codigo})? Esta ação não pode ser desfeita.`;
+    this.dialogMensagem = `Deseja realmente excluir o equipamento "${eq.nome}" (${eq.codigo})? O histórico do equipamento será perdido. Esta ação não pode ser desfeita.`;
     this.dialogTipo = 'confirmacao';
     this.dialogBotoes = [
       { label: 'Não', acao: 'cancelar', estilo: 'neutro' },
@@ -541,7 +552,7 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
       .pipe(take(1))
       .subscribe({
         next: () => {
-          this.carregar();
+          this.carregar('Equipamento foi excluído com sucesso.');
         },
         error: (err: { error?: { erro?: string; message?: string } }) => {
           this.dialogTitulo = 'Erro ao excluir';
