@@ -110,7 +110,7 @@ import { UserRole, ROLE_LABELS } from '../../../core/enums/roles.enum';
               class="absolute bottom-full left-0 w-full mb-2 bg-surface rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
             >
               <a
-                href="#"
+                routerLink="/app/perfil"
                 class="flex items-center gap-2 px-4 py-2 text-on-surface hover:bg-surface-container transition-colors text-sm first:rounded-t-lg"
               >
                 <span class="material-symbols-outlined text-sm">person</span>

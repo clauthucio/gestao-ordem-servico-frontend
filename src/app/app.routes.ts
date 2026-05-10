@@ -43,6 +43,13 @@ export const routes: Routes = [
           ),
       },
 
+      // PERFIL (usuário logado — todos os papéis autenticados)
+      {
+        path: 'perfil',
+        loadComponent: () =>
+          import('./features/perfil/perfil').then((m) => m.Perfil),
+      },
+
       //ORDENS DE SERVIÇO
       {
         path: 'ordens',

@@ -25,7 +25,21 @@ export interface Usuario {
 export interface AtualizarUsuarioPayload {
   nomeUsuario?: string;
   emailUsuario?: string;
-  senhaUsuario?: string;
   perfilUsuario?: string;
   statusUsuario?: boolean;
+}
+
+/** PATCH /app/usuarios/:id/senha — apenas o próprio utilizador autenticado. */
+export interface AlterarSenhaRequest {
+  senhaAtual: string;
+  senhaNova: string;
+}
+
+export interface AlterarSenhaResponse {
+  message?: string;
+  usuario?: {
+    idUsuario?: string;
+    nomeUsuario?: string;
+    emailUsuario?: string;
+  };
 }

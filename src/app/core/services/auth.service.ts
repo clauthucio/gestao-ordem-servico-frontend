@@ -1,4 +1,3 @@
-import { Component } from '@angular/core';
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError } from 'rxjs';
@@ -15,6 +14,7 @@ import {
   User,
   RefreshResponse,
 } from '../models/auth.model';
+import { mapBrutoParaSessionUser } from '../http/usuario-api-normalize';
 import { TokenService } from './token.service';
 import { UserRole } from '../enums/roles.enum';
 import { environment } from '../../../environments/environment';
@@ -31,7 +31,7 @@ export class AuthService {
 
    //BehaviorSubject = Observable que guarda um valor
   private currentUserSubject = new BehaviorSubject<User | null>(
-    this.tokenService.getUser()
+    mapBrutoParaSessionUser(this.tokenService.getUser()),
   );
 
   public currentUser$ = this.currentUserSubject.asObservable();
@@ -50,11 +50,17 @@ export class AuthService {
       .post<BackendLoginResponse>(`${this.API_URL}/auth/login`, loginRequest)
       .pipe(
         // map = transforma a resposta do backend no formato interno
-        map((backendResponse: BackendLoginResponse): LoginResponse => ({
-          access_token: backendResponse.dados.accessToken,
-          refresh_token: backendResponse.dados.refreshToken,
-          user: backendResponse.dados.usuario,
-        })),
+        map((backendResponse: BackendLoginResponse): LoginResponse => {
+          const user = mapBrutoParaSessionUser(backendResponse.dados.usuario);
+          if (!user) {
+            throw new Error('Resposta de login sem identificador de usuário válido.');
+          }
+          return {
+            access_token: backendResponse.dados.accessToken,
+            refresh_token: backendResponse.dados.refreshToken,
+            user,
+          };
+        }),
 
         // tap = executa algo sem modificar o fluxo
         tap((response: LoginResponse) => {
@@ -144,12 +150,35 @@ export class AuthService {
 }
 
   getCurrentUser(): User | null {
-    const user = this.tokenService.getUser();
-
-    if (user !== this.currentUserSubject.value) {
+    const raw = this.tokenService.getUser();
+    if (raw == null) {
+      if (this.currentUserSubject.value !== null) {
+        this.currentUserSubject.next(null);
+      }
+      return null;
+    }
+    const user = mapBrutoParaSessionUser(raw);
+    if (user == null) {
+      return null;
+    }
+    this.tokenService.setUser(user);
+    const prev = this.currentUserSubject.value;
+    if (
+      !prev ||
+      prev.idUsuario !== user.idUsuario ||
+      prev.nomeUsuario !== user.nomeUsuario ||
+      prev.emailUsuario !== user.emailUsuario ||
+      prev.perfilUsuario !== user.perfilUsuario
+    ) {
       this.currentUserSubject.next(user);
     }
     return user;
+  }
+
+  /** Atualiza o usuário na sessão após PUT de perfil (localStorage + stream). */
+  syncCurrentUserFromServer(user: User): void {
+    this.tokenService.setUser(user);
+    this.currentUserSubject.next(user);
   }
 
   getCurrentUserRole(): UserRole | null {

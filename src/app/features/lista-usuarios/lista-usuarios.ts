@@ -7,14 +7,8 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  AbstractControl,
-  FormBuilder,
-  ReactiveFormsModule,
-  ValidationErrors,
-  ValidatorFn,
-  Validators,
-} from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { take } from 'rxjs';
 
@@ -25,17 +19,19 @@ import { UsuarioService } from '../../core/http/usuario.service';
 import { Usuario } from '../../core/models/usuario.model';
 import { AuthService } from '../../core/services/auth.service';
 import { UserRole, ROLE_LABELS } from '../../core/enums/roles.enum';
+import { extrairMensagemErroApi } from '../../core/utils/api-error-message.util';
+import {
+  SENHA_ALTERACAO_MAX,
+  SENHA_ALTERACAO_MIN,
+  senhaNovaDiferenteDaAtualValidator,
+  senhasNovaConfirmacaoValidator,
+} from '../../core/utils/senha-alteracao.validators';
 
-function senhasCoincidemValidator(): ValidatorFn {
-  return (group: AbstractControl): ValidationErrors | null => {
-    const nova = group.get('novaSenha')?.value as string | undefined;
-    const conf = group.get('confirmarSenha')?.value as string | undefined;
-    if (nova == null || conf == null || nova === '' || conf === '') {
-      return null;
-    }
-    return nova === conf ? null : { mismatch: true };
-  };
-}
+const senhaControleValidators = [
+  Validators.required,
+  Validators.minLength(SENHA_ALTERACAO_MIN),
+  Validators.maxLength(SENHA_ALTERACAO_MAX),
+];
 
 @Component({
   selector: 'app-lista-usuarios',
@@ -67,10 +63,13 @@ export class ListaUsuarios implements OnInit {
 
   readonly formSenha = this.fb.nonNullable.group(
     {
-      novaSenha: ['', [Validators.required, Validators.minLength(6)]],
-      confirmarSenha: ['', [Validators.required, Validators.minLength(6)]],
+      senhaAtual: ['', senhaControleValidators],
+      senhaNova: ['', senhaControleValidators],
+      confirmarSenha: ['', senhaControleValidators],
     },
-    { validators: senhasCoincidemValidator() },
+    {
+      validators: [senhasNovaConfirmacaoValidator(), senhaNovaDiferenteDaAtualValidator()],
+    },
   );
 
   usuarios: Usuario[] = [];
@@ -91,6 +90,7 @@ export class ListaUsuarios implements OnInit {
   showModalAlterarSenha = false;
   usuarioSenhaAlvo: Usuario | null = null;
   salvandoSenha = false;
+  erroApiSenha: string | null = null;
 
   acaoAbertaId: string | null = null;
 
@@ -119,6 +119,12 @@ export class ListaUsuarios implements OnInit {
     }
     this.acaoAbertaId = null;
     this.cdr.markForCheck();
+  }
+
+  /** Somente a própria conta pode ter a senha alterada por esta tela. */
+  podeAlterarSenhaDoProprioUsuario(u: Usuario): boolean {
+    const atual = this.authService.getCurrentUser();
+    return !!atual?.idUsuario && atual.idUsuario === u.idUsuario;
   }
 
   carregar(): void {
@@ -248,6 +254,7 @@ export class ListaUsuarios implements OnInit {
     event.stopPropagation();
     this.fecharMenuAcaoLinha();
     this.usuarioSenhaAlvo = usuario;
+    this.erroApiSenha = null;
     this.formSenha.reset();
     this.showModalAlterarSenha = true;
     this.cdr.markForCheck();
@@ -256,6 +263,7 @@ export class ListaUsuarios implements OnInit {
   fecharModalAlterarSenha(): void {
     this.showModalAlterarSenha = false;
     this.usuarioSenhaAlvo = null;
+    this.erroApiSenha = null;
     this.formSenha.reset();
     this.salvandoSenha = false;
     this.cdr.markForCheck();
@@ -265,47 +273,56 @@ export class ListaUsuarios implements OnInit {
     if (!this.usuarioSenhaAlvo?.idUsuario) {
       return;
     }
+    this.erroApiSenha = null;
     if (this.formSenha.invalid) {
       this.formSenha.markAllAsTouched();
       this.cdr.markForCheck();
       return;
     }
-    if (this.formSenha.errors?.['mismatch']) {
+    if (this.formSenha.errors?.['mismatch'] || this.formSenha.errors?.['igualAtual']) {
       this.formSenha.markAllAsTouched();
       this.cdr.markForCheck();
       return;
     }
-    const { novaSenha } = this.formSenha.getRawValue();
+    const { senhaAtual, senhaNova } = this.formSenha.getRawValue();
     this.salvandoSenha = true;
     this.cdr.markForCheck();
     this.usuarioService
-      .atualizar(this.usuarioSenhaAlvo.idUsuario, { senhaUsuario: novaSenha })
+      .alterarSenha(this.usuarioSenhaAlvo.idUsuario, { senhaAtual, senhaNova })
       .pipe(take(1))
       .subscribe({
-        next: () => {
+        next: (res) => {
           this.salvandoSenha = false;
           this.showModalAlterarSenha = false;
           this.usuarioSenhaAlvo = null;
           this.formSenha.reset();
           this.dialogTitulo = 'Senha alterada';
-          this.dialogMensagem = 'A senha do usuário foi atualizada com sucesso.';
+          this.dialogMensagem =
+            typeof res?.message === 'string' && res.message.trim()
+              ? res.message.trim()
+              : 'A senha foi atualizada com sucesso.';
           this.dialogTipo = 'info';
           this.dialogBotoes = [{ label: 'OK', acao: 'ok', estilo: 'primario' }];
           this.dialogCallback = null;
           this.dialogVisivel = true;
           this.cdr.markForCheck();
         },
-        error: (err: { error?: { message?: string } }) => {
+        error: (err: HttpErrorResponse) => {
           this.salvandoSenha = false;
-          this.showModalAlterarSenha = false;
-          this.usuarioSenhaAlvo = null;
-          this.formSenha.reset();
-          this.dialogTitulo = 'Erro';
-          this.dialogMensagem = err?.error?.message ?? 'Não foi possível alterar a senha.';
-          this.dialogTipo = 'erro';
-          this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
-          this.dialogCallback = null;
-          this.dialogVisivel = true;
+          const msg = extrairMensagemErroApi(err, 'Não foi possível alterar a senha.');
+          if (err.status === 403) {
+            this.showModalAlterarSenha = false;
+            this.usuarioSenhaAlvo = null;
+            this.formSenha.reset();
+            this.dialogTitulo = 'Erro';
+            this.dialogMensagem = msg;
+            this.dialogTipo = 'erro';
+            this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+            this.dialogCallback = null;
+            this.dialogVisivel = true;
+          } else {
+            this.erroApiSenha = msg;
+          }
           this.cdr.markForCheck();
         },
       });
