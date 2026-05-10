@@ -258,4 +258,12 @@ describe('OsList', () => {
     expect(osFinal?.numero).toBe('OS241110-02');
     expect(osFinal?.statusOrdemServico).toBe(OrdemStatus.CONCLUIDO);
   });
+
+  it('deve abrir diálogo de sucesso quando onOrdensMutadas recebe mensagem (ex.: após editar OS)', () => {
+    component.onOrdensMutadas('Ordem de serviço atualizada com sucesso.');
+    fixture.detectChanges();
+    expect(component.dialogVisivel).toBe(true);
+    expect(component.dialogTitulo).toBe('Sucesso');
+    expect(component.dialogMensagem).toBe('Ordem de serviço atualizada com sucesso.');
+  });
 });

@@ -103,9 +103,9 @@ export class OsAcoesLinhaComponent implements OnChanges {
     this.osEmEdicao = null;
   }
 
-  onOsAtualizada(): void {
+  onOsAtualizada(_overlay?: Partial<OrdemServico>): void {
     this.onModalEdicaoFechar();
-    this.dadosAlterados.emit(undefined);
+    this.dadosAlterados.emit('Ordem de serviço atualizada com sucesso.');
   }
 
   onIniciarOS(ev: MouseEvent): void {

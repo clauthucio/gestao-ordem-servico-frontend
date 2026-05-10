@@ -2,7 +2,14 @@ function extrairMensagemHttp(err: unknown): string {
   if (err !== null && typeof err === 'object' && 'error' in err) {
     const e = (err as { error?: Record<string, unknown> }).error;
     if (e && typeof e === 'object') {
-      const details = e['details'] as { fieldErrors?: Record<string, string[]> } | undefined;
+      const details = e['details'] as
+        | { fieldErrors?: Record<string, string[]>; formErrors?: unknown[] }
+        | undefined;
+      const formErrs = details?.formErrors;
+      if (Array.isArray(formErrs) && formErrs.length > 0) {
+        const msgs = formErrs.filter((x): x is string => typeof x === 'string' && x.trim() !== '');
+        if (msgs.length > 0) return msgs.join(' ');
+      }
       const fe = details?.fieldErrors;
       if (fe && typeof fe === 'object') {
         const msgs = Object.values(fe)

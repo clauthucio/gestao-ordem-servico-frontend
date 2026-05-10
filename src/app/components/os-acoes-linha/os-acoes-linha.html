@@ -2,7 +2,7 @@
   <app-modal-container titulo="Editar Ordem de Serviço" (fechar)="onModalEdicaoFechar()">
     <app-os-form
       [osParaEditar]="osEmEdicao"
-      (salvo)="onOsAtualizada()"
+      (salvo)="onOsAtualizada($event)"
       (cancelado)="onModalEdicaoFechar()"
     />
   </app-modal-container>

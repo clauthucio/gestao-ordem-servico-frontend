@@ -10,6 +10,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 
 import { OrdemServicoService } from '../../core/http/ordem-servico.service';
 import { EquipamentoService } from '../../core/http/equipamento.service';
@@ -22,7 +23,9 @@ import { Usuario } from '../../core/models/usuario.model';
 import {
   AtualizarOrdemServicoPayload,
   CriarOrdemServicoPayload,
+  ManutencaoType,
   OrdemServico,
+  PrioridadeType,
 } from '../../core/models/ordem-servico.model';
 import { mensagemUsuarioErroApiOrdemServico } from '../../core/utils/ordem-servico-api-message.util';
 import {
@@ -42,7 +45,8 @@ export class OsFormComponent implements OnInit {
   @Input() osParaEditar: OrdemServico | null = null;
   @Input() osParaIniciar: OrdemServico | null = null;
   @Input() osParaEncerrar: OrdemServico | null = null;
-  @Output() salvo = new EventEmitter<void>();
+  /** Em edição: emite campos gravados para o pai fundir com o GET; nos outros modos, `undefined`. */
+  @Output() salvo = new EventEmitter<Partial<OrdemServico> | undefined>();
   @Output() cancelado = new EventEmitter<void>();
 
   get modoEdicao(): boolean {
@@ -343,7 +347,10 @@ export class OsFormComponent implements OnInit {
     if (raw.descricaoServico?.trim()) payload.descricaoServico = raw.descricaoServico;
 
     this.ordemService.criar(payload).subscribe({
-      next: () => { this.salvando = false; this.salvo.emit(); },
+      next: () => {
+        this.salvando = false;
+        this.salvo.emit(undefined);
+      },
       error: (err) => {
         this.erro = mensagemUsuarioErroApiOrdemServico(err, 'Erro ao salvar a ordem de serviço.');
         this.salvando = false;
@@ -371,14 +378,67 @@ export class OsFormComponent implements OnInit {
     if (raw.descricaoServico?.trim()) payload.descricaoServico = raw.descricaoServico;
     if (raw.pecasUtilizadas?.trim()) payload.pecasUtilizadas = raw.pecasUtilizadas;
 
-    this.ordemService.atualizar(this.osParaEditar!.idOrdemServico, payload).subscribe({
-      next: () => { this.salvando = false; this.salvo.emit(); },
-      error: (err) => {
-        this.erro = mensagemUsuarioErroApiOrdemServico(err, 'Erro ao atualizar a ordem de serviço.');
-        this.salvando = false;
-        this.cdr.markForCheck();
-      },
-    });
+    this.ordemService
+      .atualizar(this.osParaEditar!.idOrdemServico, payload)
+      .pipe(
+        finalize(() => {
+          this.salvando = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe({
+        next: (osResposta) => {
+          const overlay = this.respostaPatchEdicaoUsavel(osResposta)
+            ? this.overlayEdicaoFromServidor(osResposta)
+            : this.overlayEdicaoParaEstadoLocal(raw);
+          this.salvo.emit(overlay);
+        },
+        error: (err) => {
+          this.erro = mensagemUsuarioErroApiOrdemServico(err, 'Erro ao atualizar a ordem de serviço.');
+        },
+      });
+  }
+
+  /** Resposta mapeável do PATCH (ex.: corpo vazio/204) → usa overlay do formulário. */
+  private respostaPatchEdicaoUsavel(os: OrdemServico): boolean {
+    const idEsperado = this.osParaEditar!.idOrdemServico;
+    return os.idOrdemServico === idEsperado && idEsperado !== '';
+  }
+
+  /** Campos editáveis conforme o corpo devolvido pelo PATCH (alinhado ao que o servidor expõe). */
+  private overlayEdicaoFromServidor(os: OrdemServico): Partial<OrdemServico> {
+    const overlay: Partial<OrdemServico> = {
+      tipoManutencao: os.tipoManutencao,
+      prioridadeOrdemServico: os.prioridadeOrdemServico,
+      descricaoFalha: os.descricaoFalha,
+    };
+    if (os.descricaoServico !== undefined && String(os.descricaoServico).trim() !== '') {
+      overlay.descricaoServico = os.descricaoServico;
+    }
+    if (os.pecasUtilizadas !== undefined && String(os.pecasUtilizadas).trim() !== '') {
+      overlay.pecasUtilizadas = os.pecasUtilizadas;
+    }
+    if (os.idTecnico !== undefined && String(os.idTecnico).trim() !== '') {
+      overlay.idTecnico = os.idTecnico.trim();
+    } else {
+      overlay.idTecnico = undefined;
+    }
+    return overlay;
+  }
+
+  private overlayEdicaoParaEstadoLocal(raw: ReturnType<typeof this.form.getRawValue>): Partial<OrdemServico> {
+    const overlay: Partial<OrdemServico> = {
+      tipoManutencao: raw.tipoManutencao as ManutencaoType,
+      prioridadeOrdemServico: raw.prioridadeOrdemServico as PrioridadeType,
+      descricaoFalha: raw.descricaoFalha!,
+    };
+    if (raw.descricaoServico?.trim()) overlay.descricaoServico = raw.descricaoServico;
+    if (raw.pecasUtilizadas?.trim()) overlay.pecasUtilizadas = raw.pecasUtilizadas;
+    const osAberta = this.osParaEditar!.statusOrdemServico === OrdemStatus.ABERTO;
+    if (osAberta) overlay.idTecnico = raw.idTecnico!.trim();
+    else if (raw.idTecnico?.trim()) overlay.idTecnico = raw.idTecnico.trim();
+    else overlay.idTecnico = undefined;
+    return overlay;
   }
 
   private salvarIniciar(raw: ReturnType<typeof this.form.getRawValue>): void {
@@ -404,7 +464,7 @@ export class OsFormComponent implements OnInit {
       this.ordemService.atualizar(this.osParaIniciar!.idOrdemServico, payload).subscribe({
         next: () => {
           this.salvando = false;
-          this.salvo.emit();
+          this.salvo.emit(undefined);
         },
         error: (err) => {
           this.erro = mensagemUsuarioErroApiOrdemServico(err, 'Erro ao iniciar a ordem de serviço.');
@@ -454,7 +514,7 @@ export class OsFormComponent implements OnInit {
     this.ordemService.atualizar(this.osParaEncerrar!.idOrdemServico, payload).subscribe({
       next: () => {
         this.salvando = false;
-        this.salvo.emit();
+        this.salvo.emit(undefined);
       },
       error: (err) => {
         this.erro = mensagemUsuarioErroApiOrdemServico(err, 'Erro ao encerrar a ordem de serviço.');

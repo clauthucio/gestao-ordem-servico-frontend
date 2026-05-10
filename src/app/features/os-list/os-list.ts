@@ -86,14 +86,12 @@ export class OsList implements OnInit {
   private dialogCallback: (() => void) | null = null;
 
   ngOnInit(): void {
-    console.log('[OsList] ngOnInit chamado');
     forkJoin({
       ordens: this.ordemService.listar(),
       usuarios: this.usuarioService.listar(),
       equipamentos: this.equipamentoService.listar(),
     }).subscribe({
       next: ({ ordens, usuarios, equipamentos }) => {
-        console.log('[OsList] next disparado, ordens=', ordens.length, 'usuarios=', usuarios.length);
         try {
           this.equipamentoNomeMap.clear();
           equipamentos.forEach((e) => this.equipamentoNomeMap.set(e.id, e.nome));

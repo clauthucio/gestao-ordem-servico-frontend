@@ -558,10 +558,10 @@ export class OsDetail implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  onOsAtualizada(): void {
+  onOsAtualizada(overlayCamposEditados?: Partial<OrdemServico>): void {
     this.showModalEdicao = false;
     this.osEmEdicao = null;
-    this.recarregarDetalhe();
+    this.recarregarDetalhe('Ordem de serviço atualizada com sucesso.', overlayCamposEditados);
   }
 
   onModalIniciarFechar(): void {
@@ -725,7 +725,7 @@ export class OsDetail implements OnInit, OnDestroy {
     return this.authService.getCurrentUser()?.nomeUsuario?.trim() || 'Usuário';
   }
 
-  private recarregarDetalhe(mensagemSucesso?: string): void {
+  private recarregarDetalhe(mensagemSucesso?: string, overlayCamposEditados?: Partial<OrdemServico>): void {
     const osId = this.route.snapshot.paramMap.get('id');
     if (!osId) return;
     forkJoin({
@@ -738,11 +738,15 @@ export class OsDetail implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: ({ os, equipamentos, agLog }) => {
-          this.os = os;
+          const osFinal =
+            overlayCamposEditados !== undefined
+              ? { ...os, ...overlayCamposEditados }
+              : os;
+          this.os = osFinal;
           this.aguardandoPecaLog = agLog;
-          this.selectedTecnico = os.idTecnico?.trim() ? os.idTecnico.trim() : '';
-          this.equipamento = equipamentos.find((e) => e.id === os.idEquipamento) || null;
-          this.timelineEvents = this.generateTimeline(os, agLog);
+          this.selectedTecnico = osFinal.idTecnico?.trim() ? osFinal.idTecnico.trim() : '';
+          this.equipamento = equipamentos.find((e) => e.id === osFinal.idEquipamento) || null;
+          this.timelineEvents = this.generateTimeline(osFinal, agLog);
           if (mensagemSucesso !== undefined) {
             this.dialogTitulo = 'Sucesso';
             this.dialogMensagem = mensagemSucesso;
