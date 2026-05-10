@@ -1,5 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 import { Dashboard } from './dashboard';
+import { OrdemServicoService } from '../../core/http/ordem-servico.service';
+import { UsuarioService } from '../../core/http/usuario.service';
+import { EquipamentoService } from '../../core/http/equipamento.service';
+import { OrdemStatus } from '../../core/enums/status.enum';
 
 describe('Dashboard', () => {
   let component: Dashboard;
@@ -7,7 +13,13 @@ describe('Dashboard', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Dashboard]
+      imports: [Dashboard],
+      providers: [
+        provideRouter([]),
+        { provide: OrdemServicoService, useValue: { listar: () => of([]) } },
+        { provide: UsuarioService, useValue: { listar: () => of([]) } },
+        { provide: EquipamentoService, useValue: { listar: () => of([]) } },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(Dashboard);
@@ -19,58 +31,36 @@ describe('Dashboard', () => {
     expect(component).toBeTruthy();
   });
 
-  it('deve renderizar 4 cards de métricas', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    const cards = compiled.querySelectorAll('.grid-cols-1 > div, .md\\:grid-cols-2 > div, .lg\\:grid-cols-4 > div');
-    expect(cards.length).toBeGreaterThanOrEqual(4);
+  it('getEquipamentoExibicao usa mapa de equipamentos', () => {
+    component.equipamentoNomeMap.set('eq1', 'Bomba X');
+    expect(
+      component.getEquipamentoExibicao({
+        idOrdemServico: '1',
+        numeroOrdemServico: '1',
+        idEquipamento: 'eq1',
+        tipoManutencao: 'CORRETIVA',
+        prioridadeOrdemServico: 'MEDIA',
+        statusOrdemServico: OrdemStatus.ABERTO,
+        descricaoFalha: 'x',
+        dataCriacao: '',
+        dataAtualizacao: '',
+      })
+    ).toBe('Bomba X');
   });
 
-  it('deve exibir valor de OS abertas', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('12');
-  });
-
-  it('deve exibir alerta crítico', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Ação imediata necessária');
-  });
-
-  it('deve renderizar tabela com 5 ordens', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    const rows = compiled.querySelectorAll('tbody tr');
-    expect(rows.length).toBe(5);
-  });
-
-  it('deve exibir status "Prioridade Crítica"', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Prioridade Crítica');
-  });
-
-  it('deve renderizar gráfico de atividade com 7 barras', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    const bars = compiled.querySelectorAll('.h-32 > div');
-    expect(bars.length).toBe(7);
-  });
-
-  it('deve exibir resumo de eficiência', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('94%');
-  });
-
-  it('deve listar 3 técnicos', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    const tecnicos = compiled.querySelectorAll('.space-y-4 > div');
-    expect(tecnicos.length).toBe(3);
-  });
-
-  it('deve renderizar botão de relatório', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Gerar PDF');
-  });
-
-  it('deve ter FAB', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    const fab = compiled.querySelector('.fixed.bottom-8');
-    expect(fab).toBeTruthy();
+  it('getDescricaoOrdemExibicao faz fallback descricaoOrdemServico → descricaoServico → descricaoFalha', () => {
+    expect(
+      component.getDescricaoOrdemExibicao({
+        idOrdemServico: '1',
+        numeroOrdemServico: '1',
+        idEquipamento: 'eq1',
+        tipoManutencao: 'CORRETIVA',
+        prioridadeOrdemServico: 'MEDIA',
+        statusOrdemServico: OrdemStatus.ABERTO,
+        descricaoFalha: 'Falha na bomba',
+        dataCriacao: '',
+        dataAtualizacao: '',
+      })
+    ).toBe('Falha na bomba');
   });
 });

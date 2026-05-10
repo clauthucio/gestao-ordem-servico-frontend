@@ -139,7 +139,13 @@ export function mapBrutoParaOrdemServico(raw: unknown): OrdemServico {
     dataAtualizacao: dataAtualizacao || dataCriacao || aberturaSohApi || '',
   };
   if (aberturaExplicita !== undefined) o.aberturaEm = aberturaExplicita;
-  const eq = pickOptionalStr(r, 'equipamentoNome', 'equipamento_nome');
+  let eq = pickOptionalStr(r, 'equipamentoNome', 'equipamento_nome');
+  if (!eq) {
+    const eqRec = asRecord(r['equipamento']) ?? asRecord(r['equipamentoDto']);
+    if (eqRec) {
+      eq = pickOptionalStr(eqRec, 'nome', 'nomeEquipamento', 'nome_equipamento', 'descricao');
+    }
+  }
   if (eq) o.equipamentoNome = eq;
   const idT = pickOptionalStr(r, 'idTecnico', 'id_tecnico');
   if (idT) o.idTecnico = idT;
@@ -156,6 +162,8 @@ export function mapBrutoParaOrdemServico(raw: unknown): OrdemServico {
   if (idSol) o.idSolicitante = idSol;
   const sSol = pickOptionalStr(r, 'solicitanteNome', 'solicitante_nome');
   if (sSol) o.solicitanteNome = sSol;
+  const dOs = pickOptionalStr(r, 'descricaoOrdemServico', 'descricao_ordem_servico');
+  if (dOs) o.descricaoOrdemServico = dOs;
   const dServ = pickOptionalStr(r, 'descricaoServico', 'descricao_servico');
   if (dServ) o.descricaoServico = dServ;
   const pecas = pickOptionalStr(r, 'pecasUtilizadas', 'pecas_utilizadas');

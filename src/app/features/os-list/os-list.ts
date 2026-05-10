@@ -1,22 +1,20 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, HostListener, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { DialogComponent, DialogBotao } from '../../components/dialog/dialog.component';
 import { ModalContainerComponent } from '../../components/modal-container/modal-container';
 import { OsFormComponent } from '../../components/os-form/os-form';
+import { OsAcoesLinhaComponent } from '../../components/os-acoes-linha/os-acoes-linha';
 import { UserRole } from '../../core/enums/roles.enum';
 import { OrdemStatus } from '../../core/enums/status.enum';
 import { OrdemServicoService } from '../../core/http/ordem-servico.service';
 import { UsuarioService } from '../../core/http/usuario.service';
-import { AuthService } from '../../core/services/auth.service';
 import { OrdemServico, dataAberturaOuCriacao } from '../../core/models/ordem-servico.model';
 import { EquipamentoService } from '../../core/http/equipamento.service';
 import { compararNumeroOrdemServico } from '../../core/utils/numero-ordem-servico.util';
 import { statusOsViewBadgeColorClasses } from '../../core/utils/status-badge.util';
-import { appendOsTimelineEvent } from '../../core/storage/os-timeline-local.storage';
-import { usuarioPodeAcaoComoAdminOuTecnicoAtribuido } from '../../core/utils/os-acoes-permissao.util';
 
 export type PrioridadeOS = 'baixa' | 'media' | 'alta' | 'critica';
 export type StatusOS = 'aberto' | 'execucao' | 'pendente' | 'finalizada' | 'cancelada';
@@ -48,14 +46,13 @@ export interface OrdemServicoTabela {
 @Component({
   selector: 'app-os-list',
   standalone: true,
-  imports: [FormsModule, CommonModule, ModalContainerComponent, OsFormComponent, DialogComponent],
+  imports: [FormsModule, CommonModule, ModalContainerComponent, OsFormComponent, DialogComponent, OsAcoesLinhaComponent],
   templateUrl: './os-list.html'
 })
 export class OsList implements OnInit {
   private readonly ordemService = inject(OrdemServicoService);
   private readonly equipamentoService = inject(EquipamentoService);
   private readonly usuarioService = inject(UsuarioService);
-  private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -80,33 +77,13 @@ export class OsList implements OnInit {
   ordens: OrdemServicoTabela[] = [];
   ordensRaw: OrdemServico[] = [];
 
-  // Estado do dropdown de ações por linha
-  acaoAbertaId: string | null = null;
-
-  // Estado do modal de edição
-  osEmEdicao: OrdemServico | null = null;
-  showModalEdicao = false;
-
-  // Estado do Dialog
+  // Estado do Dialog (nova OS / feedback de recarga)
   dialogVisivel = false;
   dialogTitulo = '';
   dialogMensagem = '';
   dialogTipo: 'confirmacao' | 'erro' | 'info' = 'info';
   dialogBotoes: DialogBotao[] = [];
   private dialogCallback: (() => void) | null = null;
-
-  // Estado do modal de Iniciar
-  osParaIniciar: OrdemServico | null = null;
-  showModalIniciar = false;
-
-  // Estado do modal de Encerrar
-  osParaEncerrar: OrdemServico | null = null;
-  showModalEncerrar = false;
-
-  @HostListener('document:click')
-  fecharDropdown(): void {
-    this.fecharMenuAcoes();
-  }
 
   ngOnInit(): void {
     console.log('[OsList] ngOnInit chamado');
@@ -145,8 +122,12 @@ export class OsList implements OnInit {
     });
   }
 
-  private fecharMenuAcoes(): void {
-    this.acaoAbertaId = null;
+  ordemRawPorId(id: string): OrdemServico | undefined {
+    return this.ordensRaw.find((o) => o.idOrdemServico === id);
+  }
+
+  onOrdensMutadas(mensagemSucesso?: string): void {
+    this.recarregar(mensagemSucesso);
   }
 
   get ordensFiltradas(): OrdemServicoTabela[] {
@@ -300,7 +281,7 @@ export class OsList implements OnInit {
       id: ordem.idOrdemServico,
       numero: ordem.numeroOrdemServico,
       equipamento: ordem.idEquipamento
-        ? this.equipamentoNomeMap.get(ordem.idEquipamento) ?? 'N/D'
+        ? this.equipamentoNomeMap.get(ordem.idEquipamento) ?? ordem.equipamentoNome ?? 'N/D'
         : 'N/D',
       tipo: ordem.tipoManutencao ? this.formatarTipo(ordem.tipoManutencao) : 'N/D',
       prioridade: ordem.prioridadeOrdemServico ? this.mapearPrioridade(ordem.prioridadeOrdemServico) : 'baixa',
@@ -385,285 +366,9 @@ export class OsList implements OnInit {
     this.showModal = false;
   }
 
-  onModalEdicaoFechar(): void {
-    this.showModalEdicao = false;
-    this.osEmEdicao = null;
-  }
-
   onOsSalva(): void {
     this.showModal = false;
     this.recarregar('Ordem de serviço cadastrada com sucesso.');
-  }
-
-  onOsAtualizada(): void {
-    this.showModalEdicao = false;
-    this.osEmEdicao = null;
-    this.recarregar();
-  }
-
-  onModalIniciarFechar(): void {
-    this.showModalIniciar = false;
-    this.osParaIniciar = null;
-  }
-
-  onOsIniciada(): void {
-    this.showModalIniciar = false;
-    this.osParaIniciar = null;
-    this.recarregar('A ordem de serviço foi iniciada com sucesso.');
-  }
-
-  onModalEncerrarFechar(): void {
-    this.showModalEncerrar = false;
-    this.osParaEncerrar = null;
-  }
-
-  onOsEncerrada(): void {
-    this.showModalEncerrar = false;
-    this.osParaEncerrar = null;
-    this.recarregar();
-  }
-
-  isUserAdminOrAssignedTecnico(os: OrdemServico | OrdemServicoTabela): boolean {
-    const idTecnico = 'idTecnico' in os ? os.idTecnico : (os as OrdemServico).idTecnico;
-    return usuarioPodeAcaoComoAdminOuTecnicoAtribuido(this.authService.getCurrentUser(), idTecnico);
-  }
-
-  onIniciarOS(osId: string, event: MouseEvent): void {
-    event.stopPropagation();
-    this.fecharMenuAcoes();
-    const os = this.ordensRaw.find(o => o.idOrdemServico === osId);
-    if (!os) return;
-    this.osParaIniciar = os;
-    this.showModalIniciar = true;
-  }
-
-  onEncerrarOS(osId: string, event: MouseEvent): void {
-    event.stopPropagation();
-    this.fecharMenuAcoes();
-    const os = this.ordensRaw.find(o => o.idOrdemServico === osId);
-    if (!os) return;
-    if (os.statusOrdemServico !== OrdemStatus.EM_ANDAMENTO) return;
-
-    // Validar permissão
-    if (!this.isUserAdminOrAssignedTecnico(os)) {
-      this.dialogTitulo = 'Permissão negada';
-      this.dialogMensagem = 'Somente o técnico atribuído e administradores podem encerrar uma ordem de serviço.';
-      this.dialogTipo = 'erro';
-      this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
-      this.dialogCallback = null;
-      this.dialogVisivel = true;
-      return;
-    }
-
-    this.osParaEncerrar = os;
-    this.showModalEncerrar = true;
-  }
-
-  private nomeParaTimeline(): string {
-    return this.authService.getCurrentUser()?.nomeUsuario?.trim() || 'Usuário';
-  }
-
-  onAguardarPecaOS(osId: string, event: MouseEvent): void {
-    event.stopPropagation();
-    this.fecharMenuAcoes();
-    const os = this.ordensRaw.find(o => o.idOrdemServico === osId);
-    if (!os) return;
-    if (os.statusOrdemServico !== OrdemStatus.EM_ANDAMENTO) return;
-
-    if (!this.isUserAdminOrAssignedTecnico(os)) {
-      this.dialogTitulo = 'Permissão negada';
-      this.dialogMensagem =
-        'Somente o técnico atribuído e administradores podem marcar a ordem como aguardando peça.';
-      this.dialogTipo = 'erro';
-      this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
-      this.dialogCallback = null;
-      this.dialogVisivel = true;
-      return;
-    }
-
-    this.dialogTitulo = 'Marcar como Aguardando Peça';
-    this.dialogMensagem = 'Deseja marcar esta ordem de serviço como aguardando peça?';
-    this.dialogTipo = 'confirmacao';
-    this.dialogBotoes = [
-      { label: 'Não', acao: 'cancelar', estilo: 'neutro' },
-      { label: 'Sim', acao: 'confirmar', estilo: 'primario' },
-    ];
-    this.dialogCallback = () => {
-      const payload: any = {
-        statusOrdemServico: OrdemStatus.AGUARDANDO_PECA,
-      };
-      this.ordemService.atualizar(osId, payload).subscribe({
-        next: () => {
-          appendOsTimelineEvent(osId, 'AGUARDANDO_PECA', this.nomeParaTimeline());
-          this.recarregar('A ordem foi marcada como aguardando peça.');
-          this.cdr.markForCheck();
-        },
-        error: (err) => {
-          this.dialogTitulo = 'Erro';
-          this.dialogMensagem = err?.error?.message ?? 'Não foi possível marcar como aguardando peça.';
-          this.dialogTipo = 'erro';
-          this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
-          this.dialogCallback = null;
-          this.dialogVisivel = true;
-          this.cdr.markForCheck();
-        },
-      });
-    };
-    this.dialogVisivel = true;
-  }
-
-  onRetomarAtendimentoOS(osId: string, event: MouseEvent): void {
-    event.stopPropagation();
-    this.fecharMenuAcoes();
-    const os = this.ordensRaw.find((o) => o.idOrdemServico === osId);
-    if (!os) return;
-    if (os.statusOrdemServico !== OrdemStatus.AGUARDANDO_PECA) return;
-
-    if (!this.isUserAdminOrAssignedTecnico(os)) {
-      this.dialogTitulo = 'Permissão negada';
-      this.dialogMensagem =
-        'Somente o técnico atribuído e administradores podem retomar o atendimento.';
-      this.dialogTipo = 'erro';
-      this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
-      this.dialogCallback = null;
-      this.dialogVisivel = true;
-      return;
-    }
-
-    this.dialogTitulo = 'Retomar atendimento';
-    this.dialogMensagem = 'Deseja retomar o atendimento desta ordem de serviço?';
-    this.dialogTipo = 'confirmacao';
-    this.dialogBotoes = [
-      { label: 'Não', acao: 'cancelar', estilo: 'neutro' },
-      { label: 'Sim', acao: 'confirmar', estilo: 'primario' },
-    ];
-    this.dialogCallback = () => {
-      const payload: { statusOrdemServico: OrdemStatus } = {
-        statusOrdemServico: OrdemStatus.EM_ANDAMENTO,
-      };
-      this.ordemService.atualizar(osId, payload).subscribe({
-        next: () => {
-          appendOsTimelineEvent(osId, 'RETOMADA', this.nomeParaTimeline());
-          this.recarregar('O atendimento foi retomado com sucesso.');
-          this.cdr.markForCheck();
-        },
-        error: (err) => {
-          this.dialogTitulo = 'Erro';
-          this.dialogMensagem = err?.error?.message ?? 'Não foi possível retomar o atendimento.';
-          this.dialogTipo = 'erro';
-          this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
-          this.dialogCallback = null;
-          this.dialogVisivel = true;
-          this.cdr.markForCheck();
-        },
-      });
-    };
-    this.dialogVisivel = true;
-  }
-
-  onCancelarOS(osId: string, event: MouseEvent): void {
-    event.stopPropagation();
-    this.fecharMenuAcoes();
-    const os = this.ordensRaw.find((o) => o.idOrdemServico === osId);
-    if (!os) return;
-    if (os.statusOrdemServico !== OrdemStatus.AGUARDANDO_PECA) return;
-
-    if (!this.isUserAdminOrAssignedTecnico(os)) {
-      this.dialogTitulo = 'Permissão negada';
-      this.dialogMensagem =
-        'Somente o técnico atribuído e administradores podem cancelar a ordem de serviço.';
-      this.dialogTipo = 'erro';
-      this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
-      this.dialogCallback = null;
-      this.dialogVisivel = true;
-      return;
-    }
-
-    this.dialogTitulo = 'Cancelar ordem de serviço';
-    this.dialogMensagem =
-      'Deseja cancelar esta ordem de serviço? O atendimento não será concluído e o status passará a Cancelado.';
-    this.dialogTipo = 'confirmacao';
-    this.dialogBotoes = [
-      { label: 'Não', acao: 'cancelar', estilo: 'neutro' },
-      { label: 'Sim, cancelar', acao: 'confirmar', estilo: 'perigo' },
-    ];
-    this.dialogCallback = () => {
-      this.ordemService.atualizar(osId, { statusOrdemServico: OrdemStatus.CANCELADO }).subscribe({
-        next: () => {
-          this.recarregar('A ordem de serviço foi cancelada.');
-          this.cdr.markForCheck();
-        },
-        error: (err) => {
-          this.dialogTitulo = 'Erro';
-          this.dialogMensagem = err?.error?.message ?? 'Não foi possível cancelar a ordem de serviço.';
-          this.dialogTipo = 'erro';
-          this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
-          this.dialogCallback = null;
-          this.dialogVisivel = true;
-          this.cdr.markForCheck();
-        },
-      });
-    };
-    this.dialogVisivel = true;
-  }
-
-  abrirMenuAcao(osId: string, event: MouseEvent): void {
-    event.stopPropagation();
-    this.acaoAbertaId = this.acaoAbertaId === osId ? null : osId;
-  }
-
-  onEditarOS(osId: string, event: MouseEvent): void {
-    event.stopPropagation();
-    this.fecharMenuAcoes();
-    const os = this.ordensRaw.find(o => o.idOrdemServico === osId);
-    if (!os) return;
-    this.osEmEdicao = os;
-    this.showModalEdicao = true;
-  }
-
-  onExcluirOS(osId: string, event: MouseEvent): void {
-    event.stopPropagation();
-    this.fecharMenuAcoes();
-    const os = this.ordensRaw.find(o => o.idOrdemServico === osId);
-    if (!os) return;
-
-    if (os.statusOrdemServico !== OrdemStatus.ABERTO) {
-      this.dialogTitulo = 'Exclusão não permitida';
-      this.dialogMensagem = 'Só é possível excluir OS que estiverem "EM ABERTO".';
-      this.dialogTipo = 'erro';
-      this.dialogBotoes = [{ label: 'Entendi', acao: 'ok', estilo: 'primario' }];
-      this.dialogCallback = null;
-      this.dialogVisivel = true;
-      return;
-    }
-
-    this.dialogTitulo = 'Confirmar Exclusão';
-    this.dialogMensagem = `Tem certeza que deseja excluir a OS "${os.numeroOrdemServico}"? Esta ação não pode ser desfeita.`;
-    this.dialogTipo = 'confirmacao';
-    this.dialogBotoes = [
-      { label: 'Cancelar', acao: 'cancelar', estilo: 'neutro' },
-      { label: 'Excluir', acao: 'confirmar', estilo: 'perigo' },
-    ];
-    this.dialogCallback = () => this.executarExclusao(osId);
-    this.dialogVisivel = true;
-  }
-
-  private executarExclusao(osId: string): void {
-    this.ordemService.deletar(osId).subscribe({
-      next: () => {
-        this.recarregar();
-        this.cdr.markForCheck();
-      },
-      error: (err) => {
-        this.dialogTitulo = 'Erro ao excluir';
-        this.dialogMensagem = err?.error?.message ?? 'Não foi possível excluir a ordem de serviço.';
-        this.dialogTipo = 'erro';
-        this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
-        this.dialogCallback = null;
-        this.dialogVisivel = true;
-        this.cdr.markForCheck();
-      },
-    });
   }
 
   onDialogAcao(acao: string): void {
@@ -712,10 +417,8 @@ export class OsList implements OnInit {
     });
   }
 
-  onVerDetalhes(id: string, event?: MouseEvent): void {
-    event?.stopPropagation();
-    this.fecharMenuAcoes();
-    this.router.navigate(['/app/ordens', id]);
+  onVerDetalhes(id: string): void {
+    void this.router.navigate(['/app/ordens', id]);
   }
 
   onPaginaAnterior(): void {

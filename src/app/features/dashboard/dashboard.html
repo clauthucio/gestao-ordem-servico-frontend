@@ -1,111 +1,127 @@
+@if (dialogVisivel) {
+  <app-dialog
+    [titulo]="dialogTitulo"
+    [mensagem]="dialogMensagem"
+    [tipo]="dialogTipo"
+    [botoes]="dialogBotoes"
+    (acao)="onDashboardDialogAcao($event)"
+  />
+}
+
 <!-- Metric Grid -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6 mb-4 max-w-7xl mx-auto mt-6">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6 mb-4 mt-6 w-full max-w-7xl ml-[calc(1.5rem+2cm)]">
 
   <!-- Card 1: OS Abertas Hoje -->
-  <div class="bg-slate-50 p-2 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
+  <div class="bg-slate-50 p-4 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-all flex flex-col justify-between min-h-[172px] cursor-pointer select-none"
        [ngClass]="{'ring-2 ring-slate-400 ring-offset-2': filtroAtivo === 'ABERTO'}"
        (click)="selecionarFiltro('ABERTO')">
-    <div>
-      <div class="flex justify-between items-start mb-4">
-        <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
-          <span class="material-symbols-outlined text-slate-600">pending_actions</span>
+    <div class="min-h-0">
+      <div class="flex justify-between items-center mb-4 gap-2 min-h-8">
+        <div class="w-8 h-8 shrink-0 rounded-lg bg-slate-100 flex items-center justify-center">
+          <span class="material-symbols-outlined text-xl text-slate-600">pending_actions</span>
         </div>
-        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">30 DIAS</span>
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0 leading-none">30 DIAS</span>
       </div>
       <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Abertas</h3>
       <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ osAbertasHoje }}</p>
     </div>
-    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-[11px] text-slate-600 font-medium">
-      <span class="material-symbols-outlined text-xl mr-1">assignment</span>
+    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center min-h-10 text-[11px] text-slate-600 font-medium">
+      <span class="material-symbols-outlined text-xl leading-none">assignment</span>
     </div>
   </div>
 
   <!-- Card 2: OS em Andamento -->
-  <div class="bg-blue-50 p-4 rounded-xl shadow-sm border border-blue-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
+  <div class="bg-blue-50 p-4 rounded-xl shadow-sm border border-blue-100 hover:shadow-md transition-all flex flex-col justify-between min-h-[172px] cursor-pointer select-none"
        [ngClass]="{'ring-2 ring-blue-400 ring-offset-2': filtroAtivo === 'EM_ANDAMENTO'}"
        (click)="selecionarFiltro('EM_ANDAMENTO')">
-    <div>
-      <div class="flex justify-between items-start mb-4">
-        <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-          <span class="material-symbols-outlined text-blue-600">engineering</span>
+    <div class="min-h-0">
+      <div class="flex justify-between items-center mb-4 min-h-8">
+        <div class="w-8 h-8 shrink-0 rounded-lg bg-blue-100 flex items-center justify-center">
+          <span class="material-symbols-outlined text-xl text-blue-600">engineering</span>
         </div>
+        <span class="w-8 shrink-0" aria-hidden="true"></span>
       </div>
       <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Em Andamento</h3>
       <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ osEmAndamento }}</p>
     </div>
-    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 text-blue-600">
-      <span class="material-symbols-outlined text-xl mr-1">cycle</span>
+    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center min-h-10 gap-2 text-blue-600">
+      <span class="material-symbols-outlined text-xl leading-none">cycle</span>
     </div>
   </div>
 
   <!-- Card 3: Aguardando Peça -->
-  <div class="bg-yellow-50 p-6 rounded-xl shadow-sm border border-yellow-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
+  <div class="bg-yellow-50 p-4 rounded-xl shadow-sm border border-yellow-100 hover:shadow-md transition-all flex flex-col justify-between min-h-[172px] cursor-pointer select-none"
        [ngClass]="{'ring-2 ring-yellow-400 ring-offset-2': filtroAtivo === 'AGUARDANDO_PECA'}"
        (click)="selecionarFiltro('AGUARDANDO_PECA')">
-    <div>
-      <div class="flex justify-between items-start mb-4">
-        <div class="w-8 h-8 rounded-lg bg-yellow-50 flex items-center justify-center">
+    <div class="min-h-0">
+      <div class="flex justify-between items-center mb-4 min-h-8">
+        <div class="w-8 h-8 shrink-0 rounded-lg bg-yellow-50 flex items-center justify-center">
           <span class="material-symbols-outlined text-xl text-yellow-600">inventory_2</span>
         </div>
+        <span class="w-8 shrink-0" aria-hidden="true"></span>
       </div>
       <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Aguardando Peça</h3>
       <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ osAguardandopeca }}</p>
     </div>
-    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-[11px] text-yellow-600 font-medium">
-      <span class="material-symbols-outlined text-xl mr-1">hourglass_empty</span>
+    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center min-h-10 text-[11px] text-yellow-600 font-medium">
+      <span class="material-symbols-outlined text-xl leading-none">hourglass_empty</span>
     </div>
   </div>
 
   <!-- Card 4: Prioridade Crítica -->
-  <div class="bg-orange-200 p-4 rounded-xl shadow-sm border border-red-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
-       [ngClass]="{'ring-2 ring-red-400 ring-offset-2': filtroAtivo === 'CRITICA'}"
+  <div class="bg-red-50 p-4 rounded-xl shadow-sm border border-red-200 hover:shadow-md transition-all flex flex-col justify-between min-h-[172px] cursor-pointer select-none"
+       [ngClass]="{'ring-2 ring-red-500 ring-offset-2': filtroAtivo === 'CRITICA'}"
        (click)="selecionarFiltro('CRITICA')">
-    <div>
-      <div class="flex justify-between items-start mb-4">
-        <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
-          <span class="material-symbols-outlined text-orange-600" style="font-variation-settings: 'FILL' 1;">priority_high</span>
+    <div class="min-h-0">
+      <div class="flex justify-between items-center mb-4 gap-2 min-h-8">
+        <div class="w-8 h-8 shrink-0 rounded-lg bg-red-100 flex items-center justify-center">
+          <span class="material-symbols-outlined text-xl text-red-600" style="font-variation-settings: 'FILL' 1;">priority_high</span>
         </div>
-        <span class="px-2 py-0. rounded text-[10px] font-bold bg-orange-600 text-white uppercase">Crítico</span>
+        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-600 text-white uppercase shrink-0 leading-none">Crítico</span>
       </div>
-      <h3 class="text-red-600 text-xs font-semibold uppercase tracking-wider mb-1">Crítica - Não Iniciado </h3>
-      <p class="text-3xl font-black text-orange-800 tracking-tighter">{{ osCriticas }}</p>
+      <h3 class="text-red-700 text-xs font-semibold uppercase tracking-wider mb-1">Crítica - Não Iniciado </h3>
+      <p class="text-3xl font-black text-red-900 tracking-tighter">{{ osCriticas }}</p>
     </div>
-    <span class="material-symbols-outlined text-2xl text-orange-600">e911_emergency</span>
+    <div class="mt-4 pt-4 border-t border-red-100 flex items-center min-h-10 text-red-600">
+      <span class="material-symbols-outlined text-xl leading-none">e911_emergency</span>
+    </div>
   </div>
 
   <!-- Card 5: Concluídas -->
-  <div class="bg-emerald-50 p-6 rounded-xl shadow-sm border border-emerald-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
+  <div class="bg-emerald-50 p-4 rounded-xl shadow-sm border border-emerald-100 hover:shadow-md transition-all flex flex-col justify-between min-h-[172px] cursor-pointer select-none"
        [ngClass]="{'ring-2 ring-emerald-400 ring-offset-2': filtroAtivo === 'CONCLUIDO'}"
        (click)="selecionarFiltro('CONCLUIDO')">
-    <div>
-      <div class="flex justify-between items-start mb-4">
-        <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+    <div class="min-h-0">
+      <div class="flex justify-between items-center mb-4 min-h-8">
+        <div class="w-8 h-8 shrink-0 rounded-lg bg-emerald-50 flex items-center justify-center">
           <span class="material-symbols-outlined text-xl text-emerald-600">check_circle</span>
         </div>
+        <span class="w-8 shrink-0" aria-hidden="true"></span>
       </div>
       <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Concluídas</h3>
       <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ osConcluidas }}</p>
     </div>
-    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-[11px] text-emerald-600 font-medium">
-      <span class="material-symbols-outlined text-xl mr-1">verified</span>
+    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center min-h-10 text-[11px] text-emerald-600 font-medium">
+      <span class="material-symbols-outlined text-xl leading-none">verified</span>
     </div>
   </div>
 
   <!-- Card 6: Canceladas -->
-  <div class="bg-red-50 p-6 rounded-xl shadow-sm border border-red-100 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer select-none"
-       [ngClass]="{'ring-2 ring-red-400 ring-offset-2': filtroAtivo === 'CANCELADAS'}"
-       (click)="selecionarFiltro('CANCELADAS')">
-    <div>
-      <div class="flex justify-between items-start mb-4">
-        <div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
-          <span class="material-symbols-outlined text-xl text-red-600">cancel</span>
+  <div class="bg-stone-100 p-4 rounded-xl shadow-sm border border-stone-200 hover:shadow-md transition-all flex flex-col justify-between min-h-[172px] cursor-pointer select-none"
+       [ngClass]="{'ring-2 ring-stone-400 ring-offset-2': filtroAtivo === 'CANCELADO'}"
+       (click)="selecionarFiltro('CANCELADO')">
+    <div class="min-h-0">
+      <div class="flex justify-between items-center mb-4 min-h-8">
+        <div class="w-8 h-8 shrink-0 rounded-lg bg-stone-200 flex items-center justify-center">
+          <span class="material-symbols-outlined text-xl text-stone-600">cancel</span>
         </div>
+        <span class="w-8 shrink-0" aria-hidden="true"></span>
       </div>
-      <h3 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Canceladas</h3>
-      <p class="text-3xl font-black text-slate-800 tracking-tighter">{{ canceladas }}</p>
+      <h3 class="text-stone-600 text-xs font-semibold uppercase tracking-wider mb-1">Canceladas</h3>
+      <p class="text-3xl font-black text-stone-800 tracking-tighter">{{ canceladas }}</p>
     </div>
-    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center text-[11px] text-red-600 font-medium">
-      <span class="material-symbols-outlined text-xl mr-1">block</span>
+    <div class="mt-4 pt-4 border-t border-stone-200 flex items-center min-h-10 text-[11px] text-stone-600 font-medium">
+      <span class="material-symbols-outlined text-xl leading-none">block</span>
     </div>
   </div>
 
@@ -118,74 +134,103 @@
 <div class="grid grid-cols-12 gap-8 items-start">
 
   <!-- Main OS Table -->
-  <section class="col-span-12 xl:col-span-8 ml-6">
-    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-      <div class="bg-slate-500 px-6 py-5 flex items-center justify-between border-b border-slate-100">
+  <section class="col-span-12 xl:col-span-8 ml-[calc(1.5rem+2cm)]">
+    <div
+      class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden w-full max-w-[calc(100%-4cm)]"
+    >
+      <div class="bg-surface-container-lowest px-6 py-5 flex items-center justify-between border-b border-outline-variant/10">
         <div class="flex items-center gap-2">
-          <h2 class="text-white text-sm font-bold text-slate-800">Ordens de Serviço Recentes</h2>
+          <h2 class="text-sm font-bold text-on-background">Ordens de Serviço Recentes</h2>
           @if (filtroAtivo) {
-            <span class="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full uppercase">
+            <span class="text-[10px] font-bold px-2 py-0.5 bg-surface-container-high text-on-surface-variant rounded-full uppercase">
               {{ filtroLabels[filtroAtivo] }}
             </span>
           }
         </div>
-        <button class="text-slate-100 text-xs font-semibold hover:underline" (click)="selecionarFiltro(null)">Ver todas</button>
+        <button class="text-primary text-xs font-semibold hover:underline" type="button" (click)="selecionarFiltro(null)">
+          Limpar filtro
+        </button>
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead class="bg-slate-50">
-            <tr>
-              <th class="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID</th>
-              <th class="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Equipamento</th>
-              <th class="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
-              <th class="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Técnico</th>
-              <th class="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Ações</th>
+        <table class="w-full min-w-[56rem] table-fixed border-collapse text-left">
+          <thead>
+            <tr class="border-b border-outline-variant/15 bg-surface-container-low/50">
+              <th class="px-6 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant w-[10%]">ID</th>
+              <th class="px-6 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant min-w-0 w-[26%]">
+                Equipamento
+              </th>
+              <th class="px-6 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant min-w-0 w-[23%]">
+                Descrição da Ordem de Serviço
+              </th>
+              <th class="px-6 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant text-center w-[10%]">Status</th>
+              <th class="px-6 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant min-w-0 w-[19%]">
+                Técnico
+              </th>
+              <th class="px-6 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant text-right w-[12%]">
+                Ações
+              </th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <tbody>
             @if (carregando) {
               <tr>
-                <td colspan="5" class="px-6 py-12 text-center">
+                <td colspan="6" class="px-6 py-12 text-center">
                   <div class="flex justify-center items-center gap-2">
-                    <span class="material-symbols-outlined animate-spin">hourglass_bottom</span>
-                    <span class="text-sm text-slate-500">Carregando ordens de serviço...</span>
+                    <span class="material-symbols-outlined animate-spin text-on-surface-variant">hourglass_bottom</span>
+                    <span class="text-sm text-on-surface-variant">Carregando ordens de serviço...</span>
                   </div>
                 </td>
               </tr>
             } @else if (erro) {
               <tr>
-                <td colspan="5" class="px-6 py-12 text-center">
-                  <span class="text-sm text-red-600">{{ erro }}</span>
+                <td colspan="6" class="px-6 py-12 text-center">
+                  <span class="text-sm text-error">{{ erro }}</span>
                 </td>
               </tr>
             } @else if (ordens.length === 0) {
               <tr>
-                <td colspan="5" class="px-6 py-12 text-center">
-                  <span class="text-sm text-slate-400">Nenhuma ordem de serviço encontrada</span>
+                <td colspan="6" class="px-6 py-12 text-center">
+                  <span class="text-sm text-on-surface-variant">Nenhuma ordem de serviço encontrada</span>
                 </td>
               </tr>
             } @else if (ordensFiltradas.length === 0) {
               <tr>
-                <td colspan="5" class="px-6 py-12 text-center">
-                  <span class="text-sm text-slate-400">Nenhuma OS encontrada para "{{ filtroLabels[filtroAtivo!] }}"</span>
+                <td colspan="6" class="px-6 py-12 text-center">
+                  <span class="text-sm text-on-surface-variant">Nenhuma OS encontrada para "{{ filtroLabels[filtroAtivo!] }}"</span>
                 </td>
               </tr>
             } @else {
               @for (os of ordensFiltradas.slice(0, 8); track os.idOrdemServico) {
-                <tr class="hover:bg-slate-50/50 transition-colors">
-                  <td class="px-6 py-4 text-xs font-mono font-medium text-slate-600">#{{ os.numeroOrdemServico }}</td>
-                  <td class="px-6 py-4">
-                    <p class="text-sm font-semibold text-slate-800">{{ os.descricaoFalha }}</p>
-                    <p class="text-[10px] text-slate-400">{{ os.tipoManutencao }}</p>
+                <tr
+                  class="border-b border-outline-variant/10 hover:bg-surface-container-low/30 transition-colors cursor-pointer"
+                  (click)="onVerDetalhesOrdem(os.idOrdemServico)"
+                  role="button"
+                  tabindex="0"
+                  (keydown.enter)="onVerDetalhesOrdem(os.idOrdemServico)"
+                  (keydown.space)="$event.preventDefault(); onVerDetalhesOrdem(os.idOrdemServico)"
+                >
+                  <td class="px-6 py-4 text-xs font-mono font-medium text-on-surface-variant w-[10%] max-w-[10%] align-top">
+                    #{{ os.numeroOrdemServico }}
                   </td>
-                  <td class="px-6 py-4">
+                  <td class="px-6 py-4 min-w-0 align-top w-[26%] max-w-[26%]">
+                    <p class="text-sm font-semibold text-on-background break-words">
+                      {{ getEquipamentoExibicao(os) }}
+                    </p>
+                    <p class="text-[10px] text-on-surface-variant break-words">{{ os.tipoManutencao }}</p>
+                  </td>
+                  <td class="px-6 py-4 min-w-0 align-top text-sm text-on-background break-words w-[23%] max-w-[23%]">
+                    {{ getDescricaoOrdemExibicao(os) }}
+                  </td>
+                  <td class="px-6 py-4 text-center align-top w-[10%]">
                     <span [class]="getStatusClass(os.statusOrdemServico)">{{ getStatusLabel(os.statusOrdemServico) }}</span>
                   </td>
-                  <td class="px-6 py-4 text-sm text-slate-500">
+                  <td
+                    class="px-6 py-4 text-sm text-on-surface-variant min-w-0 align-top break-words hyphens-auto w-[19%] max-w-[19%]"
+                  >
                     {{ getTecnicoNome(os.idTecnico) }}
                   </td>
-                  <td class="px-6 py-4 text-right">
-                    <button class="material-symbols-outlined text-slate-400 hover:text-slate-600 transition-colors">more_vert</button>
+                  <td class="px-6 py-4 text-right align-top w-[12%]" (click)="$event.stopPropagation()">
+                    <app-os-acoes-linha [ordem]="os" (dadosAlterados)="onDadosOsAlterados($event)" />
                   </td>
                 </tr>
               }
@@ -200,67 +245,94 @@
   <aside class="col-span-12 xl:col-span-4 space-y-8">
 
     <!-- Disponibilidade Técnica -->
-    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-      <div class="bg-slate-500 px-6 py-5 border-b border-slate-100 flex items-center justify-between">
-        <h2 class="text-white text-sm font-bold text-slate-800">Disponibilidade técnica</h2>
-        <span class="text-[10px] font-bold text-white uppercase tracking-widest">OS ativas</span>
+    <div
+      class="relative z-10 bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden w-full max-w-[calc(100%-2cm)] -translate-x-[3cm]"
+    >
+      <div class="bg-surface-container-lowest px-6 py-5 border-b border-outline-variant/10 flex items-center justify-between">
+        <h2 class="text-sm font-bold text-on-background">Disponibilidade técnica</h2>
+        <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Ordens de Serviço ativas</span>
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead class="bg-slate-50">
-            <tr>
-              <th class="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Técnico</th>
-              <th class="px-3 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Baixa</th>
-              <th class="px-3 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Média</th>
-              <th class="px-3 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Alta</th>
-              <th class="px-3 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Crítica</th>
+        <table class="w-full table-fixed border-collapse text-left">
+          <thead>
+            <tr class="border-b border-outline-variant/15 bg-surface-container-low/50">
+              <th class="px-4 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant min-w-0 w-[40%]">
+                Técnico
+              </th>
+              <th class="px-3 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant text-center w-[15%]">
+                Baixa
+              </th>
+              <th class="px-3 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant text-center w-[15%]">
+                Média
+              </th>
+              <th class="px-3 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant text-center w-[15%]">
+                Alta
+              </th>
+              <th class="px-3 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant text-center w-[15%]">
+                Crítica
+              </th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <tbody>
             @if (carregando) {
               <tr>
                 <td colspan="5" class="px-4 py-8 text-center">
-                  <span class="material-symbols-outlined animate-spin text-slate-400">hourglass_bottom</span>
+                  <span class="material-symbols-outlined animate-spin text-on-surface-variant">hourglass_bottom</span>
                 </td>
               </tr>
             } @else if (disponibilidadeTecnicos.length === 0) {
               <tr>
-                <td colspan="5" class="px-4 py-8 text-center text-xs text-slate-400">
+                <td colspan="5" class="px-4 py-8 text-center text-xs text-on-surface-variant">
                   Nenhum técnico com OS ativa
                 </td>
               </tr>
             } @else {
               @for (tec of disponibilidadeTecnicos; track tec.idTecnico) {
-                <tr class="hover:bg-slate-50/50 transition-colors">
-                  <td class="px-4 py-3 text-xs font-semibold text-slate-700 max-w-[120px] truncate" [title]="tec.tecnicoNome">
+                <tr class="border-b border-outline-variant/10 hover:bg-surface-container-low/30 transition-colors">
+                  <td
+                    class="px-4 py-3 text-xs font-semibold text-on-background min-w-0 align-top break-words hyphens-auto"
+                    [title]="tec.tecnicoNome"
+                  >
                     {{ tec.tecnicoNome }}
                   </td>
                   <td class="px-3 py-3 text-center">
                     @if (tec.baixa > 0) {
-                      <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">{{ tec.baixa }}</span>
+                      <span
+                        class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-surface-container-high text-on-surface-variant text-[11px] font-bold"
+                        >{{ tec.baixa }}</span
+                      >
                     } @else {
-                      <span class="text-[11px] text-slate-300 font-medium">—</span>
+                      <span class="text-[11px] text-outline font-medium">—</span>
                     }
                   </td>
                   <td class="px-3 py-3 text-center">
                     @if (tec.media > 0) {
-                      <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold">{{ tec.media }}</span>
+                      <span
+                        class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-bold"
+                        >{{ tec.media }}</span
+                      >
                     } @else {
-                      <span class="text-[11px] text-slate-300 font-medium">—</span>
+                      <span class="text-[11px] text-outline font-medium">—</span>
                     }
                   </td>
                   <td class="px-3 py-3 text-center">
                     @if (tec.alta > 0) {
-                      <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-700 text-[11px] font-bold">{{ tec.alta }}</span>
+                      <span
+                        class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-tertiary/15 text-tertiary text-[11px] font-bold"
+                        >{{ tec.alta }}</span
+                      >
                     } @else {
-                      <span class="text-[11px] text-slate-300 font-medium">—</span>
+                      <span class="text-[11px] text-outline font-medium">—</span>
                     }
                   </td>
                   <td class="px-3 py-3 text-center">
                     @if (tec.critica > 0) {
-                      <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-700 text-[11px] font-bold">{{ tec.critica }}</span>
+                      <span
+                        class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-error/15 text-error text-[11px] font-bold"
+                        >{{ tec.critica }}</span
+                      >
                     } @else {
-                      <span class="text-[11px] text-slate-300 font-medium">—</span>
+                      <span class="text-[11px] text-outline font-medium">—</span>
                     }
                   </td>
                 </tr>
@@ -271,43 +343,72 @@
       </div>
     </div>
 
-    <!-- Activity Chart -->
-    <div class="bg-slate-500 p-6 rounded-xl shadow-sm">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-white text-sm font-bold text-slate-800">Atividade Semanal</h2>
-        <span class="text-[10px] font-bold text-slate-100">ÚLTIMOS 7 DIAS</span>
+    <!-- Atividade Semanal — histograma (OS nos últimos 7 dias) -->
+    <div class="relative z-10 bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden -translate-x-[4cm]">
+      <div class="px-5 pt-5 pb-3 border-b border-outline-variant/10">
+        <h2 class="text-sm font-bold text-on-background">Atividade Semanal</h2>
+        <p class="text-[10px] text-on-surface-variant mt-1">Quantidade de ordens de serviço por dia — últimos 7 dias</p>
       </div>
-      <div class="flex flex-col gap-2 mt-2">
-        @for (dia of atividadeSemanal; track dia.dia) {
-          <div class="flex items-center gap-2">
-            <span class="text-[9px] font-bold text-slate-100 uppercase tracking-tighter w-6 shrink-0 text-right">
-              {{ dia.dia }}
-            </span>
-            <div class="flex-1 h-5 bg-slate-50 rounded-sm overflow-hidden">
+      <div class="p-5 bg-slate-50">
+        <div class="flex gap-3 items-stretch">
+          <!-- Eixo Y: quantidade de OS (fundo = área do gráfico, cinza claro) -->
+          <div
+            class="flex flex-col justify-between shrink-0 text-[10px] tabular-nums text-on-surface-variant text-right min-w-[2rem] h-40 py-0.5 border-r border-slate-300/45 bg-slate-50"
+            aria-hidden="true"
+          >
+            @for (t of ticksEixoY; track t) {
+              <span class="leading-none">{{ t }}</span>
+            }
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col">
+            <!-- Área de plotagem: cinza médio-claro -->
+            <div
+              class="relative h-40 rounded-tr-sm border-l border-b border-slate-400/35 bg-slate-200"
+              role="img"
+              [attr.aria-label]="'Ordens de serviço por dia nos últimos sete dias'"
+            >
+              <!-- Grade horizontal -->
               <div
-                class="h-full rounded-sm transition-all cursor-pointer"
-                [ngClass]="dia.ativo ? 'bg-slate-600' : 'bg-slate-200 hover:bg-slate-400'"
-                [style.width.%]="dia.porcentagem">
+                class="absolute inset-0 flex flex-col justify-between pointer-events-none pt-0.5 pb-px pl-1 pr-1"
+              >
+                @for (t of ticksEixoY; track t) {
+                  <div class="border-t border-slate-300/30 w-full first:border-t-0"></div>
+                }
+              </div>
+              <!-- Barras: eixo X = dia da semana (rótulos abaixo); altura = quantidade -->
+              <div class="relative z-[1] flex h-full items-end justify-between gap-0.5 sm:gap-1 px-1">
+                @for (dia of atividadeSemanal; track $index) {
+                  <div class="flex flex-col items-center flex-1 min-w-0 h-full min-h-0">
+                    <div class="grid grid-rows-[auto_1fr] h-full w-full min-h-0 max-w-[2.5rem] mx-auto">
+                      <span
+                        class="text-[10px] font-bold tabular-nums text-on-background text-center leading-none pb-1"
+                        >{{ dia.valor }}</span
+                      >
+                      <div class="flex flex-col justify-end min-h-0 pt-0.5 border-l border-r border-slate-200/50 rounded-t-sm bg-transparent">
+                        <div
+                          class="w-[48%] mx-auto rounded-t-md bg-primary transition-[height] duration-300 min-h-0"
+                          [class.ring-2]="dia.ehHoje"
+                          [class.ring-primary]="dia.ehHoje"
+                          [class.ring-offset-2]="dia.ehHoje"
+                          [class.ring-offset-slate-200]="dia.ehHoje"
+                          [style.height.%]="dia.alturaPercentual"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                }
               </div>
             </div>
-            <span class="text-[9px] font-medium text-slate-100 w-4 text-right">{{ dia.valor }}</span>
+            <!-- Eixo X: dias da semana + data -->
+            <div class="flex justify-between gap-0.5 sm:gap-1 mt-3 pl-0.5 text-center border-t border-slate-300/45 pt-2 bg-slate-50">
+              @for (dia of atividadeSemanal; track $index) {
+                <div class="flex-1 min-w-0">
+                  <p class="text-[10px] font-semibold text-on-background leading-tight">{{ dia.dia }}</p>
+                  <p class="text-[9px] text-on-surface-variant leading-tight">{{ dia.rotuloData }}</p>
+                </div>
+              }
+            </div>
           </div>
-        }
-      </div>
-      <div class="mt-6 flex items-center justify-between">
-        <div class="text-center">
-          <p class="text-xs text-slate-100 font-medium">Concluídas</p>
-          <p class="text-lg font-bold text-emerald-500">{{ osConcluidas }} Concluídas</p>
-        </div>
-        <div class="w-[1px] h-8 bg-slate-100"></div>
-        <div class="text-center">
-          <p class="text-xs text-slate-100 font-medium">Canceladas</p>
-          <p class="text-lg font-bold text-red-600">{{ canceladas }}</p>
-        </div>
-        <div class="w-[1px] h-8 bg-slate-100"></div>
-        <div class="text-center">
-          <p class="text-xs text-slate-100 font-medium">Eficiência</p>
-          <p class="text-lg font-bold text-blue-400">{{ eficiencia }}</p>
         </div>
       </div>
     </div>

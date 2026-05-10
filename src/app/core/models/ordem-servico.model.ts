@@ -16,6 +16,8 @@ export interface OrdemServico {
   prioridadeOrdemServico: PrioridadeType;
   statusOrdemServico: OrdemStatus;
   descricaoFalha: string;
+  /** Descrição geral da ordem de serviço (API: `descricao_ordem_servico`). */
+  descricaoOrdemServico?: string;
   descricaoServico?: string;
   pecasUtilizadas?: string;
   horasTrabalhadas?: number;
