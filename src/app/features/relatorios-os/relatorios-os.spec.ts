@@ -57,58 +57,25 @@ describe('RelatoriosOs', () => {
 
   it('deve exibir título do relatório', () => {
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Relatório de Produtividade por Técnico');
+    expect(el.textContent).toContain('Relatórios de ordens de serviço');
   });
 
-  it('filtro de status padrão é apenas Concluído', () => {
-    expect(component.statusSelecionados).toEqual([OrdemStatus.CONCLUIDO]);
+  it('modo padrão é ordens de serviço concluídas', () => {
+    expect(component.modoRelatorio).toBe('concluidas');
   });
 
-  it('resumosPorStatus tem um bloco de cartões por cada status selecionado (ordem fixa)', () => {
-    expect(component.resumosPorStatus.length).toBe(1);
-    expect(component.resumosPorStatus.map((r) => r.status)).toEqual([OrdemStatus.CONCLUIDO]);
-  });
-
-  it('limparFiltros repõe status ao padrão', () => {
-    component.statusSelecionados = [OrdemStatus.ABERTO];
+  it('limparFiltros repõe modo e janela de datas', () => {
+    component.modoRelatorio = 'canceladas';
+    component.dataInicio = '2000-01-01';
     component.limparFiltros();
-    expect(component.statusSelecionados).toEqual([OrdemStatus.CONCLUIDO]);
+    expect(component.modoRelatorio).toBe('concluidas');
+    const hoje = new Date();
+    expect(component.dataFim).toBe(ymd(hoje));
   });
 
-  it('não permite desmarcar o último status no pendente e mantém seleção', () => {
-    component.statusSelecionadosPendente = [OrdemStatus.ABERTO];
-    component.alternarStatusPendente(OrdemStatus.ABERTO, false);
-    expect(component.erro).toContain('pelo menos');
-    expect(component.statusMarcadoPendente(OrdemStatus.ABERTO)).toBe(true);
-  });
-
-  it('tituloPrincipalExportacao e textoFiltroStatusExportacao refletem o filtro', () => {
-    expect(component.tituloPrincipalExportacao()).toContain('ordens de serviço');
-    expect(component.textoFiltroStatusExportacao()).toContain('Concluído');
-  });
-
-  it('confirmarSelecaoStatus aplica pendente e fecha o painel', () => {
-    component.painelStatusAberto = true;
-    component.statusSelecionadosPendente = [OrdemStatus.CONCLUIDO, OrdemStatus.EM_ANDAMENTO];
-    component.confirmarSelecaoStatus();
-    expect(component.statusSelecionados).toEqual([OrdemStatus.CONCLUIDO, OrdemStatus.EM_ANDAMENTO]);
-    expect(component.painelStatusAberto).toBe(false);
-  });
-
-  it('confirmarSelecaoStatus com lista vazia define erro', () => {
-    component.statusSelecionadosPendente = [];
-    component.confirmarSelecaoStatus();
-    expect(component.erro).toContain('pelo menos');
-  });
-
-  it('cancelarPainelStatus repõe pendente a partir do aplicado e fecha', () => {
-    component.statusSelecionados = [OrdemStatus.CONCLUIDO];
-    component.painelStatusAberto = true;
-    component.statusSelecionadosPendente = [OrdemStatus.CONCLUIDO, OrdemStatus.ABERTO];
-    component.cancelarPainelStatus();
-    expect(component.statusSelecionados).toEqual([OrdemStatus.CONCLUIDO]);
-    expect(component.statusSelecionadosPendente).toEqual([OrdemStatus.CONCLUIDO]);
-    expect(component.painelStatusAberto).toBe(false);
+  it('tituloPrincipalExportacao e textoFiltroStatusExportacao refletem o modo', () => {
+    expect(component.tituloPrincipalExportacao()).toContain('concluí');
+    expect(component.textoFiltroStatusExportacao()).toContain('Ordens de serviço concluídas');
   });
 
   it('deve usar período padrão de 7 dias até hoje nas datas', () => {
@@ -121,7 +88,7 @@ describe('RelatoriosOs', () => {
     expect(component.dataInicio).toBe(esperadoIni);
   });
 
-  it('deve recalcular resumo ao alterar período (aoAlterarFiltro) sem botão Aplicar', () => {
+  it('deve recalcular resumo ao alterar período (aoAlterarFiltro)', () => {
     expect(component.resumo.totalOs).toBe(1);
     expect(component.resumo.totalHoras).toBe(5);
     component.dataInicio = '2000-01-01';
@@ -138,18 +105,11 @@ describe('RelatoriosOs', () => {
     expect(component.resumo.totalOs).toBe(1);
   });
 
-  it('limparFiltros repõe janela de 7 dias e recalcula o relatório', () => {
-    component.dataInicio = '2000-01-01';
-    component.dataFim = '2000-01-31';
-    component.aoAlterarFiltro();
-    component.limparFiltros();
-    const hoje = new Date();
-    const esperadoFim = ymd(hoje);
-    const ini = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-    ini.setDate(ini.getDate() - 7);
-    expect(component.dataFim).toBe(esperadoFim);
-    expect(component.dataInicio).toBe(ymd(ini));
-    expect(component.resumo.totalOs).toBe(1);
+  it('modo tempo de espera calcula média com ordens no universo', () => {
+    component.modoRelatorio = 'tempo_espera_pecas';
+    component.aoAlterarModoRelatorio();
+    expect(component.mediaEsperaPecas?.osNoUniverso).toBe(1);
+    expect(component.mediaEsperaPecas?.osComEsperaRegistada).toBe(0);
   });
 
   it('aoAlterarFiltro com data inicial maior que final define erro e não atualiza totais para intervalo inválido', () => {

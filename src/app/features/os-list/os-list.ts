@@ -11,7 +11,7 @@ import { OrdemStatus } from '../../core/enums/status.enum';
 import { OrdemServicoService } from '../../core/http/ordem-servico.service';
 import { UsuarioService } from '../../core/http/usuario.service';
 import { AuthService } from '../../core/services/auth.service';
-import { OrdemServico } from '../../core/models/ordem-servico.model';
+import { OrdemServico, dataAberturaOuCriacao } from '../../core/models/ordem-servico.model';
 import { EquipamentoService } from '../../core/http/equipamento.service';
 import { compararNumeroOrdemServico } from '../../core/utils/numero-ordem-servico.util';
 import { statusOsViewBadgeColorClasses } from '../../core/utils/status-badge.util';
@@ -290,7 +290,8 @@ export class OsList implements OnInit {
   }
 
   private mapearOrdem(ordem: OrdemServico): OrdemServicoTabela {
-    const ts = ordem.aberturaEm ? new Date(ordem.aberturaEm).getTime() : 0;
+    const ab = dataAberturaOuCriacao(ordem);
+    const ts = ab ? new Date(ab).getTime() : 0;
     return {
       id: ordem.idOrdemServico,
       numero: ordem.numeroOrdemServico,
@@ -303,7 +304,7 @@ export class OsList implements OnInit {
       statusOrdemServico: ordem.statusOrdemServico as OrdemStatus,
       tecnico: ordem.idTecnico ? this.tecnicoNomeMap.get(ordem.idTecnico) ?? ordem.tecnicoNome ?? null : null,
       idTecnico: ordem.idTecnico ?? null,
-      dataAbertura: ordem.aberturaEm ? this.formatarData(ordem.aberturaEm) : 'N/D',
+      dataAbertura: ab ? this.formatarData(ab) : 'N/D',
       aberturaTimestamp: Number.isFinite(ts) ? ts : 0,
     };
   }

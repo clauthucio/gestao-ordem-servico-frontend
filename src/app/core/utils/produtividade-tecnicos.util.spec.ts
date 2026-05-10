@@ -2,14 +2,18 @@ import { OrdemStatus } from '../enums/status.enum';
 import type { OrdemServico } from '../models/ordem-servico.model';
 import {
   CHAVE_SEM_TECNICO,
+  agruparAbertasPorEquipamento,
   aplicarFiltrosTipoPrioridade,
+  calcularMediaTempoEsperaPecas,
   calcularResumoGlobal,
   computarProdutividadePorTecnico,
   criarLimitesPeriodoLocal,
+  filtrarConcluidasOuCanceladasNoPeriodo,
   filtrarOrdensRelatorioNoPeriodo,
   filtrarOsConcluidasNoPeriodo,
   horasContabilizadasRelatorio,
   instanteParaFiltroPeriodoRelatorio,
+  parseAberturaOuCriacaoMs,
   parseConclusaoMs,
   parseDataReferenciaMs,
 } from './produtividade-tecnicos.util';
@@ -201,16 +205,19 @@ describe('produtividade-tecnicos.util', () => {
     expect(horasContabilizadasRelatorio(o)).toBe(4);
   });
 
-  it('horasContabilizadasRelatorio para CONCLUIDO com horasTrabalhadas usa o valor da API', () => {
+  it('horasContabilizadasRelatorio para CONCLUIDO com horasTrabalhadas desconta horasAguardandoPecaAcumuladas (contrato API)', () => {
     const o = os({
       idOrdemServico: 'z',
       statusOrdemServico: OrdemStatus.CONCLUIDO,
-      horasTrabalhadas: 8,
+      horasTrabalhadas: 10,
+      horasAguardandoPecaAcumuladas: 2.5,
       aberturaEm: '2024-06-10T08:00:00',
       inicioEm: '2024-06-10T08:00:00',
       conclusaoEm: '2024-06-10T13:00:00',
     });
-    expect(horasContabilizadasRelatorio(o)).toBe(8);
+    expect(horasContabilizadasRelatorio(o)).toBe(7.5);
+    const semAguardar = { ...o, horasAguardandoPecaAcumuladas: undefined };
+    expect(horasContabilizadasRelatorio(semAguardar)).toBe(10);
   });
 
   it('horasContabilizadasRelatorio para status não concluído usa intervalo quando horasTrabalhadas está ausente', () => {
@@ -222,6 +229,15 @@ describe('produtividade-tecnicos.util', () => {
       conclusaoEm: '2024-06-10T13:00:00',
     });
     expect(horasContabilizadasRelatorio(o)).toBe(5);
+  });
+
+  it('parseAberturaOuCriacaoMs usa dataCriacao quando aberturaEm está ausente', () => {
+    const o = os({
+      idOrdemServico: 'x',
+      aberturaEm: undefined,
+      dataCriacao: '2024-06-15',
+    });
+    expect(parseAberturaOuCriacaoMs(o)).toBe(parseDataReferenciaMs('2024-06-15'));
   });
 
   it('computarProdutividadePorTecnico soma fallback líquido para CONCLUIDO sem horasTrabalhadas da API', () => {
@@ -300,5 +316,62 @@ describe('produtividade-tecnicos.util', () => {
     expect(res.totalHoras).toBe(6);
     expect(res.mediaHorasPorOsGlobal).toBe(3);
     expect(res.tecnicosComOs).toBe(1);
+  });
+
+  it('agruparAbertasPorEquipamento conta só ABERTO no período e média de horas', () => {
+    const lista = [
+      os({
+        idOrdemServico: '1',
+        idEquipamento: 'e1',
+        equipamentoNome: 'Prensa',
+        statusOrdemServico: OrdemStatus.ABERTO,
+        horasTrabalhadas: 4,
+        dataAtualizacao: '2024-06-15T10:00:00',
+      }),
+      os({
+        idOrdemServico: '2',
+        idEquipamento: 'e1',
+        equipamentoNome: 'Prensa',
+        statusOrdemServico: OrdemStatus.ABERTO,
+        horasTrabalhadas: 2,
+        dataAtualizacao: '2024-06-16T10:00:00',
+      }),
+      os({
+        idOrdemServico: '3',
+        idEquipamento: 'e1',
+        equipamentoNome: 'Prensa',
+        statusOrdemServico: OrdemStatus.CONCLUIDO,
+        conclusaoEm: '2024-06-15T10:00:00',
+      }),
+    ];
+    const ag = agruparAbertasPorEquipamento(lista, '2024-06-01', '2024-06-30');
+    expect(ag).toHaveLength(1);
+    expect(ag[0].quantidade).toBe(2);
+    expect(ag[0].nomeExibicao).toBe('Prensa');
+    expect(ag[0].mediaHorasPorOrdemServico).toBe(3);
+  });
+
+  it('filtrarConcluidasOuCanceladasNoPeriodo não duplica id', () => {
+    const lista = [
+      os({
+        idOrdemServico: '1',
+        statusOrdemServico: OrdemStatus.CONCLUIDO,
+        conclusaoEm: '2024-06-15T12:00:00',
+      }),
+    ];
+    const r = filtrarConcluidasOuCanceladasNoPeriodo(lista, '2024-06-01', '2024-06-30');
+    expect(r).toHaveLength(1);
+  });
+
+  it('calcularMediaTempoEsperaPecas ignora zeros e calcula média', () => {
+    const lista = [
+      os({ idOrdemServico: 'a', horasAguardandoPecaAcumuladas: 4 }),
+      os({ idOrdemServico: 'b', horasAguardandoPecaAcumuladas: 2 }),
+      os({ idOrdemServico: 'c', horasAguardandoPecaAcumuladas: 0 }),
+    ];
+    const m = calcularMediaTempoEsperaPecas(lista);
+    expect(m.osNoUniverso).toBe(3);
+    expect(m.osComEsperaRegistada).toBe(2);
+    expect(m.mediaHoras).toBe(3);
   });
 });

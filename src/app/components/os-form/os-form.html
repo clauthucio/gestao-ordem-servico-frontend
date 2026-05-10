@@ -20,7 +20,7 @@
   @if (modoIniciar) {
     <div class="mb-6 pb-4 border-b border-outline-variant/20">
       <h2 class="text-xl font-bold text-on-surface">Iniciar Atendimento</h2>
-      <p class="text-sm text-on-surface-variant mt-1">Defina a data prevista para conclusão desta ordem de serviço.</p>
+      <p class="text-sm text-on-surface-variant mt-1">Informe a data prevista para conclusão (obrigatória). O início real do atendimento é registrado pelo servidor.</p>
     </div>
   } @else if (modoEncerrar) {
     <div class="mb-6 pb-4 border-b border-outline-variant/20">
@@ -122,21 +122,22 @@
           </div>
         </div>
 
-        <!-- Data prevista: largura total -->
+        <!-- Data prevista (meta): largura total -->
         <div>
           <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
-            Data Prevista para Conclusão <span class="text-error">*</span>
+            Data prevista para conclusão <span class="text-error">*</span>
           </label>
           <input
-            formControlName="conclusaoEm"
+            formControlName="dataPrevistaConclusao"
             type="date"
+            [attr.min]="minDataPrevistaConclusaoYmd"
             class="w-full max-w-md bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
-            [class.ring-2]="isInvalid('conclusaoEm')"
-            [class.ring-error]="isInvalid('conclusaoEm')"
+            [class.ring-2]="isInvalid('dataPrevistaConclusao')"
+            [class.ring-error]="isInvalid('dataPrevistaConclusao')"
           />
-          <p class="mt-1 text-[11px] text-on-surface-variant">Este campo é obrigatório para iniciar o atendimento.</p>
-          @if (isInvalid('conclusaoEm')) {
-            <p class="mt-1 text-[11px] text-error">Data prevista para conclusão é obrigatória.</p>
+          <p class="mt-1 text-[11px] text-on-surface-variant">Deve ser hoje ou uma data futura.</p>
+          @if (isInvalid('dataPrevistaConclusao')) {
+            <p class="mt-1 text-[11px] text-error">Informe uma data válida.</p>
           }
         </div>
       </div>
@@ -319,7 +320,6 @@
             }
           </div>
 
-          <!-- Técnico Responsável -->
           <div>
             <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
               Técnico Responsável

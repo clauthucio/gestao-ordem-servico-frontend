@@ -91,6 +91,7 @@ describe('OsDetail', () => {
           useValue: {
             buscarPorId: () => of(mockOs),
             atualizar: () => of(mockOs),
+            buscarAguardandoPecaLog: () => of({ totalHorasAguardando: 0, logs: [] }),
           },
         },
         { provide: UsuarioService, useValue: { listar: () => of(mockUsuarios) } },
@@ -223,6 +224,7 @@ describe('OsDetail', () => {
           useValue: {
             buscarPorId: () => of(mockOs),
             atualizar: () => of(mockOs),
+            buscarAguardandoPecaLog: () => of({ totalHorasAguardando: 0, logs: [] }),
           },
         },
         { provide: UsuarioService, useValue: { listar: () => of(mockUsuarios) } },
@@ -246,5 +248,111 @@ describe('OsDetail', () => {
       b.textContent?.trim().includes('Aguardar Peça'),
     );
     expect(btn?.disabled).toBe(true);
+  });
+
+  it('em EM_ANDAMENTO não exibe o painel de horas trabalhadas / aguardando peça', () => {
+    expect(component.exibirValoresHorasOficiais).toBe(false);
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).not.toContain('Horas trabalhadas (líquido)');
+    expect(compiled.textContent).not.toContain('Tempo em aguardando peça');
+  });
+
+  it('formatarHorasNumero exibe HH:MM com min/hora(s) (incl. menos de 1h)', () => {
+    expect(component.formatarHorasNumero(20 / 60)).toBe('00:20 min');
+    expect(component.formatarHorasNumero(1)).toBe('01:00 hora');
+    expect(component.formatarHorasNumero(1 + 32 / 60)).toBe('01:32 min');
+    expect(component.formatarHorasNumero(4)).toBe('04:00 horas');
+    expect(component.formatarHorasNumero(null)).toBe('—');
+  });
+
+  it('em CONCLUIDO sem horas em aguardando peça exibe 0 h no painel', async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [OsDetail],
+      providers: [
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: { paramMap: { get: (k: string) => (k === 'id' ? 'os-1' : null) } },
+          },
+        },
+        {
+          provide: OrdemServicoService,
+          useValue: {
+            buscarPorId: () =>
+              of({
+                ...mockOs,
+                statusOrdemServico: OrdemStatus.CONCLUIDO,
+                horasTrabalhadas: 4,
+                conclusaoEm: '2024-12-03T10:00:00.000Z',
+              }),
+            atualizar: () => of(mockOs),
+            buscarAguardandoPecaLog: () => of({ totalHorasAguardando: 0, logs: [] }),
+          },
+        },
+        { provide: UsuarioService, useValue: { listar: () => of(mockUsuarios) } },
+        { provide: EquipamentoService, useValue: { listar: () => of([mockEquipamento]) } },
+        {
+          provide: AuthService,
+          useValue: {
+            getCurrentUser: () => ({ idUsuario: 'adm', perfilUsuario: UserRole.ADMIN }),
+          },
+        },
+      ],
+    }).compileComponents();
+    const f = TestBed.createComponent(OsDetail);
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    const comp = f.componentInstance;
+    expect(comp.exibirValoresHorasOficiais).toBe(true);
+    expect(comp.formatarHorasAguardandoPecaNoPainel()).toBe('0 h');
+  });
+
+  it('em CANCELADO exibe horas trabalhadas e aguardando peça no painel', async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [OsDetail],
+      providers: [
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: { paramMap: { get: (k: string) => (k === 'id' ? 'os-1' : null) } },
+          },
+        },
+        {
+          provide: OrdemServicoService,
+          useValue: {
+            buscarPorId: () =>
+              of({
+                ...mockOs,
+                statusOrdemServico: OrdemStatus.CANCELADO,
+                horasTrabalhadas: 10,
+                horasAguardandoPecaAcumuladas: 1,
+                dataAtualizacao: '2024-12-04T10:00:00.000Z',
+              }),
+            atualizar: () => of(mockOs),
+            buscarAguardandoPecaLog: () => of({ totalHorasAguardando: 0, logs: [] }),
+          },
+        },
+        { provide: UsuarioService, useValue: { listar: () => of(mockUsuarios) } },
+        { provide: EquipamentoService, useValue: { listar: () => of([mockEquipamento]) } },
+        {
+          provide: AuthService,
+          useValue: {
+            getCurrentUser: () => ({ idUsuario: 'adm', perfilUsuario: UserRole.ADMIN }),
+          },
+        },
+      ],
+    }).compileComponents();
+    const f = TestBed.createComponent(OsDetail);
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    const compiled = f.nativeElement as HTMLElement;
+    expect(f.componentInstance.exibirValoresHorasOficiais).toBe(true);
+    expect(compiled.textContent).toContain('10');
+    expect(compiled.textContent).toContain('1');
+    expect(compiled.textContent).toContain('Ordem de Serviço Cancelada');
   });
 });

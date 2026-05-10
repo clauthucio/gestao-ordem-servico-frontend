@@ -69,6 +69,21 @@
               {{ formatarData(dataAberturaParaExibicao(os)) }}
             </span>
           </div>
+          <div class="hidden sm:block w-px h-9 shrink-0 bg-outline-variant/35 self-end mb-0.5"></div>
+          <div class="flex flex-col gap-0.5 min-w-0">
+            <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest leading-tight">Data prevista para conclusão</span>
+            @if (os.dataPrevistaConclusao) {
+              <span class="inline-flex items-center gap-1 text-on-background text-sm font-medium leading-tight">
+                <span class="material-symbols-outlined text-on-surface-variant text-[18px] shrink-0">event_upcoming</span>
+                {{ formatarData(os.dataPrevistaConclusao) }}
+              </span>
+            } @else {
+              <span class="inline-flex items-center gap-1 text-sm font-medium leading-tight text-on-surface-variant">
+                <span class="material-symbols-outlined text-on-surface-variant text-[18px] shrink-0">event_upcoming</span>
+                Não definida
+              </span>
+            }
+          </div>
         </div>
       </div>
       <div
@@ -173,7 +188,7 @@
       }
     </div>
 
-    @if (os.statusOrdemServico === 'CONCLUIDO') {
+    @if (exibirValoresHorasOficiais) {
       <div
         class="shrink-0 w-full rounded-xl border border-outline-variant/15 bg-surface-container-low/80 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4"
       >
@@ -182,14 +197,28 @@
             >Horas trabalhadas (líquido)</span
           >
           <p class="text-sm font-semibold text-on-background mt-1 tabular-nums">{{ formatarHorasNumero(os.horasTrabalhadas) }}</p>
-          <p class="text-[10px] text-on-surface-variant mt-1 leading-snug">Calculadas no servidor com base em início, conclusão e tempo em aguardando peça.</p>
+          @if (os.statusOrdemServico === 'CONCLUIDO') {
+            <p class="text-[10px] text-on-surface-variant mt-1 leading-snug">
+              Valor oficial da API: horas entre início e conclusão, <strong>descontando</strong> o tempo acumulado em «Aguardando peça».
+            </p>
+          } @else if (os.statusOrdemServico === 'CANCELADO') {
+            <p class="text-[10px] text-on-surface-variant mt-1 leading-snug">
+              Valor oficial da API: horas entre início e encerramento do cancelamento, <strong>incluindo</strong> períodos em «Aguardando peça».
+            </p>
+          } @else {
+            <p class="text-[10px] text-on-surface-variant mt-1 leading-snug">
+              Calculadas no servidor quando a ordem está concluída ou cancelada.
+            </p>
+          }
         </div>
         <div>
           <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest block"
             >Tempo em aguardando peça</span
           >
-          <p class="text-sm font-semibold text-on-background mt-1 tabular-nums">{{ formatarHorasNumero(os.horasAguardandoPecaAcumuladas) }}</p>
-          <p class="text-[10px] text-on-surface-variant mt-1 leading-snug">Somatório dos períodos em que a OS esteve no status Aguardando peça.</p>
+          <p class="text-sm font-semibold text-on-background mt-1 tabular-nums">{{ formatarHorasAguardandoPecaNoPainel() }}</p>
+          <p class="text-[10px] text-on-surface-variant mt-1 leading-snug">
+            Somatório dos períodos em que a OS esteve no status Aguardando peça. Sem períodos contabilizados: 0 h.
+          </p>
         </div>
       </div>
     }

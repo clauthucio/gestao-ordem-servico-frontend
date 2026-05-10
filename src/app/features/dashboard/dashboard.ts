@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { OrdemServicoService } from '../../core/http/ordem-servico.service';
 import { UsuarioService } from '../../core/http/usuario.service';
-import { OrdemServico } from '../../core/models/ordem-servico.model';
+import { OrdemServico, dataAberturaOuCriacao } from '../../core/models/ordem-servico.model';
 import { UserRole } from '../../core/enums/roles.enum';
 import { OrdemStatus, STATUS_LABELS } from '../../core/enums/status.enum';
 import { statusOrdemBadgeColorClasses } from '../../core/utils/status-badge.util';
@@ -90,7 +90,12 @@ export class Dashboard implements OnInit {
         trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
         console.log('[Dashboard] Data de corte (30 dias atrás):', trintaDiasAtras);
 
-        this.ordens = dados.filter(os => new Date(os.aberturaEm) >= trintaDiasAtras);
+        this.ordens = dados.filter((os) => {
+          const ref = dataAberturaOuCriacao(os);
+          if (!ref) return false;
+          const t = new Date(ref).getTime();
+          return !Number.isNaN(t) && t >= trintaDiasAtras.getTime();
+        });
         console.log('[Dashboard] Ordens após filtro de 30 dias:', this.ordens.length);
         console.log('[Dashboard] Ordens filtradas:', this.ordens);
 
@@ -114,8 +119,11 @@ export class Dashboard implements OnInit {
         );
         if (concluidas.length > 0) {
           const totalHoras = concluidas.reduce((acc, os) => {
-            const abertura = new Date(os.aberturaEm).getTime();
-            const conclusao = new Date(os.conclusaoEm!).getTime();
+            const abRef = dataAberturaOuCriacao(os);
+            if (!abRef || !os.conclusaoEm) return acc;
+            const abertura = new Date(abRef).getTime();
+            const conclusao = new Date(os.conclusaoEm).getTime();
+            if (Number.isNaN(abertura) || Number.isNaN(conclusao)) return acc;
             const horas = (conclusao - abertura) / (1000 * 60 * 60);
             return acc + horas;
           }, 0);
@@ -159,7 +167,11 @@ export class Dashboard implements OnInit {
       const data = new Date(hoje);
       data.setDate(hoje.getDate() - i);
       const dateStr = data.toDateString();
-      const count = dados.filter(os => new Date(os.aberturaEm).toDateString() === dateStr).length;
+      const count = dados.filter((os) => {
+        const ref = dataAberturaOuCriacao(os);
+        if (!ref) return false;
+        return new Date(ref).toDateString() === dateStr;
+      }).length;
       ultimos7.push({ dia: diasNomes[data.getDay()], valor: count, ativo: i === 0, porcentagem: 0 });
     }
 
