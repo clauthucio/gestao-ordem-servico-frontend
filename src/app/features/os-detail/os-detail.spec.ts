@@ -354,5 +354,6 @@ describe('OsDetail', () => {
     expect(compiled.textContent).toContain('10');
     expect(compiled.textContent).toContain('1');
     expect(compiled.textContent).toContain('Ordem de Serviço Cancelada');
+    expect(compiled.querySelector('button[title="Editar ordem"]')).toBeNull();
   });
 });

@@ -62,7 +62,10 @@
           <span class="material-symbols-outlined text-[18px] text-primary">visibility</span>
           Ver detalhes
         </button>
-        @if (ordem.statusOrdemServico !== OrdemStatus.CONCLUIDO) {
+        @if (
+          ordem.statusOrdemServico !== OrdemStatus.CONCLUIDO &&
+          ordem.statusOrdemServico !== OrdemStatus.CANCELADO
+        ) {
           @if (ordem.statusOrdemServico === OrdemStatus.ABERTO) {
             <button
               type="button"

@@ -111,7 +111,7 @@
           Iniciar
         </button>
       }
-      @if (os.statusOrdemServico !== 'CONCLUIDO') {
+      @if (os.statusOrdemServico !== 'CONCLUIDO' && os.statusOrdemServico !== 'CANCELADO') {
         <button
           type="button"
           (click)="abrirModalEditar()"
