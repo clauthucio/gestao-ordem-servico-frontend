@@ -111,7 +111,7 @@
               type="date"
               [(ngModel)]="dataInicio"
               (ngModelChange)="aoAlterarFiltro()"
-              class="w-full px-3 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm"
+              class="w-full px-3 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <div>
@@ -122,7 +122,7 @@
               type="date"
               [(ngModel)]="dataFim"
               (ngModelChange)="aoAlterarFiltro()"
-              class="w-full px-3 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm"
+              class="w-full px-3 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <div class="min-w-[200px] max-w-full self-start">
@@ -132,7 +132,7 @@
             <select
               [(ngModel)]="modoRelatorio"
               (ngModelChange)="aoAlterarModoRelatorio()"
-              class="w-full px-3 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm text-on-surface"
+              class="w-full px-3 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             >
               @for (m of modosRelatorio; track m.value) {
                 <option [ngValue]="m.value">{{ m.label }}</option>
@@ -144,9 +144,9 @@
           <button
             type="button"
             (click)="limparFiltros()"
-            class="inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-primary text-on-primary font-bold text-sm hover:opacity-90 transition-opacity"
+            class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-surface-container-high text-on-surface text-sm font-medium hover:bg-surface-variant transition-colors"
           >
-            <span class="material-symbols-outlined text-lg">restart_alt</span>
+            <span class="material-symbols-outlined text-[18px]">restart_alt</span>
             Limpar
           </button>
           <button
