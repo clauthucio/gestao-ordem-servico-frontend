@@ -46,12 +46,12 @@
 }
 
 @if (equipamentoDetalhe) {
-  <app-modal-container [titulo]="'Ordens de serviço abertas — ' + equipamentoDetalhe.nomeExibicao" (fechar)="fecharDetalheEquipamento()">
+  <app-modal-container [titulo]="'Ordens de serviço — ' + equipamentoDetalhe.nomeExibicao" (fechar)="fecharDetalheEquipamento()">
     <p class="text-xs text-on-surface-variant mb-4">
-      Ordens com status <strong>Aberto</strong> cuja data de referência cai no período ({{ dataInicio }} a {{ dataFim }}).
+      Ordens de serviço <strong>concluídas ou canceladas</strong> cuja data de referência cai no período ({{ dataInicio }} a {{ dataFim }}).
     </p>
     <div class="overflow-x-auto rounded-xl border border-outline-variant/15">
-      <table class="w-full text-left text-xs min-w-[640px]">
+      <table class="w-full text-left text-xs min-w-[720px]">
         <thead>
           <tr class="border-b border-outline-variant/15 bg-surface-container-low/50">
             <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">N.º ordem de serviço</th>
@@ -59,6 +59,7 @@
             <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Técnico</th>
             <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Prioridade</th>
             <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Abertura</th>
+            <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -69,10 +70,11 @@
               <td class="px-3 py-2 text-on-surface-variant">{{ o.tecnicoNome ?? '—' }}</td>
               <td class="px-3 py-2 text-on-surface-variant">{{ prioridadeLabel(o.prioridadeOrdemServico) }}</td>
               <td class="px-3 py-2 text-on-surface-variant whitespace-nowrap">{{ formatarDataHora(dataAberturaOuCriacao(o)) }}</td>
+              <td class="px-3 py-2 text-on-surface-variant">{{ statusLabel(o.statusOrdemServico) }}</td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="px-3 py-8 text-center text-on-surface-variant">Nenhuma ordem de serviço.</td>
+              <td colspan="6" class="px-3 py-8 text-center text-on-surface-variant">Nenhuma ordem de serviço.</td>
             </tr>
           }
         </tbody>
@@ -168,6 +170,17 @@
         </div>
       </div>
 
+      @if (modoComTabelaEquipamento()) {
+        <div
+          class="mb-6 p-4 rounded-xl border border-amber-600/35 bg-amber-500/10 text-on-surface text-sm"
+          role="status"
+        >
+          <p class="font-semibold text-on-background">
+            Apenas ordens de serviço «Concluídas» ou «Canceladas» são contabilizadas neste relatório.
+          </p>
+        </div>
+      }
+
       @if (erro) {
         <div class="p-4 rounded-xl bg-error/10 border border-error/20 text-error text-sm mb-6">{{ erro }}</div>
       }
@@ -201,7 +214,7 @@
               @if (modoRelatorio === 'canceladas') {
                 Ordens de serviço canceladas no período
               } @else if (modoComTabelaEquipamento()) {
-                Ordens de serviço abertas no período
+                Ordens de serviço (concluídas ou canceladas) no período
               } @else {
                 Ordens de serviço no período
               }
@@ -226,13 +239,14 @@
           </div>
           <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
             <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
-              {{ modoComTabelaEquipamento() ? 'Equipamentos com ordens abertas' : 'Técnicos com ordens no período' }}
+              {{ modoComTabelaEquipamento() ? 'Equipamentos com ordens no período' : 'Técnicos com ordens no período' }}
             </p>
             <p class="text-3xl font-black text-on-background mt-2">{{ resumo.tecnicosComOs }}</p>
           </div>
         </div>
       }
 
+      <!-- Modo tempo_espera_pecas: UI oculta no select; ver comentário em relatorios-os.ts (subtitulo). -->
       @if (modoTempoEspera()) {
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
           <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm xl:col-span-2">
@@ -346,9 +360,9 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div class="lg:col-span-2 bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden">
             <div class="px-4 py-3 border-b border-outline-variant/10 bg-surface-container-low/40">
-              <h2 class="font-bold text-on-background">Ordens de serviço abertas por equipamento</h2>
+              <h2 class="font-bold text-on-background">O.S. por equipamento</h2>
               <p class="text-xs text-on-surface-variant mt-0.5">
-                Clique num equipamento para ver o detalhe das ordens em aberto no período.
+                Clique num equipamento para ver as ordens de serviço concluídas ou canceladas no período.
               </p>
             </div>
             <div class="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
@@ -366,7 +380,7 @@
                     <span class="font-semibold text-base">{{ a.nomeExibicao }}</span>
                   </p>
                   <p class="text-sm text-on-surface mt-3">
-                    <span class="font-semibold text-on-surface-variant">Quantidade de ordens de serviço abertas:</span>
+                    <span class="font-semibold text-on-surface-variant">Quantidade de ordens de serviço no período:</span>
                     {{ a.quantidade }}
                   </p>
                   <p class="text-sm text-on-surface mt-2">
@@ -376,7 +390,7 @@
                 </div>
               } @empty {
                 <p class="text-sm text-on-surface-variant text-center py-12 px-4">
-                  Nenhuma ordem de serviço aberta no período para este relatório.
+                  Nenhuma ordem de serviço concluída ou cancelada no período para este relatório.
                 </p>
               }
             </div>
@@ -384,7 +398,7 @@
 
           <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-5">
             <h2 class="font-bold text-on-background text-lg">Top 5 — equipamentos</h2>
-            <p class="text-xs text-on-surface-variant mt-1 mb-6">Por quantidade de ordens de serviço abertas</p>
+            <p class="text-xs text-on-surface-variant mt-1 mb-6">Por quantidade de ordens de serviço (concluídas ou canceladas)</p>
             <div class="space-y-5">
               @for (item of chartData; track item.nome) {
                 <div>
@@ -411,9 +425,8 @@
       <p class="text-xs text-on-surface-variant mt-8 max-w-3xl leading-relaxed">
         <strong>Regras:</strong> o período usa limites locais (00:00–23:59). Concluídas: só entram pela
         <strong>data de conclusão</strong>. Canceladas: referência = conclusão, senão atualização, início ou abertura.
-        Ordens de serviço abertas (modo O.S por equipamento): status <strong>Aberto</strong> com a mesma regra de data de referência que os outros status não concluídos.
-        Tempo de espera de peças usa o campo normalizado de horas acumuladas na listagem (ex.
-        <code class="text-[10px]">totalHorasAguardando</code>).
+        Modo <strong>O.S. por equipamento</strong>: entram apenas ordens <strong>Concluídas</strong> ou <strong>Canceladas</strong>, com a mesma regra de data de referência acima.
+        <!-- Reativar com o modo «Tempo de espera de peças»: Tempo de espera de peças usa o campo normalizado de horas acumuladas na listagem (ex. totalHorasAguardando). -->
       </p>
     }
   </div>

@@ -13,8 +13,10 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ModalContainerComponent } from '../../components/modal-container/modal-container';
 import { OrdemStatus, STATUS_LABELS } from '../../core/enums/status.enum';
+import { EquipamentoService } from '../../core/http/equipamento.service';
 import { OrdemServicoService } from '../../core/http/ordem-servico.service';
 import { UsuarioService } from '../../core/http/usuario.service';
+import type { EquipamentoListItem } from '../../core/models/equipamento.model';
 import {
   dataAberturaOuCriacao,
   type ManutencaoType,
@@ -28,7 +30,7 @@ import {
   type MediaEsperaPecasResultado,
   type ResumoProdutividadeGlobal,
   type TecnicoProdutividadeAgg,
-  agruparAbertasPorEquipamento,
+  agruparConcluidasOuCanceladasPorEquipamento,
   calcularMediaTempoEsperaPecas,
   calcularResumoGlobal,
   computarProdutividadePorTecnico,
@@ -57,19 +59,28 @@ export class RelatoriosOs implements OnInit {
 
   private readonly ordemServicoService = inject(OrdemServicoService);
   private readonly usuarioService = inject(UsuarioService);
+  private readonly equipamentoService = inject(EquipamentoService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
   private readonly authService = inject(AuthService);
 
   readonly titulo = 'Relatórios de ordens de serviço';
+
+  /**
+   * Relatório «Tempo de espera de peças» (`tempo_espera_pecas`): oculto no select até implementação futura.
+   * Mantidos no código: `RelatorioOsModo`, `recomputar()` (case `tempo_espera_pecas`), `modoTempoEspera()`,
+   * exportações e o bloco `@if (modoTempoEspera())` no template.
+   * Para reativar: (1) readicionar `{ value: 'tempo_espera_pecas', label: 'Tempo de espera de peças' }` em `modosRelatorio`;
+   * (2) acrescentar ao fim de `subtitulo` a frase sobre média de espera entre O.S. concluídas ou canceladas com horas registadas na API;
+   * (3) restaurar no rodapé «Regras» do HTML o texto guardado em comentário HTML.
+   */
   readonly subtitulo =
-    'Escolha o tipo de relatório e o período. Concluídas: horas líquidas (horas trabalhadas na API menos total em espera de peças, quando informado). Canceladas: tempo até cancelamento. O.S abertas por equipamento: contagem e média de horas por equipamento. Tempo de espera de peças: média entre ordens de serviço concluídas ou canceladas no período que tenham horas de espera registadas na API.';
+    'Escolha o tipo de relatório e o período. Concluídas: horas líquidas (horas trabalhadas na API menos total em espera de peças, quando informado). Canceladas: tempo até cancelamento. O.S. por equipamento: equipamentos com O.S. concluídas ou canceladas no período e quantidade por equipamento.';
 
   readonly modosRelatorio: { value: RelatorioOsModo; label: string }[] = [
-    { value: 'concluidas', label: 'Ordens de serviço concluídas' },
-    { value: 'canceladas', label: 'Ordens de serviço canceladas' },
-    { value: 'abertas_equipamento', label: 'O.S abertas por equipamento' },
-    { value: 'tempo_espera_pecas', label: 'Tempo de espera de peças' },
+    { value: 'concluidas', label: 'O.S. Concluídas' },
+    { value: 'canceladas', label: 'O.S. Canceladas' },
+    { value: 'abertas_equipamento', label: 'O.S. por equipamento' },
   ];
 
   modoRelatorio: RelatorioOsModo = 'concluidas';
@@ -131,10 +142,17 @@ export class RelatoriosOs implements OnInit {
     forkJoin({
       ordens: this.ordemServicoService.listar(),
       usuarios: this.usuarioService.listar().pipe(catchError(() => of([] as Usuario[]))),
+      equipamentos: this.equipamentoService.listar().pipe(catchError(() => of([] as EquipamentoListItem[]))),
     }).subscribe({
-      next: ({ ordens, usuarios }) => {
-        const nomePorId = new Map(usuarios.map((u) => [u.idUsuario, u.nomeUsuario]));
-        this.todasOrdens = ordens.map((o) => RelatoriosOs.enriquecerNomeTecnico(o, nomePorId));
+      next: ({ ordens, usuarios, equipamentos }) => {
+        const nomeTecnicoPorId = new Map(usuarios.map((u) => [u.idUsuario, u.nomeUsuario]));
+        const nomeEquipPorId = new Map(equipamentos.map((e) => [e.id, e.nome]));
+        this.todasOrdens = ordens.map((o) =>
+          RelatoriosOs.enriquecerNomeEquipamento(
+            RelatoriosOs.enriquecerNomeTecnico(o, nomeTecnicoPorId),
+            nomeEquipPorId,
+          ),
+        );
         this.carregando = false;
         this.recomputar();
       },
@@ -154,6 +172,15 @@ export class RelatoriosOs implements OnInit {
     const nome = nomePorId.get(id);
     if (!nome?.trim()) return o;
     return { ...o, tecnicoNome: nome.trim() };
+  }
+
+  private static enriquecerNomeEquipamento(o: OrdemServico, nomePorId: Map<string, string>): OrdemServico {
+    const id = o.idEquipamento?.trim();
+    if (!id) return o;
+    if (o.equipamentoNome?.trim()) return o;
+    const nome = nomePorId.get(id);
+    if (!nome?.trim()) return o;
+    return { ...o, equipamentoNome: nome.trim() };
   }
 
   limparFiltros(): void {
@@ -205,18 +232,23 @@ export class RelatoriosOs implements OnInit {
       case 'abertas_equipamento':
         this.agregados = [];
         this.mediaEsperaPecas = null;
-        this.agregadosEquipamento = agruparAbertasPorEquipamento(this.todasOrdens, this.dataInicio, this.dataFim);
-        const totalAbertas = this.agregadosEquipamento.reduce((s, a) => s + a.quantidade, 0);
-        let totalHorasAbertas = 0;
+        this.agregadosEquipamento = agruparConcluidasOuCanceladasPorEquipamento(
+          this.todasOrdens,
+          this.dataInicio,
+          this.dataFim,
+        );
+        const totalOsEquipamento = this.agregadosEquipamento.reduce((s, a) => s + a.quantidade, 0);
+        let totalHorasEquipamento = 0;
         for (const a of this.agregadosEquipamento) {
           for (const o of a.ordens) {
-            totalHorasAbertas += horasContabilizadasRelatorio(o);
+            totalHorasEquipamento += horasContabilizadasRelatorio(o);
           }
         }
         this.resumo = {
-          totalOs: totalAbertas,
-          totalHoras: totalHorasAbertas,
-          mediaHorasPorOsGlobal: totalAbertas > 0 ? totalHorasAbertas / totalAbertas : null,
+          totalOs: totalOsEquipamento,
+          totalHoras: totalHorasEquipamento,
+          mediaHorasPorOsGlobal:
+            totalOsEquipamento > 0 ? totalHorasEquipamento / totalOsEquipamento : null,
           tecnicosComOs: this.agregadosEquipamento.filter((a) => a.quantidade > 0).length,
         };
         this.chartData = montarDadosGraficoTopEquipamento(this.agregadosEquipamento, 5);
@@ -257,14 +289,14 @@ export class RelatoriosOs implements OnInit {
     return this.modoRelatorio === 'tempo_espera_pecas';
   }
 
-  tituloPrincipalExportacao(): string {
-    const m = this.modosRelatorio.find((x) => x.value === this.modoRelatorio);
-    return `Relatório de ordens de serviço — ${m?.label ?? this.modoRelatorio}`;
+  tituloPrincipalExportacao(modo: RelatorioOsModo = this.modoRelatorio): string {
+    const m = this.modosRelatorio.find((x) => x.value === modo);
+    return `Relatório de ordens de serviço — ${m?.label ?? modo}`;
   }
 
-  textoFiltroStatusExportacao(): string {
-    const m = this.modosRelatorio.find((x) => x.value === this.modoRelatorio);
-    return `Tipo de relatório: ${m?.label ?? this.modoRelatorio}`;
+  textoFiltroStatusExportacao(modo: RelatorioOsModo = this.modoRelatorio): string {
+    const m = this.modosRelatorio.find((x) => x.value === modo);
+    return `Tipo de relatório: ${m?.label ?? modo}`;
   }
 
   semOrdensNaApi(): boolean {
@@ -389,6 +421,20 @@ export class RelatoriosOs implements OnInit {
     return `${n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} h`;
   }
 
+  /**
+   * Converte horas decimais em texto legível para PDF (ex.: 1,25 → "1h15min", 0,02 → "1min").
+   */
+  formatarHorasDuracaoPdf(n: number | null | undefined): string {
+    if (n === null || n === undefined || Number.isNaN(n) || n < 0) return '—';
+    const totalMinutes = Math.round(n * 60);
+    if (totalMinutes === 0) return '0h';
+    const h = Math.floor(totalMinutes / 60);
+    const min = totalMinutes % 60;
+    if (h === 0) return `${min}min`;
+    if (min === 0) return `${h}h`;
+    return `${h}h${min}min`;
+  }
+
   horasRelatorio(o: OrdemServico): number {
     return horasContabilizadasRelatorio(o);
   }
@@ -411,120 +457,177 @@ export class RelatoriosOs implements OnInit {
     return STATUS_LABELS[st] ?? String(s);
   }
 
+  /**
+   * Captura modo, período e agregados no instante do pedido de exportação (antes de `await import`),
+   * para o ficheiro coincidir com o relatório visível mesmo se a UI mudar durante o carregamento da biblioteca.
+   */
+  private snapshotParaExport(): {
+    modo: RelatorioOsModo;
+    dataInicio: string;
+    dataFim: string;
+    resumo: ResumoProdutividadeGlobal;
+    mediaEsperaPecas: MediaEsperaPecasResultado | null;
+    agregados: TecnicoProdutividadeAgg[];
+    agregadosEquipamento: EquipamentoAbertasAgg[];
+  } {
+    return {
+      modo: this.modoRelatorio,
+      dataInicio: this.dataInicio,
+      dataFim: this.dataFim,
+      resumo: { ...this.resumo },
+      mediaEsperaPecas: this.mediaEsperaPecas ? { ...this.mediaEsperaPecas } : null,
+      agregados: this.agregados.map((a) => ({ ...a, ordens: [...a.ordens] })),
+      agregadosEquipamento: this.agregadosEquipamento.map((a) => ({ ...a, ordens: [...a.ordens] })),
+    };
+  }
+
   async exportarExcel(): Promise<void> {
     if (this.exportando) return;
     this.exportando = true;
     this.cdr.markForCheck();
+    const snap = this.snapshotParaExport();
     try {
       const XLSX = await import('xlsx');
       const wb = XLSX.utils.book_new();
       const gerado = this.formatarMomentoGeracao();
 
-      if (this.modoComTabelaTecnico()) {
-        const mediaGeralNum =
-          this.resumo.mediaHorasPorOsGlobal != null && !Number.isNaN(this.resumo.mediaHorasPorOsGlobal)
-            ? Number(this.resumo.mediaHorasPorOsGlobal.toFixed(2))
-            : '—';
-        const resumoAoa: (string | number)[][] = [
-          [this.tituloPrincipalExportacao()],
-          [this.textoFiltroStatusExportacao()],
-          [`Gerado em: ${gerado}`],
-          [`Período: ${this.dataInicio} a ${this.dataFim}`],
-          [],
-          ['Totais gerais (período)', '', '', ''],
-          [
-            'Ordens de serviço no período',
-            this.resumo.totalOs,
-            this.modoRelatorio === 'concluidas' ? 'Horas líquidas (total)' : 'Tempo até cancelamento (total)',
-            this.resumo.totalHoras.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
-          ],
-          ['Média geral h / ordem de serviço', mediaGeralNum, 'Técnicos com ordens no período', this.resumo.tecnicosComOs],
-          [],
-          ['Técnico', 'Ordens no período', 'Horas totais', 'Média h / ordem'],
-          ...this.agregados.map((a) => [
-            a.nomeExibicao,
-            a.osConcluidas,
-            a.horasTotais,
-            a.mediaHorasPorOs != null ? Number(a.mediaHorasPorOs.toFixed(2)) : '—',
-          ]),
-        ];
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumoAoa), 'Resumo por técnico');
-        const detalheRows: Record<string, string | number>[] = [];
-        for (const a of this.agregados) {
-          for (const o of a.ordens) {
-            detalheRows.push({
-              Técnico: a.nomeExibicao,
-              'N.º ordem de serviço': o.numeroOrdemServico,
-              'Título / resumo': this.resumoTitulo(o),
-              'Tipo de serviço': this.tipoManutencaoLabel(o.tipoManutencao),
-              Prioridade: this.prioridadeLabel(o.prioridadeOrdemServico),
-              'Data abertura / criação': this.formatarDataHora(dataAberturaOuCriacao(o)),
-              'Data prevista (meta)': this.formatarDataHora(o.dataPrevistaConclusao),
-              'Data conclusão': this.formatarDataHora(o.conclusaoEm),
-              'Tempo gasto (h líq.)': this.horasRelatorio(o),
-              'Aguardando peça (h)': this.horasAguardandoPecaRelatorio(o) ?? '—',
-              Status: this.statusLabel(o.statusOrdemServico),
-            });
+      switch (snap.modo) {
+        case 'concluidas':
+        case 'canceladas': {
+          const { modo, resumo, agregados, dataInicio, dataFim } = snap;
+          const mediaGeralNum =
+            resumo.mediaHorasPorOsGlobal != null && !Number.isNaN(resumo.mediaHorasPorOsGlobal)
+              ? Number(resumo.mediaHorasPorOsGlobal.toFixed(2))
+              : '—';
+          const resumoAoa: (string | number)[][] = [
+            [this.tituloPrincipalExportacao(modo)],
+            [this.textoFiltroStatusExportacao(modo)],
+            [`Gerado em: ${gerado}`],
+            [`Período: ${dataInicio} a ${dataFim}`],
+            [],
+            ['Totais gerais (período)', '', '', ''],
+            [
+              'Ordens de serviço no período',
+              resumo.totalOs,
+              modo === 'concluidas' ? 'Horas líquidas (total)' : 'Tempo até cancelamento (total)',
+              resumo.totalHoras.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
+            ],
+            ['Média geral h / ordem de serviço', mediaGeralNum, 'Técnicos com ordens no período', resumo.tecnicosComOs],
+            [],
+            ['Técnico', 'Ordens no período', 'Horas totais', 'Média h / ordem'],
+            ...agregados.map((a) => [
+              a.nomeExibicao,
+              a.osConcluidas,
+              a.horasTotais,
+              a.mediaHorasPorOs != null ? Number(a.mediaHorasPorOs.toFixed(2)) : '—',
+            ]),
+          ];
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumoAoa), 'Resumo por técnico');
+          const detalheRows: Record<string, string | number>[] = [];
+          for (const a of agregados) {
+            for (const o of a.ordens) {
+              detalheRows.push({
+                Técnico: a.nomeExibicao,
+                'N.º ordem de serviço': o.numeroOrdemServico,
+                'Título / resumo': this.resumoTitulo(o),
+                'Tipo de serviço': this.tipoManutencaoLabel(o.tipoManutencao),
+                Prioridade: this.prioridadeLabel(o.prioridadeOrdemServico),
+                'Data abertura / criação': this.formatarDataHora(dataAberturaOuCriacao(o)),
+                'Data prevista (meta)': this.formatarDataHora(o.dataPrevistaConclusao),
+                'Data conclusão': this.formatarDataHora(o.conclusaoEm),
+                'Tempo gasto (h líq.)': this.horasRelatorio(o),
+                'Aguardando peça (h)': this.horasAguardandoPecaRelatorio(o) ?? '—',
+                Status: this.statusLabel(o.statusOrdemServico),
+              });
+            }
           }
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detalheRows), 'Detalhe ordens de serviço');
+          break;
         }
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detalheRows), 'Detalhe ordens de serviço');
-      } else if (this.modoComTabelaEquipamento()) {
-        const mediaGeralEquip =
-          this.resumo.mediaHorasPorOsGlobal != null && !Number.isNaN(this.resumo.mediaHorasPorOsGlobal)
-            ? Number(this.resumo.mediaHorasPorOsGlobal.toFixed(2))
-            : '—';
-        const aoa: (string | number)[][] = [
-          [this.tituloPrincipalExportacao()],
-          [this.textoFiltroStatusExportacao()],
-          [`Gerado em: ${gerado}`],
-          [`Período: ${this.dataInicio} a ${this.dataFim}`],
-          [],
-          ['Ordens de serviço abertas no período', this.resumo.totalOs],
-          ['Horas contabilizadas (total)', this.resumo.totalHoras.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })],
-          ['Média de horas por ordem de serviço', mediaGeralEquip],
-          ['Equipamentos com ordens abertas', this.resumo.tecnicosComOs],
-          [],
-          ['Equipamento', 'Quantidade de ordens abertas', 'Média h / ordem de serviço'],
-          ...this.agregadosEquipamento.map((a) => [
-            a.nomeExibicao,
-            a.quantidade,
-            a.mediaHorasPorOrdemServico != null ? Number(a.mediaHorasPorOrdemServico.toFixed(2)) : '—',
-          ]),
-        ];
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Por equipamento');
-        const rows: Record<string, string | number>[] = [];
-        for (const a of this.agregadosEquipamento) {
-          for (const o of a.ordens) {
-            rows.push({
-              Equipamento: a.nomeExibicao,
-              'N.º ordem de serviço': o.numeroOrdemServico,
-              Técnico: o.tecnicoNome ?? '—',
-              Prioridade: this.prioridadeLabel(o.prioridadeOrdemServico),
-              Abertura: this.formatarDataHora(dataAberturaOuCriacao(o)),
-            });
+        case 'abertas_equipamento': {
+          const { resumo, agregadosEquipamento, dataInicio, dataFim, modo } = snap;
+          const mediaGeralEquip =
+            resumo.mediaHorasPorOsGlobal != null && !Number.isNaN(resumo.mediaHorasPorOsGlobal)
+              ? Number(resumo.mediaHorasPorOsGlobal.toFixed(2))
+              : '—';
+          const aoa: (string | number)[][] = [
+            [this.tituloPrincipalExportacao(modo)],
+            [this.textoFiltroStatusExportacao(modo)],
+            [
+              'Apenas ordens de serviço «Concluídas» ou «Canceladas» são contabilizadas neste relatório.',
+            ],
+            [`Gerado em: ${gerado}`],
+            [`Período: ${dataInicio} a ${dataFim}`],
+            [],
+            ['Ordens de serviço (concluídas ou canceladas) no período', resumo.totalOs],
+            [
+              'Horas contabilizadas (total)',
+              resumo.totalHoras.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
+            ],
+            ['Média de horas por ordem de serviço', mediaGeralEquip],
+            ['Equipamentos com ordens no período', resumo.tecnicosComOs],
+            [],
+            ['Equipamento', 'Quantidade de ordens de serviço', 'Média h / ordem de serviço'],
+            ...agregadosEquipamento.map((a) => [
+              a.nomeExibicao,
+              a.quantidade,
+              a.mediaHorasPorOrdemServico != null ? Number(a.mediaHorasPorOrdemServico.toFixed(2)) : '—',
+            ]),
+          ];
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Por equipamento');
+          const rows: Record<string, string | number>[] = [];
+          for (const a of agregadosEquipamento) {
+            for (const o of a.ordens) {
+              rows.push({
+                Equipamento: a.nomeExibicao,
+                'N.º ordem de serviço': o.numeroOrdemServico,
+                Técnico: o.tecnicoNome ?? '—',
+                Prioridade: this.prioridadeLabel(o.prioridadeOrdemServico),
+                Status: this.statusLabel(o.statusOrdemServico),
+                Abertura: this.formatarDataHora(dataAberturaOuCriacao(o)),
+              });
+            }
           }
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detalhe ordens por equipamento');
+          break;
         }
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detalhe ordens abertas');
-      } else {
-        const m = this.mediaEsperaPecas;
-        const aoa: (string | number)[][] = [
-          [this.tituloPrincipalExportacao()],
-          [this.textoFiltroStatusExportacao()],
-          [`Gerado em: ${gerado}`],
-          [`Período: ${this.dataInicio} a ${this.dataFim}`],
-          [],
-          [
-            'Ordens no universo (concluídas ou canceladas no período)',
-            m?.osNoUniverso ?? 0,
-            'Média h espera (só ordens com tempo > 0)',
-            m?.mediaHoras != null ? Number(m.mediaHoras.toFixed(2)) : '—',
-          ],
-          ['Ordens com tempo de espera registado', m?.osComEsperaRegistada ?? 0, 'Soma horas espera', m?.somaHorasEspera ?? 0],
-        ];
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Tempo espera peças');
+        case 'tempo_espera_pecas': {
+          const m = snap.mediaEsperaPecas;
+          const { dataInicio, dataFim, modo } = snap;
+          const aoa: (string | number)[][] = [
+            [this.tituloPrincipalExportacao(modo)],
+            [this.textoFiltroStatusExportacao(modo)],
+            [`Gerado em: ${gerado}`],
+            [`Período: ${dataInicio} a ${dataFim}`],
+            [],
+            [
+              'Ordens no universo (concluídas ou canceladas no período)',
+              m?.osNoUniverso ?? 0,
+              'Média h espera (só ordens com tempo > 0)',
+              m?.mediaHoras != null ? Number(m.mediaHoras.toFixed(2)) : '—',
+            ],
+            ['Ordens com tempo de espera registado', m?.osComEsperaRegistada ?? 0, 'Soma horas espera', m?.somaHorasEspera ?? 0],
+          ];
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Tempo espera peças');
+          break;
+        }
+        default: {
+          const { modo, dataInicio, dataFim } = snap;
+          XLSX.utils.book_append_sheet(
+            wb,
+            XLSX.utils.aoa_to_sheet([
+              [this.tituloPrincipalExportacao(modo)],
+              [this.textoFiltroStatusExportacao(modo)],
+              [`Período: ${dataInicio} a ${dataFim}`],
+              [],
+              [`Modo de relatório não suportado na exportação: ${String(modo)}`],
+            ]),
+            'Relatório',
+          );
+        }
       }
 
-      const nome = `relatorio-os_${this.modoRelatorio}_${this.dataInicio}_${this.dataFim}.xlsx`;
+      const nome = `relatorio-os_${snap.modo}_${snap.dataInicio}_${snap.dataFim}.xlsx`;
       XLSX.writeFile(wb, nome);
     } finally {
       this.ngZone.run(() => {
@@ -538,6 +641,7 @@ export class RelatoriosOs implements OnInit {
     if (this.exportando) return;
     this.exportando = true;
     this.cdr.markForCheck();
+    const snap = this.snapshotParaExport();
     try {
       const { jsPDF } = await import('jspdf');
       const autoTableMod = await import('jspdf-autotable');
@@ -549,99 +653,118 @@ export class RelatoriosOs implements OnInit {
       const geradoPdf = this.formatarMomentoGeracao();
       const lineH = 14;
       let yHead = 32;
+      const { modo, dataInicio, dataFim } = snap;
       doc.setFontSize(16);
-      doc.text(this.tituloPrincipalExportacao(), 40, yHead);
+      doc.text(this.tituloPrincipalExportacao(modo), 40, yHead);
       yHead += 22;
       doc.setFontSize(10);
-      doc.text(this.textoFiltroStatusExportacao(), 40, yHead);
+      doc.text(this.textoFiltroStatusExportacao(modo), 40, yHead);
       yHead += lineH;
-      doc.text(`Período: ${this.dataInicio} a ${this.dataFim}`, 40, yHead);
+      doc.text(`Período: ${dataInicio} a ${dataFim}`, 40, yHead);
       yHead += lineH;
       doc.text(`Gerado em: ${geradoPdf}`, 40, yHead);
       yHead += lineH + 8;
 
-      if (this.modoComTabelaTecnico()) {
-        const mediaGeralPdf = this.formatarHoras(this.resumo.mediaHorasPorOsGlobal);
-        const totaisLinha = `Totais: ${this.resumo.totalOs} ordens de serviço | ${this.resumo.totalHoras.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} h | Média h / ordem: ${mediaGeralPdf} | ${this.resumo.tecnicosComOs} técnico(s)`;
-        const totaisLines = doc.splitTextToSize(totaisLinha, 720);
-        doc.text(totaisLines, 40, yHead);
-        yHead += totaisLines.length * lineH + 12;
+      switch (snap.modo) {
+        case 'concluidas':
+        case 'canceladas': {
+          const { resumo, agregados } = snap;
+          const mediaGeralPdf = this.formatarHorasDuracaoPdf(resumo.mediaHorasPorOsGlobal);
+          const totaisLinha = `Totais: ${resumo.totalOs} ordens de serviço | Total: ${this.formatarHorasDuracaoPdf(resumo.totalHoras)} | Média por ordem: ${mediaGeralPdf} | ${resumo.tecnicosComOs} técnico(s)`;
+          const totaisLines = doc.splitTextToSize(totaisLinha, 720);
+          doc.text(totaisLines, 40, yHead);
+          yHead += totaisLines.length * lineH + 12;
 
-        autoTable(doc, {
-          startY: yHead,
-          head: [['Técnico', 'Ordens no período', 'Horas totais', 'Média h / ordem']],
-          body: this.agregados.map((a) => [
-            a.nomeExibicao,
-            String(a.osConcluidas),
-            String(a.horasTotais),
-            a.mediaHorasPorOs != null ? a.mediaHorasPorOs.toFixed(2) : '—',
-          ]),
-          styles: { fontSize: 9 },
-          headStyles: { fillColor: [103, 80, 164] },
-        });
-
-        const finalY = doc.lastAutoTable?.finalY ?? 120;
-        let y = finalY + 24;
-        if (y > 520) {
-          doc.addPage();
-          y = 40;
-        }
-        doc.setFontSize(11);
-        doc.text('Detalhamento por ordem de serviço', 40, y);
-        y += 14;
-
-        const bodyDet: string[][] = [];
-        for (const a of this.agregados) {
-          for (const o of a.ordens) {
-            const hAg = this.horasAguardandoPecaRelatorio(o);
-            bodyDet.push([
+          autoTable(doc, {
+            startY: yHead,
+            head: [['Técnico', 'Ordens no período', 'Horas totais', 'Média h / ordem']],
+            body: agregados.map((a) => [
               a.nomeExibicao,
-              o.numeroOrdemServico,
-              this.resumoTitulo(o).slice(0, 60),
-              this.tipoManutencaoLabel(o.tipoManutencao),
-              this.prioridadeLabel(o.prioridadeOrdemServico),
-              this.formatarDataCurta(dataAberturaOuCriacao(o)),
-              this.formatarDataCurta(o.dataPrevistaConclusao),
-              this.formatarDataCurta(o.conclusaoEm),
-              String(this.horasRelatorio(o)),
-              hAg != null ? String(hAg) : '—',
-              this.statusLabel(o.statusOrdemServico),
-            ]);
-          }
-        }
+              String(a.osConcluidas),
+              this.formatarHorasDuracaoPdf(a.horasTotais),
+              this.formatarHorasDuracaoPdf(a.mediaHorasPorOs),
+            ]),
+            styles: { fontSize: 9 },
+            headStyles: { fillColor: [103, 80, 164] },
+          });
 
-        autoTable(doc, {
-          startY: y,
-          head: [
-            ['Técnico', 'N.º ordem', 'Resumo', 'Tipo', 'Prior.', 'Abertura', 'Prevista', 'Conclusão', 'h líq.', 'h aguard.', 'Status'],
-          ],
-          body: bodyDet,
-          styles: { fontSize: 7 },
-          headStyles: { fillColor: [79, 55, 138] },
-        });
-      } else if (this.modoComTabelaEquipamento()) {
-        autoTable(doc, {
-          startY: yHead,
-          head: [['Equipamento', 'Ordens abertas', 'Média h / ordem']],
-          body: this.agregadosEquipamento.map((a) => [
-            a.nomeExibicao,
-            String(a.quantidade),
-            a.mediaHorasPorOrdemServico != null ? a.mediaHorasPorOrdemServico.toFixed(2) : '—',
-          ]),
-          styles: { fontSize: 9 },
-          headStyles: { fillColor: [103, 80, 164] },
-        });
-      } else {
-        const m = this.mediaEsperaPecas;
-        const linhas = [
-          `Ordens no período (concluídas ou canceladas): ${m?.osNoUniverso ?? 0}`,
-          `Ordens com tempo de espera registado (> 0 h): ${m?.osComEsperaRegistada ?? 0}`,
-          `Média de horas em espera de peças (entre essas ordens): ${m?.mediaHoras != null ? m.mediaHoras.toFixed(2) : '—'} h`,
-        ];
-        doc.text(linhas, 40, yHead);
+          const finalY = doc.lastAutoTable?.finalY ?? 120;
+          let y = finalY + 24;
+          if (y > 520) {
+            doc.addPage();
+            y = 40;
+          }
+          doc.setFontSize(11);
+          doc.text('Detalhamento por ordem de serviço', 40, y);
+          y += 14;
+
+          const bodyDet: string[][] = [];
+          for (const a of agregados) {
+            for (const o of a.ordens) {
+              const hAg = this.horasAguardandoPecaRelatorio(o);
+              bodyDet.push([
+                a.nomeExibicao,
+                o.numeroOrdemServico,
+                this.resumoTitulo(o).slice(0, 60),
+                this.tipoManutencaoLabel(o.tipoManutencao),
+                this.prioridadeLabel(o.prioridadeOrdemServico),
+                this.formatarDataCurta(dataAberturaOuCriacao(o)),
+                this.formatarDataCurta(o.dataPrevistaConclusao),
+                this.formatarDataCurta(o.conclusaoEm),
+                this.formatarHorasDuracaoPdf(this.horasRelatorio(o)),
+                hAg != null ? this.formatarHorasDuracaoPdf(hAg) : '—',
+                this.statusLabel(o.statusOrdemServico),
+              ]);
+            }
+          }
+
+          autoTable(doc, {
+            startY: y,
+            head: [
+              ['Técnico', 'N.º ordem', 'Resumo', 'Tipo', 'Prior.', 'Abertura', 'Prevista', 'Conclusão', 'h líq.', 'h aguard.', 'Status'],
+            ],
+            body: bodyDet,
+            styles: { fontSize: 7 },
+            headStyles: { fillColor: [79, 55, 138] },
+          });
+          break;
+        }
+        case 'abertas_equipamento': {
+          const { agregadosEquipamento } = snap;
+          const avisoEquip =
+            'Apenas ordens de serviço «Concluídas» ou «Canceladas» são contabilizadas neste relatório.';
+          const avisoLines = doc.splitTextToSize(avisoEquip, 720);
+          doc.text(avisoLines, 40, yHead);
+          yHead += avisoLines.length * lineH + 8;
+          autoTable(doc, {
+            startY: yHead,
+            head: [['Equipamento', 'Ordens (concl. ou cancel.)', 'Média h / ordem']],
+            body: agregadosEquipamento.map((a) => [
+              a.nomeExibicao,
+              String(a.quantidade),
+              a.mediaHorasPorOrdemServico != null ? this.formatarHorasDuracaoPdf(a.mediaHorasPorOrdemServico) : '—',
+            ]),
+            styles: { fontSize: 9 },
+            headStyles: { fillColor: [103, 80, 164] },
+          });
+          break;
+        }
+        case 'tempo_espera_pecas': {
+          const m = snap.mediaEsperaPecas;
+          const linhas = [
+            `Ordens no período (concluídas ou canceladas): ${m?.osNoUniverso ?? 0}`,
+            `Ordens com tempo de espera registado (> 0 h): ${m?.osComEsperaRegistada ?? 0}`,
+            `Média de horas em espera de peças (entre essas ordens): ${this.formatarHorasDuracaoPdf(m?.mediaHoras ?? null)}`,
+          ];
+          doc.text(linhas, 40, yHead);
+          break;
+        }
+        default: {
+          doc.text(`Modo de relatório não suportado na exportação: ${String(snap.modo)}`, 40, yHead);
+        }
       }
 
-      doc.save(`relatorio-os_${this.modoRelatorio}_${this.dataInicio}_${this.dataFim}.pdf`);
+      doc.save(`relatorio-os_${snap.modo}_${snap.dataInicio}_${snap.dataFim}.pdf`);
     } finally {
       this.ngZone.run(() => {
         this.exportando = false;

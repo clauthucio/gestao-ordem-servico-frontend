@@ -2,7 +2,7 @@ import { OrdemStatus } from '../enums/status.enum';
 import type { OrdemServico } from '../models/ordem-servico.model';
 import {
   CHAVE_SEM_TECNICO,
-  agruparAbertasPorEquipamento,
+  agruparConcluidasOuCanceladasPorEquipamento,
   aplicarFiltrosTipoPrioridade,
   calcularMediaTempoEsperaPecas,
   calcularResumoGlobal,
@@ -318,33 +318,41 @@ describe('produtividade-tecnicos.util', () => {
     expect(res.tecnicosComOs).toBe(1);
   });
 
-  it('agruparAbertasPorEquipamento conta só ABERTO no período e média de horas', () => {
+  it('agruparConcluidasOuCanceladasPorEquipamento conta só concluídas e canceladas no período e média de horas', () => {
     const lista = [
       os({
         idOrdemServico: '1',
         idEquipamento: 'e1',
         equipamentoNome: 'Prensa',
-        statusOrdemServico: OrdemStatus.ABERTO,
+        statusOrdemServico: OrdemStatus.CONCLUIDO,
         horasTrabalhadas: 4,
-        dataAtualizacao: '2024-06-15T10:00:00',
+        conclusaoEm: '2024-06-10T10:00:00',
       }),
       os({
         idOrdemServico: '2',
         idEquipamento: 'e1',
         equipamentoNome: 'Prensa',
-        statusOrdemServico: OrdemStatus.ABERTO,
+        statusOrdemServico: OrdemStatus.CONCLUIDO,
         horasTrabalhadas: 2,
-        dataAtualizacao: '2024-06-16T10:00:00',
+        conclusaoEm: '2024-06-20T10:00:00',
       }),
       os({
         idOrdemServico: '3',
         idEquipamento: 'e1',
         equipamentoNome: 'Prensa',
+        statusOrdemServico: OrdemStatus.ABERTO,
+        horasTrabalhadas: 99,
+        dataAtualizacao: '2024-06-15T10:00:00',
+      }),
+      os({
+        idOrdemServico: '4',
+        idEquipamento: 'e1',
+        equipamentoNome: 'Prensa',
         statusOrdemServico: OrdemStatus.CONCLUIDO,
-        conclusaoEm: '2024-06-15T10:00:00',
+        conclusaoEm: '2024-07-15T10:00:00',
       }),
     ];
-    const ag = agruparAbertasPorEquipamento(lista, '2024-06-01', '2024-06-30');
+    const ag = agruparConcluidasOuCanceladasPorEquipamento(lista, '2024-06-01', '2024-06-30');
     expect(ag).toHaveLength(1);
     expect(ag[0].quantidade).toBe(2);
     expect(ag[0].nomeExibicao).toBe('Prensa');

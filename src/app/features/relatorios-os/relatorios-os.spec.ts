@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 
 import { OrdemStatus } from '../../core/enums/status.enum';
+import { EquipamentoService } from '../../core/http/equipamento.service';
 import { OrdemServicoService } from '../../core/http/ordem-servico.service';
 import { UsuarioService } from '../../core/http/usuario.service';
 import type { OrdemServico } from '../../core/models/ordem-servico.model';
@@ -44,6 +45,7 @@ describe('RelatoriosOs', () => {
       providers: [
         { provide: OrdemServicoService, useValue: { listar: () => of([osConcluidaHoje(5)]) } },
         { provide: UsuarioService, useValue: { listar: () => of([]) } },
+        { provide: EquipamentoService, useValue: { listar: () => of([]) } },
         {
           provide: AuthService,
           useValue: {
@@ -69,8 +71,28 @@ describe('RelatoriosOs', () => {
     expect(el.textContent).toContain('Relatórios de ordens de serviço');
   });
 
+  it('formatarHorasDuracaoPdf formata horas decimais para PDF', () => {
+    expect(component.formatarHorasDuracaoPdf(1.25)).toBe('1h15min');
+    expect(component.formatarHorasDuracaoPdf(0.02055138888888889)).toBe('1min');
+    expect(component.formatarHorasDuracaoPdf(null)).toBe('—');
+    expect(component.formatarHorasDuracaoPdf(2)).toBe('2h');
+  });
+
   it('modo padrão é ordens de serviço concluídas', () => {
     expect(component.modoRelatorio).toBe('concluidas');
+  });
+
+  it('snapshotParaExport captura modo, período e cópias de agregados', () => {
+    component.modoRelatorio = 'canceladas';
+    component.dataInicio = '2024-03-01';
+    component.dataFim = '2024-03-31';
+    component.aoAlterarModoRelatorio();
+    const snap = (component as unknown as { snapshotParaExport: () => Record<string, unknown> }).snapshotParaExport();
+    expect(snap['modo']).toBe('canceladas');
+    expect(snap['dataInicio']).toBe('2024-03-01');
+    expect(snap['dataFim']).toBe('2024-03-31');
+    expect(snap['agregados']).not.toBe(component.agregados);
+    expect(snap['agregadosEquipamento']).not.toBe(component.agregadosEquipamento);
   });
 
   it('limparFiltros repõe modo e janela de datas', () => {
@@ -83,8 +105,8 @@ describe('RelatoriosOs', () => {
   });
 
   it('tituloPrincipalExportacao e textoFiltroStatusExportacao refletem o modo', () => {
-    expect(component.tituloPrincipalExportacao()).toContain('concluí');
-    expect(component.textoFiltroStatusExportacao()).toContain('Ordens de serviço concluídas');
+    expect(component.tituloPrincipalExportacao().toLowerCase()).toContain('concluí');
+    expect(component.textoFiltroStatusExportacao()).toContain('O.S. Concluídas');
   });
 
   it('deve usar período padrão de 7 dias até hoje nas datas', () => {

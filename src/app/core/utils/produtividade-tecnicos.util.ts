@@ -331,22 +331,30 @@ export function montarDadosGraficoTopOs(aggs: TecnicoProdutividadeAgg[], topN: n
   }));
 }
 
+/** Agrupamento por equipamento no relatório «O.S. por equipamento» (só concluídas e canceladas no período). */
 export interface EquipamentoAbertasAgg {
   idEquipamento: string;
   nomeExibicao: string;
   quantidade: number;
-  /** Média aritmética de `horasContabilizadasRelatorio` entre as ordens abertas do grupo. */
+  /** Média aritmética de `horasContabilizadasRelatorio` entre as ordens do grupo. */
   mediaHorasPorOrdemServico: number | null;
   ordens: OrdemServico[];
 }
 
-export function agruparAbertasPorEquipamento(
+/**
+ * Equipamentos com pelo menos uma O.S. **Concluída** ou **Cancelada** cuja data de referência do relatório
+ * cai no período; `quantidade` = número dessas ordens por equipamento.
+ */
+export function agruparConcluidasOuCanceladasPorEquipamento(
   todasOrdens: OrdemServico[],
   dataInicio: string,
   dataFim: string,
 ): EquipamentoAbertasAgg[] {
   const { inicioMs, fimMs } = criarLimitesPeriodoLocal(dataInicio, dataFim);
-  const base = filtrarOrdensRelatorioNoPeriodo(todasOrdens, inicioMs, fimMs, [OrdemStatus.ABERTO]);
+  const base = filtrarOrdensRelatorioNoPeriodo(todasOrdens, inicioMs, fimMs, [
+    OrdemStatus.CONCLUIDO,
+    OrdemStatus.CANCELADO,
+  ]);
   const map = new Map<string, { nome: string; ordens: OrdemServico[] }>();
   for (const o of base) {
     const id = String(o.idEquipamento ?? '').trim() || '__sem_equipamento__';
