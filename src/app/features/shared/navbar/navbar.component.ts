@@ -116,13 +116,7 @@ import { UserRole, ROLE_LABELS } from '../../../core/enums/roles.enum';
                 <span class="material-symbols-outlined text-sm">person</span>
                 <span>Perfil</span>
               </a>
-              <a
-                href="#"
-                class="flex items-center gap-2 px-4 py-2 text-on-surface hover:bg-surface-container transition-colors text-sm"
-              >
-                <span class="material-symbols-outlined text-sm">settings</span>
-                <span>Configurações</span>
-              </a>
+              <!-- Implementação futura: item "Configurações" (rota /app/configuracoes ou equivalente) quando existir a feature. -->
               <button
                 (click)="onLogout()"
                 class="w-full flex items-center gap-2 px-4 py-2 text-error hover:bg-error/10 transition-colors text-sm last:rounded-b-lg"
