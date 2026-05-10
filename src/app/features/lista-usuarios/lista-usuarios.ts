@@ -113,6 +113,14 @@ export class ListaUsuarios implements OnInit {
     }
   }
 
+  private fecharMenuAcaoLinha(): void {
+    if (this.acaoAbertaId === null) {
+      return;
+    }
+    this.acaoAbertaId = null;
+    this.cdr.markForCheck();
+  }
+
   carregar(): void {
     this.carregando = true;
     this.erro = null;
@@ -238,7 +246,7 @@ export class ListaUsuarios implements OnInit {
 
   onAlterarSenha(usuario: Usuario, event: MouseEvent): void {
     event.stopPropagation();
-    this.acaoAbertaId = null;
+    this.fecharMenuAcaoLinha();
     this.usuarioSenhaAlvo = usuario;
     this.formSenha.reset();
     this.showModalAlterarSenha = true;
@@ -305,7 +313,7 @@ export class ListaUsuarios implements OnInit {
 
   onExcluirUsuario(usuario: Usuario, event: MouseEvent): void {
     event.stopPropagation();
-    this.acaoAbertaId = null;
+    this.fecharMenuAcaoLinha();
     if (!usuario.idUsuario) {
       return;
     }

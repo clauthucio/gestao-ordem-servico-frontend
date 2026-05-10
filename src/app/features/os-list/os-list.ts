@@ -105,7 +105,7 @@ export class OsList implements OnInit {
 
   @HostListener('document:click')
   fecharDropdown(): void {
-    this.acaoAbertaId = null;
+    this.fecharMenuAcoes();
   }
 
   ngOnInit(): void {
@@ -143,6 +143,10 @@ export class OsList implements OnInit {
         this.carregando = false;
       },
     });
+  }
+
+  private fecharMenuAcoes(): void {
+    this.acaoAbertaId = null;
   }
 
   get ordensFiltradas(): OrdemServicoTabela[] {
@@ -426,7 +430,7 @@ export class OsList implements OnInit {
 
   onIniciarOS(osId: string, event: MouseEvent): void {
     event.stopPropagation();
-    this.acaoAbertaId = null;
+    this.fecharMenuAcoes();
     const os = this.ordensRaw.find(o => o.idOrdemServico === osId);
     if (!os) return;
     this.osParaIniciar = os;
@@ -435,7 +439,7 @@ export class OsList implements OnInit {
 
   onEncerrarOS(osId: string, event: MouseEvent): void {
     event.stopPropagation();
-    this.acaoAbertaId = null;
+    this.fecharMenuAcoes();
     const os = this.ordensRaw.find(o => o.idOrdemServico === osId);
     if (!os) return;
     if (os.statusOrdemServico !== OrdemStatus.EM_ANDAMENTO) return;
@@ -461,7 +465,7 @@ export class OsList implements OnInit {
 
   onAguardarPecaOS(osId: string, event: MouseEvent): void {
     event.stopPropagation();
-    this.acaoAbertaId = null;
+    this.fecharMenuAcoes();
     const os = this.ordensRaw.find(o => o.idOrdemServico === osId);
     if (!os) return;
     if (os.statusOrdemServico !== OrdemStatus.EM_ANDAMENTO) return;
@@ -510,7 +514,7 @@ export class OsList implements OnInit {
 
   onRetomarAtendimentoOS(osId: string, event: MouseEvent): void {
     event.stopPropagation();
-    this.acaoAbertaId = null;
+    this.fecharMenuAcoes();
     const os = this.ordensRaw.find((o) => o.idOrdemServico === osId);
     if (!os) return;
     if (os.statusOrdemServico !== OrdemStatus.AGUARDANDO_PECA) return;
@@ -559,7 +563,7 @@ export class OsList implements OnInit {
 
   onCancelarOS(osId: string, event: MouseEvent): void {
     event.stopPropagation();
-    this.acaoAbertaId = null;
+    this.fecharMenuAcoes();
     const os = this.ordensRaw.find((o) => o.idOrdemServico === osId);
     if (!os) return;
     if (os.statusOrdemServico !== OrdemStatus.AGUARDANDO_PECA) return;
@@ -610,7 +614,7 @@ export class OsList implements OnInit {
 
   onEditarOS(osId: string, event: MouseEvent): void {
     event.stopPropagation();
-    this.acaoAbertaId = null;
+    this.fecharMenuAcoes();
     const os = this.ordensRaw.find(o => o.idOrdemServico === osId);
     if (!os) return;
     this.osEmEdicao = os;
@@ -619,7 +623,7 @@ export class OsList implements OnInit {
 
   onExcluirOS(osId: string, event: MouseEvent): void {
     event.stopPropagation();
-    this.acaoAbertaId = null;
+    this.fecharMenuAcoes();
     const os = this.ordensRaw.find(o => o.idOrdemServico === osId);
     if (!os) return;
 
@@ -710,7 +714,7 @@ export class OsList implements OnInit {
 
   onVerDetalhes(id: string, event?: MouseEvent): void {
     event?.stopPropagation();
-    this.acaoAbertaId = null;
+    this.fecharMenuAcoes();
     this.router.navigate(['/app/ordens', id]);
   }
 

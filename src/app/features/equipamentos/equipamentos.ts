@@ -123,6 +123,14 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
     }
   }
 
+  private fecharMenuAcaoLinha(): void {
+    if (this.acaoAbertaId === null) {
+      return;
+    }
+    this.acaoAbertaId = null;
+    this.cdr.markForCheck();
+  }
+
   carregar(mensagemSucessoAposEdicao?: string): void {
     this.carregando = true;
     this.erro = null;
@@ -434,7 +442,7 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
 
   onEditar(eq: EquipamentoListItem, event: MouseEvent): void {
     event.stopPropagation();
-    this.acaoAbertaId = null;
+    this.fecharMenuAcaoLinha();
     this.equipamentoEditar = eq;
     this.formEditar.patchValue({
       nome: eq.nome,
@@ -497,7 +505,7 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
 
   onHistorico(eq: EquipamentoListItem, event: MouseEvent): void {
     event.stopPropagation();
-    this.acaoAbertaId = null;
+    this.fecharMenuAcaoLinha();
     this.equipamentoHistorico = eq;
     this.showModalHistorico = true;
     this.cdr.markForCheck();
@@ -522,7 +530,7 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
 
   onExcluir(eq: EquipamentoListItem, event: MouseEvent): void {
     event.stopPropagation();
-    this.acaoAbertaId = null;
+    this.fecharMenuAcaoLinha();
     if (this.statusExibicao(eq) === 'emManutencao') {
       this.dialogTitulo = 'Não é possível excluir';
       this.dialogMensagem =

@@ -111,7 +111,7 @@
     </div>
 
     <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden">
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto" [class.pb-72]="acaoAbertaId !== null">
         <table class="w-full text-left text-sm min-w-[960px]">
           <thead>
             <tr class="border-b border-outline-variant/15 bg-slate-500">
@@ -310,7 +310,7 @@
                         </button>
                         @if (acaoAbertaId === os.id) {
                           <div
-                            class="absolute right-0 top-full mt-1 z-30 bg-surface rounded-xl shadow-xl border border-outline-variant/20 py-1 min-w-[180px]"
+                            class="absolute right-0 top-full mt-1 z-30 bg-surface rounded-xl shadow-xl border border-outline-variant/20 py-1 min-w-[180px] max-h-[min(320px,calc(100vh-16px))] overflow-y-auto"
                             (click)="$event.stopPropagation()"
                           >
                             <button
