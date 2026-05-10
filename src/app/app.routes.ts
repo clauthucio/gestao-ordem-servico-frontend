@@ -97,11 +97,13 @@ export const routes: Routes = [
         ],
       },
 
-      //EQUIPAMENTOS
+      //EQUIPAMENTOS (TÉCNICO: consulta; ADMIN e SUPERVISOR: edição)
       {
         path: 'equipamentos',
         canActivate: [RoleGuard],
-        data: { requiredRole: UserRole.ADMIN },
+        data: {
+          requiredRole: [UserRole.TECNICO, UserRole.SUPERVISOR_DE_MANUTENCAO, UserRole.ADMIN],
+        },
         canDeactivate: [UnsavedChangesGuard],
         loadComponent: () =>
           import('./features/equipamentos/equipamentos').then((m) => m.Equipamentos),
@@ -126,11 +128,13 @@ export const routes: Routes = [
         ],
       },
 
-      //RELATÓRIOS
+      //RELATÓRIOS (TÉCNICO: consulta; SUPERVISOR e ADMIN)
       {
         path: 'relatorios',
         canActivate: [RoleGuard],
-        data: { requiredRole: UserRole.SUPERVISOR_DE_MANUTENCAO },
+        data: {
+          requiredRole: [UserRole.TECNICO, UserRole.SUPERVISOR_DE_MANUTENCAO, UserRole.ADMIN],
+        },
         children: [
           {
             path: 'tecnicos',

@@ -18,6 +18,8 @@ import {
   EquipamentoListItem,
   TipoEquipamento,
 } from '../../core/models/equipamento.model';
+import { AuthService } from '../../core/services/auth.service';
+import { UserRole } from '../../core/enums/roles.enum';
 
 export type StatusEquipamentoExibicao = 'ativo' | 'emManutencao' | 'inativo';
 
@@ -39,6 +41,7 @@ export type ColunaOrdenacaoEquipamento =
 })
 export class Equipamentos implements OnInit, CanComponentDeactivate {
   private readonly equipamentoService = inject(EquipamentoService);
+  private readonly authService = inject(AuthService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly fb = inject(FormBuilder);
 
@@ -103,6 +106,11 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
   dialogTipo: 'confirmacao' | 'erro' | 'info' = 'info';
   dialogBotoes: DialogBotao[] = [];
   private dialogCallback: (() => void) | null = null;
+
+  /** Técnico: apenas consulta (sem cadastro, edição ou exclusão). */
+  get somenteLeitura(): boolean {
+    return this.authService.getCurrentUserRole() === UserRole.TECNICO;
+  }
 
   ngOnInit(): void {
     this.carregar();

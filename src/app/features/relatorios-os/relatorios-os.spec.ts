@@ -6,6 +6,8 @@ import { OrdemServicoService } from '../../core/http/ordem-servico.service';
 import { UsuarioService } from '../../core/http/usuario.service';
 import type { OrdemServico } from '../../core/models/ordem-servico.model';
 import { RelatoriosOs } from './relatorios-os';
+import { AuthService } from '../../core/services/auth.service';
+import { UserRole } from '../../core/enums/roles.enum';
 
 function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -42,6 +44,13 @@ describe('RelatoriosOs', () => {
       providers: [
         { provide: OrdemServicoService, useValue: { listar: () => of([osConcluidaHoje(5)]) } },
         { provide: UsuarioService, useValue: { listar: () => of([]) } },
+        {
+          provide: AuthService,
+          useValue: {
+            getCurrentUserRole: () => UserRole.SUPERVISOR_DE_MANUTENCAO,
+            getCurrentUser: () => ({ idUsuario: 's', perfilUsuario: UserRole.SUPERVISOR_DE_MANUTENCAO }),
+          },
+        },
       ],
     }).compileComponents();
 

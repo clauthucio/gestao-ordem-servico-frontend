@@ -5,6 +5,8 @@ import { of } from 'rxjs';
 import { Equipamentos } from './equipamentos';
 import { EquipamentoService } from '../../core/http/equipamento.service';
 import type { EquipamentoListItem } from '../../core/models/equipamento.model';
+import { AuthService } from '../../core/services/auth.service';
+import { UserRole } from '../../core/enums/roles.enum';
 
 describe('Equipamentos', () => {
   let component: Equipamentos;
@@ -47,6 +49,13 @@ describe('Equipamentos', () => {
       providers: [
         provideRouter([]),
         { provide: EquipamentoService, useValue: equipamentoServiceStub },
+        {
+          provide: AuthService,
+          useValue: {
+            getCurrentUserRole: () => UserRole.ADMIN,
+            getCurrentUser: () => ({ idUsuario: 'a', perfilUsuario: UserRole.ADMIN }),
+          },
+        },
       ],
     }).compileComponents();
 

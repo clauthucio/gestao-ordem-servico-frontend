@@ -38,6 +38,8 @@ import {
   montarDadosGraficoTopEquipamento,
   montarDadosGraficoTopOs,
 } from '../../core/utils/produtividade-tecnicos.util';
+import { AuthService } from '../../core/services/auth.service';
+import { UserRole } from '../../core/enums/roles.enum';
 
 /** Um modo de relatório por vez (dropdown). */
 export type RelatorioOsModo = 'concluidas' | 'canceladas' | 'abertas_equipamento' | 'tempo_espera_pecas';
@@ -57,6 +59,7 @@ export class RelatoriosOs implements OnInit {
   private readonly usuarioService = inject(UsuarioService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
+  private readonly authService = inject(AuthService);
 
   readonly titulo = 'Relatórios de ordens de serviço';
   readonly subtitulo =
@@ -93,6 +96,11 @@ export class RelatoriosOs implements OnInit {
 
   tecnicoDetalhe: TecnicoProdutividadeAgg | null = null;
   equipamentoDetalhe: EquipamentoAbertasAgg | null = null;
+
+  /** Técnico: modo consulta nesta área. */
+  get somenteLeituraTecnico(): boolean {
+    return this.authService.getCurrentUserRole() === UserRole.TECNICO;
+  }
 
   ngOnInit(): void {
     this.aplicarPeriodoPadraoCampos();

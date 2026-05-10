@@ -61,8 +61,8 @@ import { UserRole, ROLE_LABELS } from '../../../core/enums/roles.enum';
             </a>
           }
 
-          <!-- Equipamentos (SUPERVISOR+) -->
-          @if (hasRole(UserRole.SUPERVISOR_DE_MANUTENCAO) || hasRole(UserRole.ADMIN)) {
+          <!-- Equipamentos (TÉCNICO+, consulta ou gestão) -->
+          @if (hasRole(UserRole.TECNICO) || hasRole(UserRole.SUPERVISOR_DE_MANUTENCAO) || hasRole(UserRole.ADMIN)) {
             <a
               routerLink="/app/equipamentos"
               routerLinkActive="bg-on-primary/20"
@@ -73,8 +73,8 @@ import { UserRole, ROLE_LABELS } from '../../../core/enums/roles.enum';
             </a>
           }
 
-          <!-- Relatórios (SUPERVISOR+) -->
-          @if (hasRole(UserRole.SUPERVISOR_DE_MANUTENCAO) || hasRole(UserRole.ADMIN)) {
+          <!-- Relatórios (TÉCNICO+, consulta ou gestão) -->
+          @if (hasRole(UserRole.TECNICO) || hasRole(UserRole.SUPERVISOR_DE_MANUTENCAO) || hasRole(UserRole.ADMIN)) {
             <a
               routerLink="/app/relatorios/tecnicos"
               routerLinkActive="bg-on-primary/20"
