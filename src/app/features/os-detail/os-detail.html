@@ -101,26 +101,50 @@
 
     <div class="shrink-0 w-full flex flex-wrap gap-2">
       @if (os.statusOrdemServico === 'ABERTO') {
-        <button
-          type="button"
-          (click)="abrirModalIniciar()"
-          title="Iniciar o atendimento"
-          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-outline-variant/30 bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors"
-        >
-          <span class="material-symbols-outlined text-[18px] text-success">play_arrow</span>
-          Iniciar
-        </button>
+        @if (detalheIniciarHabilitado) {
+          <button
+            type="button"
+            (click)="abrirModalIniciar()"
+            title="Iniciar o atendimento"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-outline-variant/30 bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors"
+          >
+            <span class="material-symbols-outlined text-[18px] text-success">play_arrow</span>
+            Iniciar
+          </button>
+        } @else {
+          <button
+            type="button"
+            disabled
+            title="Só pode iniciar ordens atribuídas ao seu utilizador"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-outline-variant/30 bg-surface-container-low text-on-surface-variant/40 cursor-not-allowed opacity-50"
+          >
+            <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+            Iniciar
+          </button>
+        }
       }
       @if (os.statusOrdemServico !== 'CONCLUIDO' && os.statusOrdemServico !== 'CANCELADO') {
-        <button
-          type="button"
-          (click)="abrirModalEditar()"
-          title="Editar ordem"
-          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-outline-variant/30 bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors"
-        >
-          <span class="material-symbols-outlined text-[18px] text-primary">edit</span>
-          Editar
-        </button>
+        @if (detalheEditarHabilitado) {
+          <button
+            type="button"
+            (click)="abrirModalEditar()"
+            title="Editar ordem"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-outline-variant/30 bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors"
+          >
+            <span class="material-symbols-outlined text-[18px] text-primary">edit</span>
+            Editar
+          </button>
+        } @else {
+          <button
+            type="button"
+            disabled
+            title="Perfil técnico não pode editar neste ecrã"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-outline-variant/30 bg-surface-container-low text-on-surface-variant/40 cursor-not-allowed opacity-50"
+          >
+            <span class="material-symbols-outlined text-[18px]">edit</span>
+            Editar
+          </button>
+        }
       }
       @if (os.statusOrdemServico === 'EM_ANDAMENTO') {
         @if (podeAcaoComoAdminOuTecnicoAtribuido) {

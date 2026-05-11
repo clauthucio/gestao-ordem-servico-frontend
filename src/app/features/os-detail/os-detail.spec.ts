@@ -356,4 +356,84 @@ describe('OsDetail', () => {
     expect(compiled.textContent).toContain('Ordem de Serviço Cancelada');
     expect(compiled.querySelector('button[title="Editar ordem"]')).toBeNull();
   });
+
+  describe('perfil TECNICO em ABERTO (Iniciar / Editar)', () => {
+    const osAbertoAtribuidaTec1: OrdemServico = {
+      ...mockOs,
+      statusOrdemServico: OrdemStatus.ABERTO,
+      idTecnico: 'tec1',
+      inicioEm: undefined,
+    };
+
+    async function setupDetailTecnico(os: OrdemServico, idUsuario: string): Promise<ComponentFixture<OsDetail>> {
+      TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [OsDetail],
+        providers: [
+          {
+            provide: ActivatedRoute,
+            useValue: {
+              snapshot: { paramMap: { get: (k: string) => (k === 'id' ? 'os-1' : null) } },
+            },
+          },
+          {
+            provide: OrdemServicoService,
+            useValue: {
+              buscarPorId: () => of(os),
+              atualizar: () => of(os),
+              buscarAguardandoPecaLog: () => of({ totalHorasAguardando: 0, logs: [] }),
+            },
+          },
+          { provide: UsuarioService, useValue: { listar: () => of(mockUsuarios) } },
+          { provide: EquipamentoService, useValue: { listar: () => of([mockEquipamento]) } },
+          {
+            provide: AuthService,
+            useValue: {
+              getCurrentUser: () => ({
+                idUsuario,
+                perfilUsuario: UserRole.TECNICO,
+                nomeUsuario: 'Téc',
+              }),
+            },
+          },
+        ],
+      }).compileComponents();
+      const f = TestBed.createComponent(OsDetail);
+      f.detectChanges();
+      await f.whenStable();
+      f.detectChanges();
+      return f;
+    }
+
+    it('técnico atribuído: Iniciar ativo; Editar desativado', async () => {
+      const f = await setupDetailTecnico(osAbertoAtribuidaTec1, 'tec1');
+      const el = f.nativeElement as HTMLElement;
+      const iniciar = el.querySelector('button[title="Iniciar o atendimento"]') as HTMLButtonElement;
+      const editar = el.querySelector('button[title="Perfil técnico não pode editar neste ecrã"]') as HTMLButtonElement;
+      expect(iniciar).toBeTruthy();
+      expect(iniciar.disabled).toBe(false);
+      expect(editar).toBeTruthy();
+      expect(editar.disabled).toBe(true);
+    });
+
+    it('técnico não atribuído: Iniciar desativado', async () => {
+      const f = await setupDetailTecnico(osAbertoAtribuidaTec1, 'tec2');
+      const el = f.nativeElement as HTMLElement;
+      const iniciar = el.querySelector(
+        'button[title="Só pode iniciar ordens atribuídas ao seu utilizador"]',
+      ) as HTMLButtonElement;
+      expect(iniciar).toBeTruthy();
+      expect(iniciar.disabled).toBe(true);
+    });
+
+    it('abrirModalEditar como técnico não abre modal e exibe diálogo de erro', async () => {
+      const f = await setupDetailTecnico(osAbertoAtribuidaTec1, 'tec1');
+      const comp = f.componentInstance;
+      comp.abrirModalEditar();
+      f.detectChanges();
+      expect(comp.showModalEdicao).toBe(false);
+      expect(comp.dialogVisivel).toBe(true);
+      expect(comp.dialogTitulo).toBe('Permissão negada');
+    });
+  });
 });

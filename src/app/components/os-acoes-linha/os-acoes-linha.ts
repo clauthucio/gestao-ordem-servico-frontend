@@ -20,7 +20,11 @@ import { OrdemServico } from '../../core/models/ordem-servico.model';
 import { AuthService } from '../../core/services/auth.service';
 import { OsAcoesLinhaMenuService } from '../../core/services/os-acoes-linha-menu.service';
 import { appendOsTimelineEvent } from '../../core/storage/os-timeline-local.storage';
-import { usuarioPodeAcaoComoAdminOuTecnicoAtribuido } from '../../core/utils/os-acoes-permissao.util';
+import {
+  iniciarAtendimentoHabilitadoParaUsuario,
+  usuarioPodeAcaoComoAdminOuTecnicoAtribuido,
+  usuarioPodeEditarOuExcluirOrdemServico,
+} from '../../core/utils/os-acoes-permissao.util';
 
 @Component({
   selector: 'app-os-acoes-linha',
@@ -82,6 +86,14 @@ export class OsAcoesLinhaComponent implements OnChanges {
     return usuarioPodeAcaoComoAdminOuTecnicoAtribuido(this.authService.getCurrentUser(), os.idTecnico);
   }
 
+  iniciarHabilitadoParaUsuario(os: OrdemServico): boolean {
+    return iniciarAtendimentoHabilitadoParaUsuario(this.authService.getCurrentUser(), os.idTecnico);
+  }
+
+  editarExcluirHabilitadoParaUsuario(): boolean {
+    return usuarioPodeEditarOuExcluirOrdemServico(this.authService.getCurrentUser());
+  }
+
   abrirMenuAcao(ev: MouseEvent): void {
     ev.stopPropagation();
     ev.preventDefault();
@@ -97,6 +109,13 @@ export class OsAcoesLinhaComponent implements OnChanges {
   onEditarOS(ev: MouseEvent): void {
     ev.stopPropagation();
     this.fecharMenuEPropagacao();
+    if (!this.editarExcluirHabilitadoParaUsuario()) {
+      this.abrirDialogErro(
+        'Permissão negada',
+        'Utilizadores com perfil técnico não podem editar ordens de serviço por este menu.'
+      );
+      return;
+    }
     this.osEmEdicao = this.ordem;
     this.showModalEdicao = true;
   }
@@ -114,6 +133,13 @@ export class OsAcoesLinhaComponent implements OnChanges {
   onIniciarOS(ev: MouseEvent): void {
     ev.stopPropagation();
     this.fecharMenuEPropagacao();
+    if (!this.iniciarHabilitadoParaUsuario(this.ordem)) {
+      this.abrirDialogErro(
+        'Permissão negada',
+        'Só pode iniciar ordens de serviço atribuídas ao seu utilizador.'
+      );
+      return;
+    }
     this.osParaIniciar = this.ordem;
     this.showModalIniciar = true;
   }
@@ -274,6 +300,13 @@ export class OsAcoesLinhaComponent implements OnChanges {
   onExcluirOS(ev: MouseEvent): void {
     ev.stopPropagation();
     this.fecharMenuEPropagacao();
+    if (!this.editarExcluirHabilitadoParaUsuario()) {
+      this.abrirDialogErro(
+        'Permissão negada',
+        'Utilizadores com perfil técnico não podem excluir ordens de serviço.'
+      );
+      return;
+    }
     if (this.ordem.statusOrdemServico !== OrdemStatus.ABERTO) {
       this.abrirDialogErro('Exclusão não permitida', 'Só é possível excluir OS que estiverem "EM ABERTO".');
       return;

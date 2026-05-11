@@ -67,25 +67,49 @@
           ordem.statusOrdemServico !== OrdemStatus.CANCELADO
         ) {
           @if (ordem.statusOrdemServico === OrdemStatus.ABERTO) {
+            @if (iniciarHabilitadoParaUsuario(ordem)) {
+              <button
+                type="button"
+                class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
+                (click)="onIniciarOS($event)"
+                title="Iniciar o atendimento"
+              >
+                <span class="material-symbols-outlined text-[18px] text-success">play_arrow</span>
+                Iniciar
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface-variant/40 cursor-not-allowed opacity-50"
+                [disabled]="true"
+                title="Só pode iniciar ordens atribuídas ao seu utilizador"
+              >
+                <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+                Iniciar
+              </button>
+            }
+          }
+          @if (editarExcluirHabilitadoParaUsuario()) {
             <button
               type="button"
               class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
-              (click)="onIniciarOS($event)"
-              title="Iniciar o atendimento"
+              (click)="onEditarOS($event)"
+              title="Editar ordem"
             >
-              <span class="material-symbols-outlined text-[18px] text-success">play_arrow</span>
-              Iniciar
+              <span class="material-symbols-outlined text-[18px] text-primary">edit</span>
+              Editar
+            </button>
+          } @else {
+            <button
+              type="button"
+              class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface-variant/40 cursor-not-allowed opacity-50"
+              [disabled]="true"
+              title="Perfil técnico não pode editar por este menu"
+            >
+              <span class="material-symbols-outlined text-[18px]">edit</span>
+              Editar
             </button>
           }
-          <button
-            type="button"
-            class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
-            (click)="onEditarOS($event)"
-            title="Editar ordem"
-          >
-            <span class="material-symbols-outlined text-[18px] text-primary">edit</span>
-            Editar
-          </button>
           @if (ordem.statusOrdemServico === OrdemStatus.EM_ANDAMENTO) {
             @if (isUserAdminOrAssignedTecnico(ordem)) {
               <button
@@ -174,15 +198,27 @@
             }
           }
           @if (ordem.statusOrdemServico === OrdemStatus.ABERTO) {
-            <button
-              type="button"
-              class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
-              (click)="onExcluirOS($event)"
-              title="Deletar ordem"
-            >
-              <span class="material-symbols-outlined text-[18px] text-error">delete</span>
-              Excluir
-            </button>
+            @if (editarExcluirHabilitadoParaUsuario()) {
+              <button
+                type="button"
+                class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
+                (click)="onExcluirOS($event)"
+                title="Deletar ordem"
+              >
+                <span class="material-symbols-outlined text-[18px] text-error">delete</span>
+                Excluir
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface-variant/40 cursor-not-allowed opacity-50"
+                [disabled]="true"
+                title="Perfil técnico não pode excluir ordens de serviço"
+              >
+                <span class="material-symbols-outlined text-[18px]">delete</span>
+                Excluir
+              </button>
+            }
           }
         }
       </div>

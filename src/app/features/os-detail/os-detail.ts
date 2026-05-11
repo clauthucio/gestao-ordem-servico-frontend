@@ -21,7 +21,11 @@ import { Equipamento } from '../../core/models/equipamento.model';
 import { OrdemStatus } from '../../core/enums/status.enum';
 import { UserRole } from '../../core/enums/roles.enum';
 import { appendOsTimelineEvent, getOsTimelineEvents } from '../../core/storage/os-timeline-local.storage';
-import { usuarioPodeAcaoComoAdminOuTecnicoAtribuido } from '../../core/utils/os-acoes-permissao.util';
+import {
+  iniciarAtendimentoHabilitadoParaUsuario,
+  usuarioPodeAcaoComoAdminOuTecnicoAtribuido,
+  usuarioPodeEditarOuExcluirOrdemServico,
+} from '../../core/utils/os-acoes-permissao.util';
 import { mensagemUsuarioErroApiOrdemServico } from '../../core/utils/ordem-servico-api-message.util';
 import { DialogComponent, DialogBotao } from '../../components/dialog/dialog.component';
 import { ModalContainerComponent } from '../../components/modal-container/modal-container';
@@ -166,6 +170,16 @@ export class OsDetail implements OnInit, OnDestroy {
     if (!sel) return false;
     const atual = this.os.idTecnico?.trim() ?? '';
     return sel !== atual;
+  }
+
+  /** Iniciar no cabeçalho: técnico só se a OS estiver atribuída a si (mesma regra que a lista). */
+  get detalheIniciarHabilitado(): boolean {
+    return iniciarAtendimentoHabilitadoParaUsuario(this.authService.getCurrentUser(), this.os?.idTecnico);
+  }
+
+  /** Editar no cabeçalho: perfil técnico não edita. */
+  get detalheEditarHabilitado(): boolean {
+    return usuarioPodeEditarOuExcluirOrdemServico(this.authService.getCurrentUser());
   }
 
   /** Mesma regra que a lista: admin ou técnico atribuído (Aguardar peça / Retomar). */
@@ -540,6 +554,16 @@ export class OsDetail implements OnInit, OnDestroy {
 
   abrirModalIniciar(): void {
     if (!this.os) return;
+    if (!iniciarAtendimentoHabilitadoParaUsuario(this.authService.getCurrentUser(), this.os.idTecnico)) {
+      this.dialogTitulo = 'Permissão negada';
+      this.dialogMensagem = 'Só pode iniciar ordens de serviço atribuídas ao seu utilizador.';
+      this.dialogTipo = 'erro';
+      this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+      this.dialogCallback = null;
+      this.dialogVisivel = true;
+      this.cdr.markForCheck();
+      return;
+    }
     this.osParaIniciar = this.os;
     this.showModalIniciar = true;
     this.cdr.markForCheck();
@@ -547,6 +571,17 @@ export class OsDetail implements OnInit, OnDestroy {
 
   abrirModalEditar(): void {
     if (!this.os) return;
+    if (!usuarioPodeEditarOuExcluirOrdemServico(this.authService.getCurrentUser())) {
+      this.dialogTitulo = 'Permissão negada';
+      this.dialogMensagem =
+        'Utilizadores com perfil técnico não podem editar ordens de serviço neste ecrã.';
+      this.dialogTipo = 'erro';
+      this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+      this.dialogCallback = null;
+      this.dialogVisivel = true;
+      this.cdr.markForCheck();
+      return;
+    }
     this.osEmEdicao = this.os;
     this.showModalEdicao = true;
     this.cdr.markForCheck();

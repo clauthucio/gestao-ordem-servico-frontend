@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
@@ -84,5 +84,77 @@ describe('OsAcoesLinhaComponent', () => {
     expect(menu.openOrdemServicoId()).toBe('os-row-b');
     expect(fa.nativeElement.querySelector('.absolute.right-0')).toBeNull();
     expect(fb.nativeElement.querySelector('.absolute.right-0')).toBeTruthy();
+  });
+
+  describe('perfil TECNICO', () => {
+    const idTec = 'tec-user-1';
+
+    function ordemAberto(extra: Partial<Pick<OrdemServico, 'idTecnico'>> = {}): OrdemServico {
+      return { ...ordemBase(OrdemStatus.ABERTO), ...extra };
+    }
+
+    beforeEach(async () => {
+      TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [OsAcoesLinhaComponent],
+        providers: [
+          provideRouter([]),
+          { provide: OrdemServicoService, useValue: { atualizar: () => of({}), deletar: () => of(void 0) } },
+          {
+            provide: AuthService,
+            useValue: {
+              getCurrentUser: () => ({ idUsuario: idTec, perfilUsuario: UserRole.TECNICO }),
+            },
+          },
+        ],
+      }).compileComponents();
+      TestBed.inject(OsAcoesLinhaMenuService).close();
+    });
+
+    function abrirMenuBotoes(fixture: ComponentFixture<OsAcoesLinhaComponent>): HTMLButtonElement[] {
+      const host = fixture.nativeElement as HTMLElement;
+      (host.querySelector('button[title="Ações"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      return Array.from(host.querySelectorAll('.absolute.right-0 button[type="button"]'));
+    }
+
+    function botaoPorRotulo(buttons: HTMLButtonElement[], label: string): HTMLButtonElement | undefined {
+      return buttons.find((b) => b.textContent?.replace(/\s+/g, ' ').trim().includes(label));
+    }
+
+    it('OS ABERTO atribuída ao técnico: Iniciar ativo; Editar e Excluir desativados', () => {
+      const fixture = TestBed.createComponent(OsAcoesLinhaComponent);
+      fixture.componentInstance.ordem = ordemAberto({ idTecnico: idTec });
+      fixture.detectChanges();
+
+      const buttons = abrirMenuBotoes(fixture);
+      const iniciar = botaoPorRotulo(buttons, 'Iniciar');
+      const editar = botaoPorRotulo(buttons, 'Editar');
+      const excluir = botaoPorRotulo(buttons, 'Excluir');
+      expect(iniciar).toBeTruthy();
+      expect(iniciar!.disabled).toBe(false);
+      expect(editar?.disabled).toBe(true);
+      expect(excluir?.disabled).toBe(true);
+    });
+
+    it('OS ABERTO não atribuída ao técnico: Iniciar desativado', () => {
+      const fixture = TestBed.createComponent(OsAcoesLinhaComponent);
+      fixture.componentInstance.ordem = ordemAberto({ idTecnico: 'outro-tecnico' });
+      fixture.detectChanges();
+
+      const iniciar = botaoPorRotulo(abrirMenuBotoes(fixture), 'Iniciar');
+      expect(iniciar).toBeTruthy();
+      expect(iniciar!.disabled).toBe(true);
+    });
+
+    it('OS ABERTO sem técnico atribuído: Iniciar desativado', () => {
+      const fixture = TestBed.createComponent(OsAcoesLinhaComponent);
+      fixture.componentInstance.ordem = ordemAberto();
+      fixture.detectChanges();
+
+      const iniciar = botaoPorRotulo(abrirMenuBotoes(fixture), 'Iniciar');
+      expect(iniciar).toBeTruthy();
+      expect(iniciar!.disabled).toBe(true);
+    });
   });
 });

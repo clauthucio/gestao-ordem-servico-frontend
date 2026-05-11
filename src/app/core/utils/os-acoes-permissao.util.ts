@@ -20,3 +20,22 @@ export function usuarioPodeAcaoComoAdminOuTecnicoAtribuido(
   if (usuario.perfilUsuario === UserRole.TECNICO && usuario.idUsuario === idT) return true;
   return false;
 }
+
+/** Perfil TÉCNICO não edita nem exclui pela UI (lista/detalhe). */
+export function usuarioPodeEditarOuExcluirOrdemServico(
+  usuario: UsuarioPermissaoOsAcao | null | undefined,
+): boolean {
+  return usuario?.perfilUsuario !== UserRole.TECNICO;
+}
+
+/**
+ * Iniciar atendimento: perfis não-técnicos mantêm acesso; TÉCNICO só com OS atribuída a si.
+ */
+export function iniciarAtendimentoHabilitadoParaUsuario(
+  usuario: UsuarioPermissaoOsAcao | null | undefined,
+  idTecnicoOs: string | null | undefined,
+): boolean {
+  if (!usuario || usuario.perfilUsuario !== UserRole.TECNICO) return true;
+  const idT = idTecnicoOs?.trim() ?? '';
+  return idT !== '' && usuario.idUsuario === idT;
+}
