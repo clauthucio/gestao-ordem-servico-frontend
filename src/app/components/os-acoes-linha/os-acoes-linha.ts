@@ -3,7 +3,7 @@ import {
   ChangeDetectorRef,
   Component,
   EventEmitter,
-  HostListener,
+  HostBinding,
   Input,
   OnChanges,
   Output,
@@ -18,6 +18,7 @@ import { OrdemStatus } from '../../core/enums/status.enum';
 import { OrdemServicoService } from '../../core/http/ordem-servico.service';
 import { OrdemServico } from '../../core/models/ordem-servico.model';
 import { AuthService } from '../../core/services/auth.service';
+import { OsAcoesLinhaMenuService } from '../../core/services/os-acoes-linha-menu.service';
 import { appendOsTimelineEvent } from '../../core/storage/os-timeline-local.storage';
 import { usuarioPodeAcaoComoAdminOuTecnicoAtribuido } from '../../core/utils/os-acoes-permissao.util';
 
@@ -32,6 +33,7 @@ export class OsAcoesLinhaComponent implements OnChanges {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
+  readonly menuCoord = inject(OsAcoesLinhaMenuService);
 
   /** OS completa da linha (mutável após recarga no pai). */
   @Input({ required: true }) ordem!: OrdemServico;
@@ -39,7 +41,10 @@ export class OsAcoesLinhaComponent implements OnChanges {
   /** Emite após mutação bem-sucedida; valor opcional = mensagem de sucesso para o pai exibir. */
   @Output() dadosAlterados = new EventEmitter<string | undefined>();
 
-  menuAberto = false;
+  @HostBinding('attr.data-os-id')
+  get hostDataOsId(): string {
+    return this.ordem.idOrdemServico;
+  }
 
   dialogVisivel = false;
   dialogTitulo = '';
@@ -61,18 +66,16 @@ export class OsAcoesLinhaComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['ordem']) {
-      this.menuAberto = false;
+      const prev = changes['ordem'].previousValue as OrdemServico | undefined;
+      if (prev?.idOrdemServico && this.menuCoord.openOrdemServicoId() === prev.idOrdemServico) {
+        this.menuCoord.close();
+      }
     }
-  }
-
-  @HostListener('document:click')
-  fecharMenuPorClickExterno(): void {
-    this.menuAberto = false;
   }
 
   private fecharMenuEPropagacao(ev?: MouseEvent): void {
     ev?.stopPropagation();
-    this.menuAberto = false;
+    this.menuCoord.close();
   }
 
   isUserAdminOrAssignedTecnico(os: OrdemServico): boolean {
@@ -82,12 +85,12 @@ export class OsAcoesLinhaComponent implements OnChanges {
   abrirMenuAcao(ev: MouseEvent): void {
     ev.stopPropagation();
     ev.preventDefault();
-    this.menuAberto = !this.menuAberto;
+    this.menuCoord.select(this.ordem.idOrdemServico);
   }
 
   onVerDetalhes(ev?: MouseEvent): void {
     ev?.stopPropagation();
-    this.menuAberto = false;
+    this.menuCoord.close();
     void this.router.navigate(['/app/ordens', this.ordem.idOrdemServico]);
   }
 
