@@ -14,31 +14,62 @@
       Usuário: <span class="font-semibold text-on-background">{{ usuarioSenhaAlvo.nomeUsuario }}</span>
       <span class="text-on-surface-variant">({{ usuarioSenhaAlvo.emailUsuario }})</span>
     </p>
+    @if (erroApiSenha) {
+      <p class="text-sm text-error mb-4" role="alert">{{ erroApiSenha }}</p>
+    }
     <form [formGroup]="formSenha" (ngSubmit)="onSalvarNovaSenha()" class="space-y-4">
       <div>
-        <label for="lu-nova-senha" class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
-          >Nova senha</label
+        <label for="lu-senha-atual" class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
+          >Senha atual</label
         >
         <input
-          id="lu-nova-senha"
+          id="lu-senha-atual"
           type="password"
-          formControlName="novaSenha"
-          autocomplete="new-password"
+          formControlName="senhaAtual"
+          autocomplete="current-password"
           class="w-full px-3 py-2.5 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm"
         />
-        @if (formSenha.controls.novaSenha.invalid && formSenha.controls.novaSenha.touched) {
+        @if (formSenha.controls.senhaAtual.invalid && formSenha.controls.senhaAtual.touched) {
           <p class="mt-1.5 text-xs text-error">
-            @if (formSenha.controls.novaSenha.errors?.['required']) {
-              Informe a nova senha.
-            } @else if (formSenha.controls.novaSenha.errors?.['minlength']) {
+            @if (formSenha.controls.senhaAtual.errors?.['required']) {
+              Informe a senha atual.
+            } @else if (formSenha.controls.senhaAtual.errors?.['minlength']) {
               Mínimo de 6 caracteres.
+            } @else if (formSenha.controls.senhaAtual.errors?.['maxlength']) {
+              Máximo de 100 caracteres.
             }
           </p>
         }
       </div>
       <div>
+        <label for="lu-senha-nova" class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
+          >Nova senha</label
+        >
+        <input
+          id="lu-senha-nova"
+          type="password"
+          formControlName="senhaNova"
+          autocomplete="new-password"
+          class="w-full px-3 py-2.5 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm"
+        />
+        @if (formSenha.controls.senhaNova.invalid && formSenha.controls.senhaNova.touched) {
+          <p class="mt-1.5 text-xs text-error">
+            @if (formSenha.controls.senhaNova.errors?.['required']) {
+              Informe a nova senha.
+            } @else if (formSenha.controls.senhaNova.errors?.['minlength']) {
+              Mínimo de 6 caracteres.
+            } @else if (formSenha.controls.senhaNova.errors?.['maxlength']) {
+              Máximo de 100 caracteres.
+            }
+          </p>
+        }
+        @if (formSenha.touched && formSenha.errors?.['igualAtual']) {
+          <p class="mt-1.5 text-xs text-error">A nova senha não pode ser igual à senha atual.</p>
+        }
+      </div>
+      <div>
         <label for="lu-conf-senha" class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
-          >Repetir nova senha</label
+          >Confirmar nova senha</label
         >
         <input
           id="lu-conf-senha"
@@ -53,6 +84,8 @@
               Confirme a nova senha.
             } @else if (formSenha.controls.confirmarSenha.errors?.['minlength']) {
               Mínimo de 6 caracteres.
+            } @else if (formSenha.controls.confirmarSenha.errors?.['maxlength']) {
+              Máximo de 100 caracteres.
             }
           </p>
         }
@@ -171,7 +204,7 @@
       </div>
 
       <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto" [class.pb-72]="acaoAbertaId !== null">
           <table class="w-full text-left text-sm min-w-[640px]">
             <thead>
               <tr class="border-b border-outline-variant/15 bg-surface-container-low/50">
@@ -214,18 +247,20 @@
                         </button>
                         @if (acaoAbertaId === u.idUsuario) {
                           <div
-                            class="absolute right-0 top-full mt-1 z-30 bg-surface rounded-xl shadow-xl border border-outline-variant/20 py-1 min-w-[180px]"
+                            class="absolute right-0 top-full mt-1 z-30 bg-surface rounded-xl shadow-xl border border-outline-variant/20 py-1 min-w-[180px] max-h-[min(320px,calc(100vh-16px))] overflow-y-auto"
                             (click)="$event.stopPropagation()"
                           >
-                            <button
-                              type="button"
-                              class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
-                              (click)="onAlterarSenha(u, $event)"
-                              title="Alterar senha"
-                            >
-                              <span class="material-symbols-outlined text-[18px] text-primary">key</span>
-                              Alterar senha
-                            </button>
+                            @if (podeAlterarSenhaDoProprioUsuario(u)) {
+                              <button
+                                type="button"
+                                class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
+                                (click)="onAlterarSenha(u, $event)"
+                                title="Alterar senha"
+                              >
+                                <span class="material-symbols-outlined text-[18px] text-primary">key</span>
+                                Alterar senha
+                              </button>
+                            }
                             <button
                               type="button"
                               class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-error hover:bg-error/5 transition-colors"

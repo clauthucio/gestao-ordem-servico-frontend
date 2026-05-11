@@ -6,40 +6,6 @@
   </app-modal-container>
 }
 
-<!-- Modal Edição OS -->
-@if (showModalEdicao && osEmEdicao) {
-  <app-modal-container titulo="Editar Ordem de Serviço" (fechar)="onModalEdicaoFechar()">
-    <app-os-form
-      [osParaEditar]="osEmEdicao"
-      (salvo)="onOsAtualizada()"
-      (cancelado)="onModalEdicaoFechar()"
-    />
-  </app-modal-container>
-}
-
-<!-- Modal Iniciar OS -->
-@if (showModalIniciar && osParaIniciar) {
-  <app-modal-container titulo="Iniciar Atendimento" (fechar)="onModalIniciarFechar()">
-    <app-os-form
-      [osParaIniciar]="osParaIniciar"
-      (salvo)="onOsIniciada()"
-      (cancelado)="onModalIniciarFechar()"
-    />
-  </app-modal-container>
-}
-
-<!-- Modal Encerrar OS -->
-@if (showModalEncerrar && osParaEncerrar) {
-  <app-modal-container titulo="Encerrar Ordem de Serviço" (fechar)="onModalEncerrarFechar()">
-    <app-os-form
-      [osParaEncerrar]="osParaEncerrar"
-      (salvo)="onOsEncerrada()"
-      (cancelado)="onModalEncerrarFechar()"
-    />
-  </app-modal-container>
-}
-
-<!-- Dialog reutilizável -->
 @if (dialogVisivel) {
   <app-dialog
     [titulo]="dialogTitulo"
@@ -60,7 +26,7 @@
     </div>
 
     <div
-      class="bg-white  rounded-xl border border-outline-variant/10 shadow-sm p-5 mb-6 flex flex-wrap items-center gap-4"
+      class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-5 mb-6 flex flex-wrap items-center gap-4"
     >
       <div class="flex-1 min-w-[300px] relative">
         <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
@@ -114,19 +80,19 @@
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm min-w-[960px]">
           <thead>
-            <tr class="border-b border-outline-variant/15 bg-slate-500">
+            <tr class="border-b border-outline-variant/15 bg-surface-container-low/50">
               <th class="px-4 py-3 align-top min-w-[100px]">
                 <div class="flex items-center justify-between gap-1">
-                  <span class="font-bold text-[10px] uppercase tracking-widest text-white"># OS</span>
+                  <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant"># OS</span>
                   <button
                     type="button"
                     title="Ordenar por número"
                     (click)="onToggleOrdenacao('numero', $event)"
-                    class="shrink-0 p-0.5 rounded hover:bg-slate-200 text-white transition-colors"
+                    class="shrink-0 p-0.5 rounded hover:bg-surface-container-highest text-on-surface-variant transition-colors"
                   >
                     <span
                       class="material-symbols-outlined text-base leading-none"
-                      [class.text-white]="ordenacaoColunaAtiva('numero')"
+                      [class.text-primary]="ordenacaoColunaAtiva('numero')"
                       >{{ iconeOrdenacaoColuna('numero') }}</span
                     >
                   </button>
@@ -134,16 +100,16 @@
               </th>
               <th class="px-4 py-3 align-top min-w-[140px]">
                 <div class="flex items-center justify-between gap-1">
-                  <span class="font-bold text-[10px] uppercase tracking-widest text-white">Equipamento</span>
+                  <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Equipamento</span>
                   <button
                     type="button"
                     title="Ordenar por equipamento"
                     (click)="onToggleOrdenacao('equipamento', $event)"
-                    class="shrink-0 p-0.5 rounded hover:bg-slate-200 text-white transition-colors"
+                    class="shrink-0 p-0.5 rounded hover:bg-surface-container-highest text-on-surface-variant transition-colors"
                   >
                     <span
                       class="material-symbols-outlined text-base leading-none"
-                      [class.text-white]="ordenacaoColunaAtiva('equipamento')"
+                      [class.text-primary]="ordenacaoColunaAtiva('equipamento')"
                       >{{ iconeOrdenacaoColuna('equipamento') }}</span
                     >
                   </button>
@@ -151,16 +117,16 @@
               </th>
               <th class="px-4 py-3 align-top min-w-[100px]">
                 <div class="flex items-center justify-between gap-1">
-                  <span class="font-bold text-[10px] uppercase tracking-widest text-white">Tipo</span>
+                  <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Tipo</span>
                   <button
                     type="button"
                     title="Ordenar por tipo"
                     (click)="onToggleOrdenacao('tipo', $event)"
-                    class="shrink-0 p-0.5 rounded hover:bg-slate-200 text-white transition-colors"
+                    class="shrink-0 p-0.5 rounded hover:bg-surface-container-highest text-on-surface-variant transition-colors"
                   >
                     <span
                       class="material-symbols-outlined text-base leading-none"
-                      [class.text-white]="ordenacaoColunaAtiva('tipo')"
+                      [class.text-primary]="ordenacaoColunaAtiva('tipo')"
                       >{{ iconeOrdenacaoColuna('tipo') }}</span
                     >
                   </button>
@@ -168,16 +134,16 @@
               </th>
               <th class="px-4 py-3 align-top min-w-[110px]">
                 <div class="flex items-center justify-between gap-1">
-                  <span class="font-bold text-[10px] uppercase tracking-widest text-white">Prioridade</span>
+                  <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Prioridade</span>
                   <button
                     type="button"
                     title="Ordenar por prioridade"
                     (click)="onToggleOrdenacao('prioridade', $event)"
-                    class="shrink-0 p-0.5 rounded hover:bg-slate-200 text-white transition-colors"
+                    class="shrink-0 p-0.5 rounded hover:bg-surface-container-highest text-on-surface-variant transition-colors"
                   >
                     <span
                       class="material-symbols-outlined text-base leading-none"
-                      [class.text-white]="ordenacaoColunaAtiva('prioridade')"
+                      [class.text-primary]="ordenacaoColunaAtiva('prioridade')"
                       >{{ iconeOrdenacaoColuna('prioridade') }}</span
                     >
                   </button>
@@ -185,16 +151,16 @@
               </th>
               <th class="px-4 py-3 align-top min-w-[120px]">
                 <div class="flex items-center justify-between gap-1">
-                  <span class="font-bold text-[10px] uppercase tracking-widest text-white">Status</span>
+                  <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Status</span>
                   <button
                     type="button"
                     title="Ordenar por status"
                     (click)="onToggleOrdenacao('status', $event)"
-                    class="shrink-0 p-0.5 rounded hover:bg-slate-200  text-white transition-colors"
+                    class="shrink-0 p-0.5 rounded hover:bg-surface-container-highest text-on-surface-variant transition-colors"
                   >
                     <span
                       class="material-symbols-outlined text-base leading-none"
-                      [class.text-white]="ordenacaoColunaAtiva('status')"
+                      [class.text-primary]="ordenacaoColunaAtiva('status')"
                       >{{ iconeOrdenacaoColuna('status') }}</span
                     >
                   </button>
@@ -202,16 +168,16 @@
               </th>
               <th class="px-4 py-3 align-top min-w-[120px]">
                 <div class="flex items-center justify-between gap-1">
-                  <span class="font-bold text-[10px] uppercase tracking-widest text-white ">Técnico</span>
+                  <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant ">Técnico</span>
                   <button
                     type="button"
                     title="Ordenar por técnico"
                     (click)="onToggleOrdenacao('tecnico', $event)"
-                    class="shrink-0 p-0.5 rounded hover:bg-slate-200 text-white transition-colors"
+                    class="shrink-0 p-0.5 rounded hover:bg-surface-container-highest text-on-surface-variant transition-colors"
                   >
                     <span
                       class="material-symbols-outlined text-base leading-none"
-                      [class.text-white]="ordenacaoColunaAtiva('tecnico')"
+                      [class.text-primary]="ordenacaoColunaAtiva('tecnico')"
                       >{{ iconeOrdenacaoColuna('tecnico') }}</span
                     >
                   </button>
@@ -219,23 +185,23 @@
               </th>
               <th class="px-4 py-3 align-top min-w-[120px]">
                 <div class="flex items-center justify-between gap-1">
-                  <span class="font-bold text-[10px] uppercase tracking-widest text-white">Abertura</span>
+                  <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Abertura</span>
                   <button
                     type="button"
                     title="Ordenar por data de abertura"
                     (click)="onToggleOrdenacao('abertura', $event)"
-                    class="shrink-0 p-0.5 rounded hover:bg-slate-200 text-white transition-colors"
+                    class="shrink-0 p-0.5 rounded hover:bg-surface-container-highest text-on-surface-variant transition-colors"
                   >
                     <span
                       class="material-symbols-outlined text-base leading-none"
-                      [class.text-white]="ordenacaoColunaAtiva('abertura')"
+                      [class.text-primary]="ordenacaoColunaAtiva('abertura')"
                       >{{ iconeOrdenacaoColuna('abertura') }}</span
                     >
                   </button>
                 </div>
               </th>
               <th class="px-4 py-3 align-top text-right min-w-[72px]">
-                <span class="font-bold text-[10px] uppercase tracking-widest text-slate-200 ">Ações</span>
+                <span class="font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Ações</span>
               </th>
             </tr>
           </thead>
@@ -297,137 +263,10 @@
                     }
                   </td>
                   <td class="px-4 py-3 text-on-surface-variant text-sm">{{ os.dataAbertura }}</td>
-                  <td class="px-4 py-3 text-right" (click)="$event.stopPropagation()">
-                    <div class="flex items-center justify-end">
-                      <div class="relative">
-                        <button
-                          type="button"
-                          class="p-1.5 hover:bg-surface-container-highest rounded-md text-on-surface-variant transition-colors"
-                          title="Ações"
-                          (click)="abrirMenuAcao(os.id, $event)"
-                        >
-                          <span class="material-symbols-outlined text-[20px]">more_vert</span>
-                        </button>
-                        @if (acaoAbertaId === os.id) {
-                          <div
-                            class="absolute right-0 top-full mt-1 z-30 bg-surface rounded-xl shadow-xl border border-outline-variant/20 py-1 min-w-[180px]"
-                            (click)="$event.stopPropagation()"
-                          >
-                            <button
-                              type="button"
-                              class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
-                              (click)="onVerDetalhes(os.id, $event)"
-                              title="Ver detalhes da ordem"
-                            >
-                              <span class="material-symbols-outlined text-[18px] text-primary">visibility</span>
-                              Ver detalhes
-                            </button>
-                            @if (os.statusOrdemServico !== 'CONCLUIDO') {
-                              @if (os.statusOrdemServico === 'ABERTO') {
-                                <button
-                                  type="button"
-                                  class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
-                                  (click)="onIniciarOS(os.id, $event)"
-                                  title="Iniciar o atendimento"
-                                >
-                                  <span class="material-symbols-outlined text-[18px] text-success">play_arrow</span>
-                                  Iniciar
-                                </button>
-                              }
-                              <button
-                                type="button"
-                                class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
-                                (click)="onEditarOS(os.id, $event)"
-                                title="Editar ordem"
-                              >
-                                <span class="material-symbols-outlined text-[18px] text-primary">edit</span>
-                                Editar
-                              </button>
-                              @if (os.statusOrdemServico === 'EM_ANDAMENTO' || os.statusOrdemServico === 'AGUARDANDO_PECA') {
-                                @if (isUserAdminOrAssignedTecnico(os)) {
-                                  <button
-                                    type="button"
-                                    class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
-                                    (click)="onEncerrarOS(os.id, $event)"
-                                    title="Encerrar a ordem de serviço"
-                                  >
-                                    <span class="material-symbols-outlined text-[18px] text-warning">check_circle</span>
-                                    Encerrar
-                                  </button>
-                                } @else {
-                                  <button
-                                    type="button"
-                                    class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface-variant/40 cursor-not-allowed opacity-50"
-                                    [disabled]="true"
-                                    title="Somente admin ou técnico atribuído podem encerrar"
-                                  >
-                                    <span class="material-symbols-outlined text-[18px]">check_circle</span>
-                                    Encerrar
-                                  </button>
-                                }
-                              }
-                              @if (os.statusOrdemServico === 'EM_ANDAMENTO') {
-                                @if (isUserAdminOrAssignedTecnico(os)) {
-                                  <button
-                                    type="button"
-                                    class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
-                                    (click)="onAguardarPecaOS(os.id, $event)"
-                                    title="Marcar como aguardando peça"
-                                  >
-                                    <span class="material-symbols-outlined text-[18px] text-info">schedule</span>
-                                    Aguardar Peça
-                                  </button>
-                                } @else {
-                                  <button
-                                    type="button"
-                                    class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface-variant/40 cursor-not-allowed opacity-50"
-                                    [disabled]="true"
-                                    title="Somente admin ou técnico atribuído podem aguardar peça"
-                                  >
-                                    <span class="material-symbols-outlined text-[18px]">schedule</span>
-                                    Aguardar Peça
-                                  </button>
-                                }
-                              }
-                              @if (os.statusOrdemServico === 'AGUARDANDO_PECA') {
-                                @if (isUserAdminOrAssignedTecnico(os)) {
-                                  <button
-                                    type="button"
-                                    class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
-                                    (click)="onRetomarAtendimentoOS(os.id, $event)"
-                                    title="Retomar o atendimento"
-                                  >
-                                    <span class="material-symbols-outlined text-[18px] text-success">play_circle</span>
-                                    Retomar
-                                  </button>
-                                } @else {
-                                  <button
-                                    type="button"
-                                    class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface-variant/40 cursor-not-allowed opacity-50"
-                                    [disabled]="true"
-                                    title="Somente admin ou técnico atribuído podem retomar o atendimento"
-                                  >
-                                    <span class="material-symbols-outlined text-[18px]">play_circle</span>
-                                    Retomar
-                                  </button>
-                                }
-                              }
-                              @if (os.statusOrdemServico === 'ABERTO') {
-                                <button
-                                  type="button"
-                                  class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
-                                  (click)="onExcluirOS(os.id, $event)"
-                                  title="Deletar ordem"
-                                >
-                                  <span class="material-symbols-outlined text-[18px] text-error">delete</span>
-                                  Excluir
-                                </button>
-                              }
-                            }
-                          </div>
-                        }
-                      </div>
-                    </div>
+                  <td class="px-4 py-3 text-right align-top" (click)="$event.stopPropagation()">
+                    @if (ordemRawPorId(os.id); as ordemR) {
+                      <app-os-acoes-linha [ordem]="ordemR" (dadosAlterados)="onOrdensMutadas($event)" />
+                    }
                   </td>
                 </tr>
               }

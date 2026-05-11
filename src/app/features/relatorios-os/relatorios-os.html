@@ -1,20 +1,22 @@
 @if (tecnicoDetalhe) {
   <app-modal-container [titulo]="'Detalhamento — ' + tecnicoDetalhe.nomeExibicao" (fechar)="fecharDetalheTecnico()">
     <p class="text-xs text-on-surface-variant mb-4">
-      Ordens no período ({{ dataInicio }} a {{ dataFim }}), conforme o filtro de status da página: para OS concluídas usa-se a
-      data de conclusão; para os demais status, a data de atualização (ou início/abertura) para enquadrar no intervalo.
+      Ordens de serviço no período ({{ dataInicio }} a {{ dataFim }}). Concluídas: data de conclusão real; «Prevista» = meta informada pelo usuário (SLA).
+      Coluna Tempo = horas líquidas (API ou estimativa). Canceladas: coluna Tempo = tempo até cancelamento (inclui aguardo).
     </p>
     <div class="overflow-x-auto rounded-xl border border-outline-variant/15">
-      <table class="w-full text-left text-xs min-w-[880px]">
+      <table class="w-full text-left text-xs min-w-[1080px]">
         <thead>
           <tr class="border-b border-outline-variant/15 bg-surface-container-low/50">
-            <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Nº OS</th>
+            <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">N.º ordem de serviço</th>
             <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Título / resumo</th>
             <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Tipo</th>
             <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Prioridade</th>
             <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Abertura</th>
+            <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Prevista</th>
             <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Conclusão</th>
             <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Tempo</th>
+            <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Aguard. peça</th>
             <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Status</th>
           </tr>
         </thead>
@@ -25,14 +27,54 @@
               <td class="px-3 py-2 text-on-surface max-w-[220px]">{{ resumoTitulo(o) }}</td>
               <td class="px-3 py-2 text-on-surface-variant">{{ tipoManutencaoLabel(o.tipoManutencao) }}</td>
               <td class="px-3 py-2 text-on-surface-variant">{{ prioridadeLabel(o.prioridadeOrdemServico) }}</td>
-              <td class="px-3 py-2 text-on-surface-variant whitespace-nowrap">{{ formatarDataHora(o.aberturaEm) }}</td>
+              <td class="px-3 py-2 text-on-surface-variant whitespace-nowrap">{{ formatarDataHora(dataAberturaOuCriacao(o)) }}</td>
+              <td class="px-3 py-2 text-on-surface-variant whitespace-nowrap">{{ formatarDataHora(o.dataPrevistaConclusao) }}</td>
               <td class="px-3 py-2 text-on-surface-variant whitespace-nowrap">{{ formatarDataHora(o.conclusaoEm) }}</td>
               <td class="px-3 py-2 text-on-surface-variant whitespace-nowrap">{{ formatarHoras(horasRelatorio(o)) }}</td>
+              <td class="px-3 py-2 text-on-surface-variant whitespace-nowrap">{{ formatarHoras(horasAguardandoPecaRelatorio(o)) }}</td>
               <td class="px-3 py-2 text-on-surface-variant">{{ statusLabel(o.statusOrdemServico) }}</td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="8" class="px-3 py-8 text-center text-on-surface-variant">Nenhuma OS neste agrupamento.</td>
+              <td colspan="10" class="px-3 py-8 text-center text-on-surface-variant">Nenhuma ordem de serviço neste agrupamento.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </app-modal-container>
+}
+
+@if (equipamentoDetalhe) {
+  <app-modal-container [titulo]="'Ordens de serviço — ' + equipamentoDetalhe.nomeExibicao" (fechar)="fecharDetalheEquipamento()">
+    <p class="text-xs text-on-surface-variant mb-4">
+      Ordens de serviço <strong>concluídas ou canceladas</strong> cuja data de referência cai no período ({{ dataInicio }} a {{ dataFim }}).
+    </p>
+    <div class="overflow-x-auto rounded-xl border border-outline-variant/15">
+      <table class="w-full text-left text-xs min-w-[720px]">
+        <thead>
+          <tr class="border-b border-outline-variant/15 bg-surface-container-low/50">
+            <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">N.º ordem de serviço</th>
+            <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Resumo</th>
+            <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Técnico</th>
+            <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Prioridade</th>
+            <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Abertura</th>
+            <th class="px-3 py-2 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (o of equipamentoDetalhe.ordens; track o.idOrdemServico) {
+            <tr class="border-b border-outline-variant/10 hover:bg-surface-container-low/40">
+              <td class="px-3 py-2 font-mono font-semibold text-on-surface">{{ o.numeroOrdemServico }}</td>
+              <td class="px-3 py-2 text-on-surface max-w-[220px]">{{ resumoTitulo(o) }}</td>
+              <td class="px-3 py-2 text-on-surface-variant">{{ o.tecnicoNome ?? '—' }}</td>
+              <td class="px-3 py-2 text-on-surface-variant">{{ prioridadeLabel(o.prioridadeOrdemServico) }}</td>
+              <td class="px-3 py-2 text-on-surface-variant whitespace-nowrap">{{ formatarDataHora(dataAberturaOuCriacao(o)) }}</td>
+              <td class="px-3 py-2 text-on-surface-variant">{{ statusLabel(o.statusOrdemServico) }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="px-3 py-8 text-center text-on-surface-variant">Nenhuma ordem de serviço.</td>
             </tr>
           }
         </tbody>
@@ -46,6 +88,11 @@
     <div class="mb-8">
       <h1 class="text-2xl font-black tracking-tight text-on-background">{{ titulo }}</h1>
       <p class="text-sm text-on-surface-variant mt-1 max-w-3xl">{{ subtitulo }}</p>
+      @if (somenteLeituraTecnico) {
+        <p class="text-xs text-on-surface-variant mt-2 max-w-3xl">
+          Perfil técnico: consulta. Filtros e período funcionam como para os demais perfis; dados apenas para visualização.
+        </p>
+      }
     </div>
 
     @if (carregando) {
@@ -66,7 +113,7 @@
               type="date"
               [(ngModel)]="dataInicio"
               (ngModelChange)="aoAlterarFiltro()"
-              class="w-full px-3 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm"
+              class="w-full px-3 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <div>
@@ -77,74 +124,31 @@
               type="date"
               [(ngModel)]="dataFim"
               (ngModelChange)="aoAlterarFiltro()"
-              class="w-full px-3 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm"
+              class="w-full px-3 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm focus:ring-2 focus:ring-primary/20"
             />
           </div>
-          <div #statusFiltroRoot class="min-w-[200px] max-w-full self-start relative z-40">
-            <span class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5"
-              >Status das OS</span
+          <div class="min-w-[200px] max-w-full self-start">
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5"
+              >Tipo de relatório</label
             >
-            <button
-              type="button"
-              (click)="togglePainelStatusFiltro($event)"
-              class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm text-left hover:bg-surface-container-high/40 transition-colors"
-              [ngClass]="{ 'ring-1 ring-primary/25': painelStatusAberto }"
-              aria-haspopup="listbox"
-              [attr.aria-expanded]="painelStatusAberto"
+            <select
+              [(ngModel)]="modoRelatorio"
+              (ngModelChange)="aoAlterarModoRelatorio()"
+              class="w-full px-3 py-2 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm text-on-surface focus:ring-2 focus:ring-primary/20"
             >
-              <span class="text-on-surface truncate">
-                {{ statusSelecionados.length }} selecionado(s)
-              </span>
-              <span
-                class="material-symbols-outlined text-lg text-on-surface-variant shrink-0 transition-transform"
-                [class.rotate-180]="painelStatusAberto"
-                >expand_more</span
-              >
-            </button>
-            @if (painelStatusAberto) {
-              <div
-                class="absolute left-0 right-0 top-full z-50 mt-1 max-h-[min(22rem,70vh)] overflow-y-auto overflow-x-hidden rounded-lg border border-outline-variant/20 bg-surface-container-lowest py-2 px-3 shadow-lg space-y-2"
-                role="listbox"
-              >
-                @for (st of statusRelatorioOpcoes; track st) {
-                  <label class="flex items-center gap-2 cursor-pointer text-on-surface hover:bg-surface-container-high/60 rounded-md px-1 py-0.5">
-                    <input
-                      type="checkbox"
-                      class="rounded border-outline-variant/40"
-                      [checked]="statusMarcadoPendente(st)"
-                      (change)="aoAlterarCheckboxPendente(st, $event)"
-                    />
-                    <span>{{ statusLabel(st) }}</span>
-                  </label>
-                }
-                <p class="text-[10px] text-on-surface-variant pt-1">Marque pelo menos um status. Confirme para aplicar ao relatório.</p>
-                <div class="flex flex-wrap gap-2 pt-2 border-t border-outline-variant/15">
-                  <button
-                    type="button"
-                    (click)="confirmarSelecaoStatus($event)"
-                    class="inline-flex items-center justify-center py-2 px-3 rounded-lg bg-primary text-on-primary font-bold text-xs hover:opacity-90"
-                  >
-                    Confirmar
-                  </button>
-                  <button
-                    type="button"
-                    (click)="cancelarPainelStatus($event)"
-                    class="inline-flex items-center justify-center py-2 px-3 rounded-lg bg-surface-container-high text-on-surface font-bold text-xs border border-outline-variant/20 hover:bg-surface-container-highest"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </div>
-            }
+              @for (m of modosRelatorio; track m.value) {
+                <option [ngValue]="m.value">{{ m.label }}</option>
+              }
+            </select>
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-2 shrink-0">
           <button
             type="button"
             (click)="limparFiltros()"
-            class="inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-primary text-on-primary font-bold text-sm hover:opacity-90 transition-opacity"
+            class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-surface-container-high text-on-surface text-sm font-medium hover:bg-surface-variant transition-colors"
           >
-            <span class="material-symbols-outlined text-lg">restart_alt</span>
+            <span class="material-symbols-outlined text-[18px]">restart_alt</span>
             Limpar
           </button>
           <button
@@ -166,6 +170,17 @@
         </div>
       </div>
 
+      @if (modoComTabelaEquipamento()) {
+        <div
+          class="mb-6 p-4 rounded-xl border border-amber-600/35 bg-amber-500/10 text-on-surface text-sm"
+          role="status"
+        >
+          <p class="font-semibold text-on-background">
+            Apenas ordens de serviço «Concluídas» ou «Canceladas» são contabilizadas neste relatório.
+          </p>
+        </div>
+      }
+
       @if (erro) {
         <div class="p-4 rounded-xl bg-error/10 border border-error/20 text-error text-sm mb-6">{{ erro }}</div>
       }
@@ -186,135 +201,232 @@
         <div class="p-4 rounded-xl bg-primary/10 border border-primary/25 text-on-surface text-sm mb-6">
           <p class="font-semibold text-on-background mb-1">Dados carregados — relatório vazio</p>
           <p class="text-on-surface-variant">
-            Foram carregadas <strong>{{ todasOrdens.length }}</strong> ordem(ns); nenhuma se enquadra no período com os
-            <strong>status selecionados</strong> (para concluídas, a data de conclusão; para os outros, atualização ou
-            início/abertura). Alargue o período, ajuste o filtro de status ou confira as datas na API.
+            Foram carregadas <strong>{{ todasOrdens.length }}</strong> ordens de serviço; nenhuma se enquadra no período para o
+            tipo de relatório selecionado. Alargue o período ou confira as datas na API.
           </p>
         </div>
       }
 
-      <div class="space-y-8 mb-8">
-        @for (bloco of resumosPorStatus; track bloco.status) {
-          <section class="space-y-3">
-            <h2 class="text-sm font-bold text-on-background tracking-tight">
-              {{ statusLabel(bloco.status) }}
-            </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-              <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
-                <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">OS no período</p>
-                <p class="text-3xl font-black text-on-background mt-2">{{ bloco.resumo.totalOs }}</p>
-              </div>
-              <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
-                <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Horas trabalhadas</p>
-                <p class="text-3xl font-black text-on-background mt-2">{{ formatarHoras(bloco.resumo.totalHoras) }}</p>
-              </div>
-              <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
-                <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Média horas / OS</p>
-                <p class="text-3xl font-black text-on-background mt-2">{{ formatarHoras(bloco.resumo.mediaHorasPorOsGlobal) }}</p>
-              </div>
-              <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
-                <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Técnicos com OS</p>
-                <p class="text-3xl font-black text-on-background mt-2">{{ bloco.resumo.tecnicosComOs }}</p>
-              </div>
+      @if (modoComTabelaTecnico() || modoComTabelaEquipamento()) {
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+          <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
+            <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
+              @if (modoRelatorio === 'canceladas') {
+                Ordens de serviço canceladas no período
+              } @else if (modoComTabelaEquipamento()) {
+                Ordens de serviço (concluídas ou canceladas) no período
+              } @else {
+                Ordens de serviço no período
+              }
+            </p>
+            <p class="text-3xl font-black text-on-background mt-2">{{ resumo.totalOs }}</p>
+          </div>
+          <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
+            <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
+              @if (modoRelatorio === 'canceladas') {
+                Tempo total (soma h)
+              } @else if (modoComTabelaEquipamento()) {
+                Horas contabilizadas (total)
+              } @else {
+                Horas trabalhadas (total)
+              }
+            </p>
+            <p class="text-3xl font-black text-on-background mt-2">{{ formatarHoras(resumo.totalHoras) }}</p>
+          </div>
+          <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
+            <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Média horas / ordem de serviço</p>
+            <p class="text-3xl font-black text-on-background mt-2">{{ formatarHoras(resumo.mediaHorasPorOsGlobal) }}</p>
+          </div>
+          <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
+            <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
+              {{ modoComTabelaEquipamento() ? 'Equipamentos com ordens no período' : 'Técnicos com ordens no período' }}
+            </p>
+            <p class="text-3xl font-black text-on-background mt-2">{{ resumo.tecnicosComOs }}</p>
+          </div>
+        </div>
+      }
+
+      <!-- Modo tempo_espera_pecas: UI oculta no select; ver comentário em relatorios-os.ts (subtitulo). -->
+      @if (modoTempoEspera()) {
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+          <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm xl:col-span-2">
+            <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
+              Média horas em espera de peças
+            </p>
+            <p class="text-sm text-on-surface-variant mt-1 mb-2">
+              Entre ordens de serviço <strong>concluídas ou canceladas</strong> no período com tempo registado (&gt; 0 h).
+            </p>
+            <p class="text-3xl font-black text-on-background">{{ formatarHoras(mediaEsperaPecas?.mediaHoras) }}</p>
+          </div>
+          <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
+            <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Ordens no universo</p>
+            <p class="text-3xl font-black text-on-background mt-2">{{ mediaEsperaPecas?.osNoUniverso ?? 0 }}</p>
+            <p class="text-[10px] text-on-surface-variant mt-1">Concluídas ou canceladas no período</p>
+          </div>
+          <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
+            <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Com espera registada</p>
+            <p class="text-3xl font-black text-on-background mt-2">{{ mediaEsperaPecas?.osComEsperaRegistada ?? 0 }}</p>
+            <p class="text-[10px] text-on-surface-variant mt-1">Soma: {{ formatarHoras(mediaEsperaPecas?.somaHorasEspera) }}</p>
+          </div>
+        </div>
+      }
+
+      @if (modoComTabelaTecnico()) {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 border-b border-outline-variant/10 bg-surface-container-low/40">
+              <h2 class="font-bold text-on-background">Por técnico</h2>
+              <p class="text-xs text-on-surface-variant mt-0.5">Clique numa linha para ver as ordens de serviço.</p>
             </div>
-          </section>
-        }
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden">
-          <div class="px-4 py-3 border-b border-outline-variant/10 bg-surface-container-low/40">
-            <h2 class="font-bold text-on-background">Produtividade por técnico</h2>
-            <p class="text-xs text-on-surface-variant mt-0.5">Clique em uma linha para ver o detalhamento das OS.</p>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm min-w-[640px]">
-              <thead>
-                <tr class="border-b border-outline-variant/15 bg-surface-container-low/50">
-                  <th class="px-4 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Técnico</th>
-                  <th class="px-4 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant text-center">
-                    OS no período
-                  </th>
-                  <th class="px-4 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant text-center">
-                    Horas totais
-                  </th>
-                  <th class="px-4 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant text-right">
-                    Média h/OS
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (a of agregados; track a.chaveTecnico) {
-                  <tr
-                    class="border-b border-outline-variant/10 hover:bg-surface-container-low/50 cursor-pointer transition-colors"
-                    (click)="abrirDetalheTecnico(a)"
-                    (keydown.enter)="abrirDetalheTecnico(a)"
-                    (keydown.space)="$event.preventDefault(); abrirDetalheTecnico(a)"
-                    tabindex="0"
-                    role="button"
-                  >
-                    <td class="px-4 py-3">
-                      <div class="flex items-center gap-3">
-                        <div
-                          class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-primary/15 text-primary"
-                        >
-                          {{ iniciais(a.nomeExibicao) }}
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm min-w-[640px]">
+                <thead>
+                  <tr class="border-b border-outline-variant/15 bg-surface-container-low/50">
+                    <th class="px-4 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Técnico</th>
+                    <th class="px-4 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant text-center">
+                      Ordens de Serviço no período
+                    </th>
+                    <th class="px-4 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant text-center">
+                      Horas totais
+                    </th>
+                    <th class="px-4 py-3 font-bold text-[10px] uppercase tracking-widest text-on-surface-variant text-right">
+                      Média h / ordem de serviço
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (a of agregados; track a.chaveTecnico) {
+                    <tr
+                      class="border-b border-outline-variant/10 hover:bg-surface-container-low/50 cursor-pointer transition-colors"
+                      (click)="abrirDetalheTecnico(a)"
+                      (keydown.enter)="abrirDetalheTecnico(a)"
+                      (keydown.space)="$event.preventDefault(); abrirDetalheTecnico(a)"
+                      tabindex="0"
+                      role="button"
+                    >
+                      <td class="px-4 py-3">
+                        <div class="flex items-center gap-3">
+                          <div
+                            class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-primary/15 text-primary"
+                          >
+                            {{ iniciais(a.nomeExibicao) }}
+                          </div>
+                          <span class="font-semibold text-on-background">{{ a.nomeExibicao }}</span>
                         </div>
-                        <span class="font-semibold text-on-background">{{ a.nomeExibicao }}</span>
-                      </div>
-                    </td>
-                    <td class="px-4 py-3 text-center font-bold text-on-background">{{ a.osConcluidas }}</td>
-                    <td class="px-4 py-3 text-center text-on-surface-variant">{{ formatarHoras(a.horasTotais) }}</td>
-                    <td class="px-4 py-3 text-right font-mono text-on-surface">{{ formatarHoras(a.mediaHorasPorOs) }}</td>
-                  </tr>
-                } @empty {
-                  <tr>
-                    <td colspan="4" class="px-4 py-12 text-center text-on-surface-variant text-sm">
-                      Nenhuma OS com os status e datas selecionados neste período.
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+                      </td>
+                      <td class="px-4 py-3 text-center font-bold text-on-background">{{ a.osConcluidas }}</td>
+                      <td class="px-4 py-3 text-center text-on-surface-variant">{{ formatarHoras(a.horasTotais) }}</td>
+                      <td class="px-4 py-3 text-right font-mono text-on-surface">{{ formatarHoras(a.mediaHorasPorOs) }}</td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="4" class="px-4 py-12 text-center text-on-surface-variant text-sm">
+                        Nenhuma ordem de serviço neste modo e período.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
 
-        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-5">
-          <h2 class="font-bold text-on-background text-lg">Top 5 — volume de OS</h2>
-          <p class="text-xs text-on-surface-variant mt-1 mb-6">Comparativo no período filtrado</p>
-          <div class="space-y-5">
-            @for (item of chartData; track item.nome) {
-              <div>
-                <div class="flex justify-between text-xs font-semibold mb-1.5">
-                  <span class="text-on-surface truncate pr-2">{{ item.nome }}</span>
-                  <span class="text-on-surface-variant shrink-0">{{ item.valor }} OS</span>
+          <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-5">
+            <h2 class="font-bold text-on-background text-lg">Top 5 — volume de ordens</h2>
+            <p class="text-xs text-on-surface-variant mt-1 mb-6">Comparativo no período filtrado</p>
+            <div class="space-y-5">
+              @for (item of chartData; track item.nome) {
+                <div>
+                  <div class="flex justify-between text-xs font-semibold mb-1.5">
+                    <span class="text-on-surface truncate pr-2">{{ item.nome }}</span>
+                    <span class="text-on-surface-variant shrink-0">{{ item.valor }} ordens</span>
+                  </div>
+                  <div class="h-2.5 w-full bg-surface-container rounded-full overflow-hidden">
+                    <div
+                      class="h-full rounded-full transition-all"
+                      [style.width.%]="item.percentual"
+                      [style.background-color]="item.corHex"
+                    ></div>
+                  </div>
                 </div>
-                <div class="h-2.5 w-full bg-surface-container rounded-full overflow-hidden">
-                  <div
-                    class="h-full rounded-full transition-all"
-                    [style.width.%]="item.percentual"
-                    [style.background-color]="item.corHex"
-                  ></div>
-                </div>
-              </div>
-            } @empty {
-              <p class="text-sm text-on-surface-variant">Sem dados para o gráfico.</p>
-            }
+              } @empty {
+                <p class="text-sm text-on-surface-variant">Sem dados para o gráfico.</p>
+              }
+            </div>
           </div>
         </div>
-      </div>
+      }
+
+      @if (modoComTabelaEquipamento()) {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 border-b border-outline-variant/10 bg-surface-container-low/40">
+              <h2 class="font-bold text-on-background">O.S. por equipamento</h2>
+              <p class="text-xs text-on-surface-variant mt-0.5">
+                Clique num equipamento para ver as ordens de serviço concluídas ou canceladas no período.
+              </p>
+            </div>
+            <div class="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+              @for (a of agregadosEquipamento; track a.idEquipamento) {
+                <div
+                  class="rounded-xl border border-outline-variant/15 bg-surface-container-low/40 p-4 hover:bg-surface-container-low/70 cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                  role="button"
+                  tabindex="0"
+                  (click)="abrirDetalheEquipamento(a)"
+                  (keydown.enter)="abrirDetalheEquipamento(a)"
+                  (keydown.space)="$event.preventDefault(); abrirDetalheEquipamento(a)"
+                >
+                  <p class="text-sm text-on-background">
+                    <span class="font-bold text-on-surface-variant uppercase tracking-wider text-[10px] block mb-1">Equipamento</span>
+                    <span class="font-semibold text-base">{{ a.nomeExibicao }}</span>
+                  </p>
+                  <p class="text-sm text-on-surface mt-3">
+                    <span class="font-semibold text-on-surface-variant">Quantidade de ordens de serviço no período:</span>
+                    {{ a.quantidade }}
+                  </p>
+                  <p class="text-sm text-on-surface mt-2">
+                    <span class="font-semibold text-on-surface-variant">Média de horas por ordem de serviço:</span>
+                    {{ formatarHoras(a.mediaHorasPorOrdemServico) }}
+                  </p>
+                </div>
+              } @empty {
+                <p class="text-sm text-on-surface-variant text-center py-12 px-4">
+                  Nenhuma ordem de serviço concluída ou cancelada no período para este relatório.
+                </p>
+              }
+            </div>
+          </div>
+
+          <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm p-5">
+            <h2 class="font-bold text-on-background text-lg">Top 5 — equipamentos</h2>
+            <p class="text-xs text-on-surface-variant mt-1 mb-6">Por quantidade de ordens de serviço (concluídas ou canceladas)</p>
+            <div class="space-y-5">
+              @for (item of chartData; track item.nome) {
+                <div>
+                  <div class="flex justify-between text-xs font-semibold mb-1.5">
+                    <span class="text-on-surface truncate pr-2">{{ item.nome }}</span>
+                    <span class="text-on-surface-variant shrink-0">{{ item.valor }} ordens</span>
+                  </div>
+                  <div class="h-2.5 w-full bg-surface-container rounded-full overflow-hidden">
+                    <div
+                      class="h-full rounded-full transition-all"
+                      [style.width.%]="item.percentual"
+                      [style.background-color]="item.corHex"
+                    ></div>
+                  </div>
+                </div>
+              } @empty {
+                <p class="text-sm text-on-surface-variant">Sem dados para o gráfico.</p>
+              }
+            </div>
+          </div>
+        </div>
+      }
 
       <p class="text-xs text-on-surface-variant mt-8 max-w-3xl leading-relaxed">
-        <strong>Regras do relatório:</strong> entram ordens cujo <strong>status</strong> está entre os marcados no filtro
-        e cuja <strong>data de referência do período</strong> cai entre a data inicial e a final (horário local, dias
-        inteiros inclusive). Para status <strong>Concluído</strong>, a data de referência é só a
-        <strong>data de conclusão</strong> registada na OS. Para os demais status, usa-se
-        <strong>atualização</strong>, senão <strong>início</strong> ou <strong>abertura</strong>. É obrigatório manter
-        pelo menos um status selecionado; o padrão é <strong>Concluído</strong> apenas. Use
-        <strong>Confirmar</strong> no filtro de status para aplicar as alterações. Horas =
-        <strong>horas trabalhadas</strong> na OS; se estiverem em branco, estima-se pelo intervalo entre início ou
-        abertura e o instante de referência de conclusão (cálculo de horas). Técnicos sem OS no período não aparecem na
-        tabela.
+        <strong>Regras:</strong> o período usa limites locais (00:00–23:59). Concluídas: só entram pela
+        <strong>data de conclusão</strong>. Canceladas: referência = conclusão, senão atualização, início ou abertura.
+        Modo <strong>O.S. por equipamento</strong>: entram apenas ordens <strong>Concluídas</strong> ou <strong>Canceladas</strong>, com a mesma regra de data de referência acima.
+        <!-- Reativar com o modo «Tempo de espera de peças»: Tempo de espera de peças usa o campo normalizado de horas acumuladas na listagem (ex. totalHorasAguardando). -->
       </p>
     }
   </div>

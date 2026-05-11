@@ -10,6 +10,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 
 import { OrdemServicoService } from '../../core/http/ordem-servico.service';
 import { EquipamentoService } from '../../core/http/equipamento.service';
@@ -22,8 +23,16 @@ import { Usuario } from '../../core/models/usuario.model';
 import {
   AtualizarOrdemServicoPayload,
   CriarOrdemServicoPayload,
+  ManutencaoType,
   OrdemServico,
+  PrioridadeType,
 } from '../../core/models/ordem-servico.model';
+import { mensagemUsuarioErroApiOrdemServico } from '../../core/utils/ordem-servico-api-message.util';
+import {
+  dataPrevistaFormYmdParaIsoFimDoDiaLocal,
+  dataPrevistaMinYmdLocal,
+  dataPrevistaYmdEhAnteriorAHoje,
+} from '../../core/utils/ordem-servico-data-prevista.util';
 import { DialogComponent, DialogBotao } from '../dialog/dialog.component';
 
 @Component({
@@ -36,7 +45,8 @@ export class OsFormComponent implements OnInit {
   @Input() osParaEditar: OrdemServico | null = null;
   @Input() osParaIniciar: OrdemServico | null = null;
   @Input() osParaEncerrar: OrdemServico | null = null;
-  @Output() salvo = new EventEmitter<void>();
+  /** Em edição: emite campos gravados para o pai fundir com o GET; nos outros modos, `undefined`. */
+  @Output() salvo = new EventEmitter<Partial<OrdemServico> | undefined>();
   @Output() cancelado = new EventEmitter<void>();
 
   get modoEdicao(): boolean {
@@ -70,6 +80,11 @@ export class OsFormComponent implements OnInit {
       return true;
     }
     return false;
+  }
+
+  /** Limite inferior do `<input type="date">` da data prevista (modo iniciar). */
+  get minDataPrevistaConclusaoYmd(): string {
+    return dataPrevistaMinYmdLocal();
   }
 
   private readonly fb = inject(FormBuilder);
@@ -113,8 +128,7 @@ export class OsFormComponent implements OnInit {
     idTecnico: [''],
     descricaoServico: ['', Validators.maxLength(2000)],
     pecasUtilizadas: ['', Validators.maxLength(2000)],
-    horasTrabalhadas: [null as number | null, Validators.min(0)],
-    conclusaoEm: [''],
+    dataPrevistaConclusao: [''],
   });
 
   ngOnInit(): void {
@@ -133,10 +147,8 @@ export class OsFormComponent implements OnInit {
 
         if (this.modoEdicao) {
           this.popularFormParaEdicao();
-          // Equipamento é readonly no modo edição
           this.form.get('idEquipamento')?.disable();
 
-          // Prioridade só pode ser editada por ADMIN ou SOLICITANTE
           const usuario = this.authService.getCurrentUser();
           const podeEditarPrioridade = usuario?.perfilUsuario === UserRole.ADMIN
             || usuario?.perfilUsuario === UserRole.SOLICITANTE;
@@ -145,7 +157,6 @@ export class OsFormComponent implements OnInit {
           }
         } else if (this.modoIniciar) {
           this.popularFormParaIniciar();
-          // Em modo iniciar, todos os campos são readonly EXCETO conclusaoEm (para ADMIN/SOLICITANTE)
           this.form.get('idEquipamento')?.disable();
           this.form.get('tipoManutencao')?.disable();
           this.form.get('prioridadeOrdemServico')?.disable();
@@ -153,28 +164,19 @@ export class OsFormComponent implements OnInit {
           this.form.get('idTecnico')?.disable();
           this.form.get('descricaoServico')?.disable();
           this.form.get('pecasUtilizadas')?.disable();
-          this.form.get('horasTrabalhadas')?.disable();
-
-          // conclusaoEm editável APENAS para ADMIN/SOLICITANTE
-          const usuario = this.authService.getCurrentUser();
-          const podeEditarConclusao = usuario?.perfilUsuario === UserRole.ADMIN
-            || usuario?.perfilUsuario === UserRole.SOLICITANTE;
-          if (!podeEditarConclusao) {
-            this.form.get('conclusaoEm')?.disable();
-          }
         } else if (this.modoEncerrar) {
           this.popularFormParaEncerrar();
-          // Em modo encerrar, descricaoFalha é readonly, outros 3 campos são editáveis (obrigatórios)
           this.form.get('idEquipamento')?.disable();
           this.form.get('tipoManutencao')?.disable();
           this.form.get('prioridadeOrdemServico')?.disable();
           this.form.get('descricaoFalha')?.disable();
           this.form.get('idTecnico')?.disable();
-          this.form.get('horasTrabalhadas')?.clearAsyncValidators();
-          // descricaoServico, pecasUtilizadas, horasTrabalhadas ficam editáveis (com requisitos)
+          this.form.get('dataPrevistaConclusao')?.disable();
         }
 
         this.aplicarValidadorTecnico();
+        this.aplicarValidadorDataPrevistaConclusao();
+        this.aplicarValidadoresEncerramento();
 
         this.cdr.markForCheck();
       },
@@ -186,6 +188,12 @@ export class OsFormComponent implements OnInit {
     });
   }
 
+  private dataPrevistaDoOsParaInput(os: OrdemServico): string {
+    const v = os.dataPrevistaConclusao;
+    if (!v) return '';
+    return String(v).substring(0, 10);
+  }
+
   private popularFormParaEdicao(): void {
     if (!this.osParaEditar) return;
     const os = this.osParaEditar;
@@ -195,16 +203,16 @@ export class OsFormComponent implements OnInit {
       prioridadeOrdemServico: os.prioridadeOrdemServico,
       descricaoFalha: os.descricaoFalha,
       idTecnico: os.idTecnico ?? '',
-      descricaoServico: os.descricaoServico ?? '',
+      descricaoServico: '',
       pecasUtilizadas: os.pecasUtilizadas ?? '',
-      horasTrabalhadas: os.horasTrabalhadas ?? null,
-      conclusaoEm: os.conclusaoEm ? String(os.conclusaoEm).substring(0, 10) : '',
     });
   }
 
   private popularFormParaIniciar(): void {
     if (!this.osParaIniciar) return;
     const os = this.osParaIniciar;
+    let ymd = this.dataPrevistaDoOsParaInput(os);
+    if (dataPrevistaYmdEhAnteriorAHoje(ymd)) ymd = '';
     this.form.patchValue({
       idEquipamento: os.idEquipamento,
       tipoManutencao: os.tipoManutencao,
@@ -213,8 +221,7 @@ export class OsFormComponent implements OnInit {
       idTecnico: os.idTecnico ?? '',
       descricaoServico: os.descricaoServico ?? '',
       pecasUtilizadas: os.pecasUtilizadas ?? '',
-      horasTrabalhadas: os.horasTrabalhadas ?? null,
-      conclusaoEm: os.conclusaoEm ? String(os.conclusaoEm).substring(0, 10) : '',
+      dataPrevistaConclusao: ymd,
     });
   }
 
@@ -229,8 +236,6 @@ export class OsFormComponent implements OnInit {
       idTecnico: os.idTecnico ?? '',
       descricaoServico: os.descricaoServico ?? '',
       pecasUtilizadas: os.pecasUtilizadas ?? '',
-      horasTrabalhadas: os.horasTrabalhadas ?? null,
-      conclusaoEm: os.conclusaoEm ? String(os.conclusaoEm).substring(0, 10) : '',
     });
   }
 
@@ -245,7 +250,6 @@ export class OsFormComponent implements OnInit {
 
   onDialogAcao(acao: string): void {
     this.dialogVisivel = false;
-    // Método pode ser sobrescrito por salvarIniciar() para handler customizado
   }
 
   get f() {
@@ -268,12 +272,49 @@ export class OsFormComponent implements OnInit {
     ctrl.updateValueAndValidity({ emitEvent: false });
   }
 
+  private aplicarValidadorDataPrevistaConclusao(): void {
+    const ctrl = this.form.get('dataPrevistaConclusao');
+    if (!ctrl) return;
+    if (this.modoIniciar) {
+      ctrl.setValidators([Validators.required]);
+    } else {
+      ctrl.clearValidators();
+    }
+    ctrl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  /** Descrição do serviço e peças só são obrigatórios ao encerrar a OS. */
+  private aplicarValidadoresEncerramento(): void {
+    const ds = this.form.get('descricaoServico');
+    const pu = this.form.get('pecasUtilizadas');
+    if (!ds || !pu) return;
+    const max = Validators.maxLength(2000);
+    if (this.modoEncerrar) {
+      ds.setValidators([Validators.required, max]);
+      pu.setValidators([Validators.required, max]);
+    } else {
+      ds.setValidators([max]);
+      pu.setValidators([max]);
+    }
+    ds.updateValueAndValidity({ emitEvent: false });
+    pu.updateValueAndValidity({ emitEvent: false });
+  }
+
   private mostrarDialogValidacaoFormulario(): void {
     const idTecnicoCtrl = this.form.get('idTecnico');
-    if (this.requerTecnico && idTecnicoCtrl?.invalid) {
+    const dpCtrl = this.form.get('dataPrevistaConclusao');
+    if (this.modoIniciar && dpCtrl?.invalid) {
+      this.dialogTitulo = 'Campo obrigatório';
+      this.dialogMensagem =
+        'Informe a data prevista para conclusão';
+    } else if (this.requerTecnico && idTecnicoCtrl?.invalid) {
       this.dialogTitulo = 'Campo obrigatório';
       this.dialogMensagem =
         'Técnico responsável é obrigatório.';
+    } else if (this.modoEncerrar) {
+      this.dialogTitulo = 'Campos obrigatórios';
+      this.dialogMensagem =
+        'Informe a Descrição do Serviço e as Peças Utilizadas para finalizar a ordem.';
     } else {
       this.dialogTitulo = 'Campos obrigatórios';
       this.dialogMensagem =
@@ -325,15 +366,13 @@ export class OsFormComponent implements OnInit {
       idTecnico: raw.idTecnico!.trim(),
     };
 
-    if (raw.descricaoServico?.trim()) payload.descricaoServico = raw.descricaoServico;
-    if (raw.pecasUtilizadas?.trim()) payload.pecasUtilizadas = raw.pecasUtilizadas;
-    if (raw.horasTrabalhadas) payload.horasTrabalhadas = Number(raw.horasTrabalhadas);
-    if (raw.conclusaoEm?.trim()) payload.conclusaoEm = raw.conclusaoEm;
-
     this.ordemService.criar(payload).subscribe({
-      next: () => { this.salvando = false; this.salvo.emit(); },
+      next: () => {
+        this.salvando = false;
+        this.salvo.emit(undefined);
+      },
       error: (err) => {
-        this.erro = err?.error?.message ?? 'Erro ao salvar a ordem de serviço.';
+        this.erro = mensagemUsuarioErroApiOrdemServico(err, 'Erro ao salvar a ordem de serviço.');
         this.salvando = false;
         this.cdr.markForCheck();
       },
@@ -341,9 +380,9 @@ export class OsFormComponent implements OnInit {
   }
 
   private salvarEdicao(raw: ReturnType<typeof this.form.getRawValue>): void {
-    const payload: any = {
-      tipoManutencao: raw.tipoManutencao as any,
-      prioridadeOrdemServico: raw.prioridadeOrdemServico as any,
+    const payload: AtualizarOrdemServicoPayload = {
+      tipoManutencao: raw.tipoManutencao as AtualizarOrdemServicoPayload['tipoManutencao'],
+      prioridadeOrdemServico: raw.prioridadeOrdemServico as AtualizarOrdemServicoPayload['prioridadeOrdemServico'],
       descricaoFalha: raw.descricaoFalha!,
     };
 
@@ -356,34 +395,71 @@ export class OsFormComponent implements OnInit {
     } else {
       payload.idTecnico = null;
     }
-    if (raw.descricaoServico?.trim()) payload.descricaoServico = raw.descricaoServico;
     if (raw.pecasUtilizadas?.trim()) payload.pecasUtilizadas = raw.pecasUtilizadas;
-    if (raw.horasTrabalhadas) payload.horasTrabalhadas = Number(raw.horasTrabalhadas);
-    if (raw.conclusaoEm?.trim()) payload.conclusaoEm = raw.conclusaoEm;
 
-    this.ordemService.atualizar(this.osParaEditar!.idOrdemServico, payload).subscribe({
-      next: () => { this.salvando = false; this.salvo.emit(); },
-      error: (err) => {
-        this.erro = err?.error?.message ?? 'Erro ao atualizar a ordem de serviço.';
-        this.salvando = false;
-        this.cdr.markForCheck();
-      },
-    });
+    this.ordemService
+      .atualizar(this.osParaEditar!.idOrdemServico, payload)
+      .pipe(
+        finalize(() => {
+          this.salvando = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe({
+        next: (osResposta) => {
+          const overlay = this.respostaPatchEdicaoUsavel(osResposta)
+            ? this.overlayEdicaoFromServidor(osResposta)
+            : this.overlayEdicaoParaEstadoLocal(raw);
+          this.salvo.emit(overlay);
+        },
+        error: (err) => {
+          this.erro = mensagemUsuarioErroApiOrdemServico(err, 'Erro ao atualizar a ordem de serviço.');
+        },
+      });
+  }
+
+  /** Resposta mapeável do PATCH (ex.: corpo vazio/204) → usa overlay do formulário. */
+  private respostaPatchEdicaoUsavel(os: OrdemServico): boolean {
+    const idEsperado = this.osParaEditar!.idOrdemServico;
+    return os.idOrdemServico === idEsperado && idEsperado !== '';
+  }
+
+  /** Campos editáveis conforme o corpo devolvido pelo PATCH (alinhado ao que o servidor expõe). */
+  private overlayEdicaoFromServidor(os: OrdemServico): Partial<OrdemServico> {
+    const overlay: Partial<OrdemServico> = {
+      tipoManutencao: os.tipoManutencao,
+      prioridadeOrdemServico: os.prioridadeOrdemServico,
+      descricaoFalha: os.descricaoFalha,
+    };
+    if (os.descricaoServico !== undefined && String(os.descricaoServico).trim() !== '') {
+      overlay.descricaoServico = os.descricaoServico;
+    }
+    if (os.pecasUtilizadas !== undefined && String(os.pecasUtilizadas).trim() !== '') {
+      overlay.pecasUtilizadas = os.pecasUtilizadas;
+    }
+    if (os.idTecnico !== undefined && String(os.idTecnico).trim() !== '') {
+      overlay.idTecnico = os.idTecnico.trim();
+    } else {
+      overlay.idTecnico = undefined;
+    }
+    return overlay;
+  }
+
+  private overlayEdicaoParaEstadoLocal(raw: ReturnType<typeof this.form.getRawValue>): Partial<OrdemServico> {
+    const overlay: Partial<OrdemServico> = {
+      tipoManutencao: raw.tipoManutencao as ManutencaoType,
+      prioridadeOrdemServico: raw.prioridadeOrdemServico as PrioridadeType,
+      descricaoFalha: raw.descricaoFalha!,
+    };
+    if (raw.pecasUtilizadas?.trim()) overlay.pecasUtilizadas = raw.pecasUtilizadas;
+    const osAberta = this.osParaEditar!.statusOrdemServico === OrdemStatus.ABERTO;
+    if (osAberta) overlay.idTecnico = raw.idTecnico!.trim();
+    else if (raw.idTecnico?.trim()) overlay.idTecnico = raw.idTecnico.trim();
+    else overlay.idTecnico = undefined;
+    return overlay;
   }
 
   private salvarIniciar(raw: ReturnType<typeof this.form.getRawValue>): void {
-    // Validar conclusaoEm obrigatório
-    if (!raw.conclusaoEm?.trim()) {
-      this.dialogTitulo = 'Campo obrigatório';
-      this.dialogMensagem = 'Data prevista para conclusão é obrigatória para iniciar o atendimento.';
-      this.dialogTipo = 'erro';
-      this.dialogBotoes = [{ label: 'Entendi', acao: 'ok', estilo: 'primario' }];
-      this.dialogVisivel = true;
-      this.salvando = false;
-      return;
-    }
-
-    // Dialog de confirmação
     this.dialogTitulo = 'Confirmar Início';
     this.dialogMensagem = 'Você deseja iniciar o atendimento desta ordem de serviço?';
     this.dialogTipo = 'confirmacao';
@@ -393,76 +469,56 @@ export class OsFormComponent implements OnInit {
     ];
     this.dialogVisivel = true;
 
-    // Armazenar callback para executar após confirmação
     const callback = () => {
+      const ymd = raw.dataPrevistaConclusao?.trim() ?? '';
+      const isoPrev = dataPrevistaFormYmdParaIsoFimDoDiaLocal(ymd);
       const payload: AtualizarOrdemServicoPayload = {
         statusOrdemServico: OrdemStatus.EM_ANDAMENTO,
-        conclusaoEm: raw.conclusaoEm!.trim(),
-        inicioEm: new Date().toISOString(),
       };
+      if (isoPrev && !dataPrevistaYmdEhAnteriorAHoje(ymd)) {
+        payload.dataPrevistaConclusao = isoPrev;
+      }
+
       this.ordemService.atualizar(this.osParaIniciar!.idOrdemServico, payload).subscribe({
         next: () => {
           this.salvando = false;
-          this.salvo.emit();
+          this.salvo.emit(undefined);
         },
         error: (err) => {
-          this.erro = err?.error?.message ?? 'Erro ao iniciar a ordem de serviço.';
+          this.erro = mensagemUsuarioErroApiOrdemServico(err, 'Erro ao iniciar a ordem de serviço.');
           this.salvando = false;
           this.cdr.markForCheck();
         },
       });
     };
 
-    // Interceptar onDialogAcao para executar callback
     const originalOnDialog = this.onDialogAcao.bind(this);
     this.onDialogAcao = (acao: string) => {
       this.dialogVisivel = false;
       if (acao === 'confirmar') {
         callback();
       } else {
-        // Quando clica "Não" ou "Cancelar", desabilitar salvando
         this.salvando = false;
         this.cdr.markForCheck();
       }
-      this.onDialogAcao = originalOnDialog; // Restaurar
+      this.onDialogAcao = originalOnDialog;
     };
   }
 
   private salvarEncerrar(raw: ReturnType<typeof this.form.getRawValue>): void {
-    // Validar 3 campos obrigatórios
-    const camposObrigatorios = [
-      { nome: 'Descrição do Serviço', valor: raw.descricaoServico?.trim() },
-      { nome: 'Peças Utilizadas', valor: raw.pecasUtilizadas?.trim() },
-      { nome: 'Horas Trabalhadas', valor: raw.horasTrabalhadas },
-    ];
-
-    const camposVazios = camposObrigatorios.filter(c => !c.valor);
-    if (camposVazios.length > 0) {
-      const nomes = camposVazios.map(c => c.nome).join(', ');
-      this.dialogTitulo = 'Campos obrigatórios';
-      this.dialogMensagem = `${nomes} ${camposVazios.length === 1 ? 'é obrigatório' : 'são obrigatórios'} para encerrar a ordem de serviço.`;
-      this.dialogTipo = 'erro';
-      this.dialogBotoes = [{ label: 'Entendi', acao: 'ok', estilo: 'primario' }];
-      this.dialogVisivel = true;
-      this.salvando = false;
-      return;
-    }
-
-    // Payload de encerramento
-    const payload: any = {
+    const payload: AtualizarOrdemServicoPayload = {
       statusOrdemServico: OrdemStatus.CONCLUIDO,
-      descricaoServico: raw.descricaoServico,
-      pecasUtilizadas: raw.pecasUtilizadas,
-      horasTrabalhadas: Number(raw.horasTrabalhadas),
+      descricaoServico: raw.descricaoServico!.trim(),
+      pecasUtilizadas: raw.pecasUtilizadas!.trim(),
     };
 
     this.ordemService.atualizar(this.osParaEncerrar!.idOrdemServico, payload).subscribe({
       next: () => {
         this.salvando = false;
-        this.salvo.emit();
+        this.salvo.emit(undefined);
       },
       error: (err) => {
-        this.erro = err?.error?.message ?? 'Erro ao encerrar a ordem de serviço.';
+        this.erro = mensagemUsuarioErroApiOrdemServico(err, 'Erro ao encerrar a ordem de serviço.');
         this.salvando = false;
         this.cdr.markForCheck();
       },

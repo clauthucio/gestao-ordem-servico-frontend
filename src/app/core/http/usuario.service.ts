@@ -3,7 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { AtualizarUsuarioPayload, CadastrarUsuarioPayload, Usuario } from '../models/usuario.model';
+import {
+  AlterarSenhaRequest,
+  AlterarSenhaResponse,
+  AtualizarUsuarioPayload,
+  CadastrarUsuarioPayload,
+  Usuario,
+} from '../models/usuario.model';
 import { normalizarListaUsuarios } from './usuario-api-normalize';
 
 @Injectable({
@@ -34,8 +40,20 @@ export class UsuarioService {
     return this.http.post<Usuario>(`${this.API_URL}/app/usuarios`, body);
   }
 
+  /**
+   * PUT /app/usuarios/:id — dados gerais (nome, e-mail, perfil, status).
+   * A senha não deve ser enviada aqui; use `alterarSenha`.
+   */
   atualizar(id: string, body: AtualizarUsuarioPayload): Observable<Usuario> {
     return this.http.put<Usuario>(`${this.API_URL}/app/usuarios/${id}`, body);
+  }
+
+  /** PATCH /app/usuarios/:id/senha — qualquer papel autenticado, só a própria conta. */
+  alterarSenha(idUsuario: string, body: AlterarSenhaRequest): Observable<AlterarSenhaResponse> {
+    return this.http.patch<AlterarSenhaResponse>(
+      `${this.API_URL}/app/usuarios/${idUsuario}/senha`,
+      body,
+    );
   }
 
   deletar(id: string): Observable<void> {

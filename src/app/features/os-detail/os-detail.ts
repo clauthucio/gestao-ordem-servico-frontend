@@ -2,20 +2,31 @@ import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angula
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin, Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { forkJoin, of, Subject } from 'rxjs';
+import { catchError, takeUntil } from 'rxjs/operators';
 
 import { OrdemServicoService } from '../../core/http/ordem-servico.service';
 import { UsuarioService } from '../../core/http/usuario.service';
 import { AuthService } from '../../core/services/auth.service';
 import { EquipamentoService } from '../../core/http/equipamento.service';
-import { ManutencaoType, OrdemServico, PrioridadeType } from '../../core/models/ordem-servico.model';
+import {
+  AguardandoPecaLogResponse,
+  dataAberturaOuCriacao,
+  ManutencaoType,
+  OrdemServico,
+  PrioridadeType,
+} from '../../core/models/ordem-servico.model';
 import { Usuario } from '../../core/models/usuario.model';
 import { Equipamento } from '../../core/models/equipamento.model';
 import { OrdemStatus } from '../../core/enums/status.enum';
 import { UserRole } from '../../core/enums/roles.enum';
 import { appendOsTimelineEvent, getOsTimelineEvents } from '../../core/storage/os-timeline-local.storage';
-import { usuarioPodeAcaoComoAdminOuTecnicoAtribuido } from '../../core/utils/os-acoes-permissao.util';
+import {
+  iniciarAtendimentoHabilitadoParaUsuario,
+  usuarioPodeAcaoComoAdminOuTecnicoAtribuido,
+  usuarioPodeEditarOuExcluirOrdemServico,
+} from '../../core/utils/os-acoes-permissao.util';
+import { mensagemUsuarioErroApiOrdemServico } from '../../core/utils/ordem-servico-api-message.util';
 import { DialogComponent, DialogBotao } from '../../components/dialog/dialog.component';
 import { ModalContainerComponent } from '../../components/modal-container/modal-container';
 import { OsFormComponent } from '../../components/os-form/os-form';
@@ -51,6 +62,8 @@ export class OsDetail implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   os: OrdemServico | null = null;
+  /** Histórico de períodos em aguardando peça (API); fallback no painel para campos da OS. */
+  aguardandoPecaLog: AguardandoPecaLogResponse | null = null;
   equipamento: Equipamento | null = null;
   tecnicos: Usuario[] = [];
   /** idUsuario → nomeUsuario (perfil TECNICO); mesmo critério que os-list para resolver nome quando a API omite tecnicoNome */
@@ -67,7 +80,6 @@ export class OsDetail implements OnInit, OnDestroy {
   fechamentoForm = {
     descricaoServico: '',
     pecasUtilizadas: '',
-    horasTrabalhadas: null as number | null,
   };
   fechamentoErro: string | null = null;
   encerrando = false;
@@ -144,6 +156,13 @@ export class OsDetail implements OnInit, OnDestroy {
     return this.os?.statusOrdemServico === OrdemStatus.EM_ANDAMENTO;
   }
 
+  /** Valores oficiais de horas (líquido / aguardando) só após conclusão ou cancelamento. */
+  get exibirValoresHorasOficiais(): boolean {
+    if (!this.os) return false;
+    const s = this.os.statusOrdemServico;
+    return s === OrdemStatus.CONCLUIDO || s === OrdemStatus.CANCELADO;
+  }
+
   /** Permite gravar só com técnico válido e quando houve alteração em relação à OS carregada. */
   get podeAtualizarTecnico(): boolean {
     if (!this.os) return false;
@@ -151,6 +170,16 @@ export class OsDetail implements OnInit, OnDestroy {
     if (!sel) return false;
     const atual = this.os.idTecnico?.trim() ?? '';
     return sel !== atual;
+  }
+
+  /** Iniciar no cabeçalho: técnico só se a OS estiver atribuída a si (mesma regra que a lista). */
+  get detalheIniciarHabilitado(): boolean {
+    return iniciarAtendimentoHabilitadoParaUsuario(this.authService.getCurrentUser(), this.os?.idTecnico);
+  }
+
+  /** Editar no cabeçalho: perfil técnico não edita. */
+  get detalheEditarHabilitado(): boolean {
+    return usuarioPodeEditarOuExcluirOrdemServico(this.authService.getCurrentUser());
   }
 
   /** Mesma regra que a lista: admin ou técnico atribuído (Aguardar peça / Retomar). */
@@ -180,10 +209,13 @@ export class OsDetail implements OnInit, OnDestroy {
       os: this.ordemService.buscarPorId(osId),
       usuarios: this.usuarioService.listar(),
       equipamentos: this.equipamentoService.listar(),
+      agLog: this.ordemService.buscarAguardandoPecaLog(osId).pipe(
+        catchError(() => of<AguardandoPecaLogResponse>({ totalHorasAguardando: 0, logs: [] })),
+      ),
     })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ({ os, usuarios, equipamentos }) => {
+        next: ({ os, usuarios, equipamentos, agLog }) => {
           this.tecnicoNomePorId.clear();
           usuarios
             .filter((u) => u.perfilUsuario === UserRole.TECNICO)
@@ -193,12 +225,13 @@ export class OsDetail implements OnInit, OnDestroy {
           usuarios.forEach((u) => this.usuarioNomePorId.set(u.idUsuario, u.nomeUsuario));
 
           this.os = os;
+          this.aguardandoPecaLog = agLog;
           this.selectedTecnico = os.idTecnico?.trim() ? os.idTecnico.trim() : '';
           this.tecnicos = usuarios.filter(
             (u) => u.perfilUsuario === UserRole.TECNICO && u.statusUsuario
           );
           this.equipamento = equipamentos.find((e) => e.id === os.idEquipamento) || null;
-          this.timelineEvents = this.generateTimeline(os);
+          this.timelineEvents = this.generateTimeline(os, agLog);
           this.carregando = false;
           this.cdr.markForCheck();
         },
@@ -234,7 +267,7 @@ export class OsDetail implements OnInit, OnDestroy {
     return Number.isFinite(t) ? t : 0;
   }
 
-  private generateTimeline(os: OrdemServico): TimelineEvent[] {
+  private generateTimeline(os: OrdemServico, agLog: AguardandoPecaLogResponse | null): TimelineEvent[] {
     type Entry = { ts: number; ev: TimelineEvent };
     const entries: Entry[] = [];
 
@@ -267,7 +300,7 @@ export class OsDetail implements OnInit, OnDestroy {
     }
 
     if (os.statusOrdemServico !== OrdemStatus.ABERTO) {
-      const inicioRef = os.inicioEm ?? os.aberturaEm;
+      const inicioRef = os.inicioEm ?? dataAberturaOuCriacao(os);
       push(this.parseTs(inicioRef), {
         icon: 'play_circle',
         filled: true,
@@ -307,7 +340,35 @@ export class OsDetail implements OnInit, OnDestroy {
       }
     }
 
-    if (os.statusOrdemServico === OrdemStatus.AGUARDANDO_PECA && !temAguardarRegistrado) {
+    if (agLog?.logs?.length) {
+      const sortedLogs = [...agLog.logs].sort(
+        (a, b) => this.parseTs(a.aguardandoPecaInicio) - this.parseTs(b.aguardandoPecaInicio),
+      );
+      for (const row of sortedLogs) {
+        push(this.parseTs(row.aguardandoPecaInicio), {
+          icon: 'inventory_2',
+          filled: true,
+          title: 'Período em aguardando peça — início',
+          timestamp: this.formatarData(row.aguardandoPecaInicio),
+          author: 'Registo do sistema',
+          iconBg: 'bg-amber-500/10',
+          iconColor: 'text-amber-600',
+        });
+        if (row.aguardandoPecaFim) {
+          push(this.parseTs(row.aguardandoPecaFim), {
+            icon: 'inventory_2',
+            filled: false,
+            title: 'Período em aguardando peça — fim',
+            timestamp: this.formatarData(row.aguardandoPecaFim),
+            author: 'Registo do sistema',
+            iconBg: 'bg-surface-container-highest',
+            iconColor: 'text-amber-600',
+          });
+        }
+      }
+    }
+
+    if (os.statusOrdemServico === OrdemStatus.AGUARDANDO_PECA && !temAguardarRegistrado && !agLog?.logs?.length) {
       push(this.parseTs(os.dataAtualizacao), {
         icon: 'schedule',
         filled: true,
@@ -334,18 +395,27 @@ export class OsDetail implements OnInit, OnDestroy {
       });
     }
 
+    if (os.statusOrdemServico === OrdemStatus.CANCELADO) {
+      push(this.parseTs(os.dataAtualizacao), {
+        icon: 'cancel',
+        filled: true,
+        title: 'Ordem de Serviço Cancelada',
+        timestamp: this.formatarData(os.dataAtualizacao),
+        author: this.nomeTecnicoResolvido(os),
+        iconBg: 'bg-error/10',
+        iconColor: 'text-error',
+      });
+    }
+
     entries.sort((a, b) => a.ts - b.ts);
     return entries.map((e) => e.ev);
   }
 
   /**
-   * Data de abertura (`data_abertura` / `aberturaEm` na API) — usada no cabeçalho como "Data de criação"
-   * e nos primeiros eventos da timeline. Fallback para `dataCriacao` se abertura vier vazia.
+   * Data de abertura para o cabeçalho e timeline. Usa `aberturaEm` da API ou `dataCriacao`.
    */
   dataAberturaParaExibicao(os: OrdemServico): Date | string | undefined {
-    const a = os.aberturaEm;
-    if (a !== undefined && a !== null && String(a).trim() !== '') return a;
-    return os.dataCriacao;
+    return dataAberturaOuCriacao(os);
   }
 
   formatarData(data: Date | string | undefined): string {
@@ -356,6 +426,34 @@ export class OsDetail implements OnInit, OnDestroy {
       ' às ' +
       d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
     );
+  }
+
+  /**
+   * Horas decimais da API → `HH:MM` com sufixo legível (min / hora / horas).
+   * Evita mostrar só "0 h" quando o trabalho foi inferior a 1 hora.
+   */
+  formatarHorasNumero(n: number | null | undefined): string {
+    if (n === null || n === undefined || Number.isNaN(Number(n))) return '—';
+    const totalMin = Math.max(0, Math.round(Number(n) * 60));
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    const hh = String(h).padStart(2, '0');
+    const mm = String(m).padStart(2, '0');
+    if (h === 0) return `${hh}:${mm} min`;
+    if (m === 0) return h === 1 ? `${hh}:00 hora` : `${hh}:00 horas`;
+    return `${hh}:${mm} min`;
+  }
+
+  /** Total em aguardando peça: API do log; senão campo da OS. */
+  formatarHorasAguardandoPecaNoPainel(): string {
+    if (!this.os) return '0 h';
+    const fromLog = this.aguardandoPecaLog?.totalHorasAguardando;
+    if (typeof fromLog === 'number' && !Number.isNaN(fromLog)) {
+      return `${fromLog.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} h`;
+    }
+    const n = this.os.horasAguardandoPecaAcumuladas;
+    const v = typeof n === 'number' && !Number.isNaN(n) ? n : 0;
+    return `${v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} h`;
   }
 
   onAtualizarTecnico(): void {
@@ -383,7 +481,7 @@ export class OsDetail implements OnInit, OnDestroy {
         next: (osAtualizada) => {
           this.os = osAtualizada;
           this.selectedTecnico = osAtualizada.idTecnico?.trim() ?? '';
-          this.timelineEvents = this.generateTimeline(osAtualizada);
+          this.timelineEvents = this.generateTimeline(osAtualizada, this.aguardandoPecaLog);
           this.atualizandoTecnico = false;
           this.dialogTitulo = 'Sucesso';
           this.dialogMensagem = 'Técnico responsável atualizado com sucesso.';
@@ -394,7 +492,7 @@ export class OsDetail implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (err) => {
-          this.erro = err?.error?.message || 'Erro ao atualizar técnico responsável.';
+          this.erro = mensagemUsuarioErroApiOrdemServico(err, 'Erro ao atualizar técnico responsável.');
           this.atualizandoTecnico = false;
           this.cdr.markForCheck();
         },
@@ -402,11 +500,10 @@ export class OsDetail implements OnInit, OnDestroy {
   }
 
   onEncerrar(): void {
-    const { descricaoServico, pecasUtilizadas, horasTrabalhadas } = this.fechamentoForm;
+    const { descricaoServico, pecasUtilizadas } = this.fechamentoForm;
     const vazios: string[] = [];
     if (!descricaoServico?.trim()) vazios.push('Descrição do Serviço');
     if (!pecasUtilizadas?.trim()) vazios.push('Peças Utilizadas');
-    if (!horasTrabalhadas) vazios.push('Horas Trabalhadas');
     if (vazios.length > 0) {
       this.fechamentoErro = `${vazios.join(', ')} ${vazios.length === 1 ? 'é obrigatório' : 'são obrigatórios'}.`;
       return;
@@ -419,14 +516,13 @@ export class OsDetail implements OnInit, OnDestroy {
         statusOrdemServico: OrdemStatus.CONCLUIDO,
         descricaoServico,
         pecasUtilizadas,
-        horasTrabalhadas: Number(horasTrabalhadas),
       })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (osAtualizada) => {
           this.os = osAtualizada;
-          this.timelineEvents = this.generateTimeline(osAtualizada);
-          this.fechamentoForm = { descricaoServico: '', pecasUtilizadas: '', horasTrabalhadas: null };
+          this.timelineEvents = this.generateTimeline(osAtualizada, this.aguardandoPecaLog);
+          this.fechamentoForm = { descricaoServico: '', pecasUtilizadas: '' };
           this.encerrando = false;
           this.dialogTitulo = 'Sucesso';
           this.dialogMensagem = 'Ordem de serviço encerrada com sucesso.';
@@ -437,7 +533,7 @@ export class OsDetail implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (err) => {
-          this.fechamentoErro = err?.error?.message || 'Erro ao encerrar a ordem de serviço.';
+          this.fechamentoErro = mensagemUsuarioErroApiOrdemServico(err, 'Erro ao encerrar a ordem de serviço.');
           this.encerrando = false;
           this.cdr.markForCheck();
         },
@@ -458,6 +554,16 @@ export class OsDetail implements OnInit, OnDestroy {
 
   abrirModalIniciar(): void {
     if (!this.os) return;
+    if (!iniciarAtendimentoHabilitadoParaUsuario(this.authService.getCurrentUser(), this.os.idTecnico)) {
+      this.dialogTitulo = 'Permissão negada';
+      this.dialogMensagem = 'Só pode iniciar ordens de serviço atribuídas ao seu utilizador.';
+      this.dialogTipo = 'erro';
+      this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+      this.dialogCallback = null;
+      this.dialogVisivel = true;
+      this.cdr.markForCheck();
+      return;
+    }
     this.osParaIniciar = this.os;
     this.showModalIniciar = true;
     this.cdr.markForCheck();
@@ -465,6 +571,17 @@ export class OsDetail implements OnInit, OnDestroy {
 
   abrirModalEditar(): void {
     if (!this.os) return;
+    if (!usuarioPodeEditarOuExcluirOrdemServico(this.authService.getCurrentUser())) {
+      this.dialogTitulo = 'Permissão negada';
+      this.dialogMensagem =
+        'Utilizadores com perfil técnico não podem editar ordens de serviço neste ecrã.';
+      this.dialogTipo = 'erro';
+      this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+      this.dialogCallback = null;
+      this.dialogVisivel = true;
+      this.cdr.markForCheck();
+      return;
+    }
     this.osEmEdicao = this.os;
     this.showModalEdicao = true;
     this.cdr.markForCheck();
@@ -476,10 +593,10 @@ export class OsDetail implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  onOsAtualizada(): void {
+  onOsAtualizada(overlayCamposEditados?: Partial<OrdemServico>): void {
     this.showModalEdicao = false;
     this.osEmEdicao = null;
-    this.recarregarDetalhe();
+    this.recarregarDetalhe('Ordem de serviço atualizada com sucesso.', overlayCamposEditados);
   }
 
   onModalIniciarFechar(): void {
@@ -528,7 +645,7 @@ export class OsDetail implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.dialogTitulo = 'Erro';
-          this.dialogMensagem = err?.error?.message ?? 'Não foi possível marcar como aguardando peça.';
+          this.dialogMensagem = mensagemUsuarioErroApiOrdemServico(err, 'Não foi possível marcar como aguardando peça.');
           this.dialogTipo = 'erro';
           this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
           this.dialogCallback = null;
@@ -577,7 +694,7 @@ export class OsDetail implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.dialogTitulo = 'Erro';
-          this.dialogMensagem = err?.error?.message ?? 'Não foi possível retomar o atendimento.';
+          this.dialogMensagem = mensagemUsuarioErroApiOrdemServico(err, 'Não foi possível retomar o atendimento.');
           this.dialogTipo = 'erro';
           this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
           this.dialogCallback = null;
@@ -590,24 +707,81 @@ export class OsDetail implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  onCancelarOrdemServico(): void {
+    if (!this.os) return;
+    if (this.os.statusOrdemServico !== OrdemStatus.AGUARDANDO_PECA) return;
+
+    if (!this.podeAcaoComoAdminOuTecnicoAtribuido) {
+      this.dialogTitulo = 'Permissão negada';
+      this.dialogMensagem =
+        'Somente o técnico atribuído e administradores podem cancelar a ordem de serviço.';
+      this.dialogTipo = 'erro';
+      this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+      this.dialogCallback = null;
+      this.dialogVisivel = true;
+      this.cdr.markForCheck();
+      return;
+    }
+
+    const osId = this.os.idOrdemServico;
+    this.dialogTitulo = 'Cancelar ordem de serviço';
+    this.dialogMensagem =
+      'Deseja cancelar esta ordem de serviço? O atendimento não será concluído e o status passará a Cancelado.';
+    this.dialogTipo = 'confirmacao';
+    this.dialogBotoes = [
+      { label: 'Não', acao: 'cancelar', estilo: 'neutro' },
+      { label: 'Sim, cancelar', acao: 'confirmar', estilo: 'perigo' },
+    ];
+    this.dialogCallback = () => {
+      this.ordemService
+        .atualizar(osId, { statusOrdemServico: OrdemStatus.CANCELADO })
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.recarregarDetalhe('A ordem de serviço foi cancelada.');
+            this.cdr.markForCheck();
+          },
+          error: (err) => {
+            this.dialogTitulo = 'Erro';
+            this.dialogMensagem = mensagemUsuarioErroApiOrdemServico(err, 'Não foi possível cancelar a ordem de serviço.');
+            this.dialogTipo = 'erro';
+            this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+            this.dialogCallback = null;
+            this.dialogVisivel = true;
+            this.cdr.markForCheck();
+          },
+        });
+    };
+    this.dialogVisivel = true;
+    this.cdr.markForCheck();
+  }
+
   private nomeParaTimeline(): string {
     return this.authService.getCurrentUser()?.nomeUsuario?.trim() || 'Usuário';
   }
 
-  private recarregarDetalhe(mensagemSucesso?: string): void {
+  private recarregarDetalhe(mensagemSucesso?: string, overlayCamposEditados?: Partial<OrdemServico>): void {
     const osId = this.route.snapshot.paramMap.get('id');
     if (!osId) return;
     forkJoin({
       os: this.ordemService.buscarPorId(osId),
       equipamentos: this.equipamentoService.listar(),
+      agLog: this.ordemService.buscarAguardandoPecaLog(osId).pipe(
+        catchError(() => of<AguardandoPecaLogResponse>({ totalHorasAguardando: 0, logs: [] })),
+      ),
     })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ({ os, equipamentos }) => {
-          this.os = os;
-          this.selectedTecnico = os.idTecnico?.trim() ? os.idTecnico.trim() : '';
-          this.equipamento = equipamentos.find((e) => e.id === os.idEquipamento) || null;
-          this.timelineEvents = this.generateTimeline(os);
+        next: ({ os, equipamentos, agLog }) => {
+          const osFinal =
+            overlayCamposEditados !== undefined
+              ? { ...os, ...overlayCamposEditados }
+              : os;
+          this.os = osFinal;
+          this.aguardandoPecaLog = agLog;
+          this.selectedTecnico = osFinal.idTecnico?.trim() ? osFinal.idTecnico.trim() : '';
+          this.equipamento = equipamentos.find((e) => e.id === osFinal.idEquipamento) || null;
+          this.timelineEvents = this.generateTimeline(osFinal, agLog);
           if (mensagemSucesso !== undefined) {
             this.dialogTitulo = 'Sucesso';
             this.dialogMensagem = mensagemSucesso;

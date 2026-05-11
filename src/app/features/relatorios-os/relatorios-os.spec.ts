@@ -2,10 +2,13 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 
 import { OrdemStatus } from '../../core/enums/status.enum';
+import { EquipamentoService } from '../../core/http/equipamento.service';
 import { OrdemServicoService } from '../../core/http/ordem-servico.service';
 import { UsuarioService } from '../../core/http/usuario.service';
 import type { OrdemServico } from '../../core/models/ordem-servico.model';
 import { RelatoriosOs } from './relatorios-os';
+import { AuthService } from '../../core/services/auth.service';
+import { UserRole } from '../../core/enums/roles.enum';
 
 function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -42,6 +45,14 @@ describe('RelatoriosOs', () => {
       providers: [
         { provide: OrdemServicoService, useValue: { listar: () => of([osConcluidaHoje(5)]) } },
         { provide: UsuarioService, useValue: { listar: () => of([]) } },
+        { provide: EquipamentoService, useValue: { listar: () => of([]) } },
+        {
+          provide: AuthService,
+          useValue: {
+            getCurrentUserRole: () => UserRole.SUPERVISOR_DE_MANUTENCAO,
+            getCurrentUser: () => ({ idUsuario: 's', perfilUsuario: UserRole.SUPERVISOR_DE_MANUTENCAO }),
+          },
+        },
       ],
     }).compileComponents();
 
@@ -57,58 +68,45 @@ describe('RelatoriosOs', () => {
 
   it('deve exibir título do relatório', () => {
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Relatório de Produtividade por Técnico');
+    expect(el.textContent).toContain('Relatórios de ordens de serviço');
   });
 
-  it('filtro de status padrão é apenas Concluído', () => {
-    expect(component.statusSelecionados).toEqual([OrdemStatus.CONCLUIDO]);
+  it('formatarHorasDuracaoPdf formata horas decimais para PDF', () => {
+    expect(component.formatarHorasDuracaoPdf(1.25)).toBe('1h15min');
+    expect(component.formatarHorasDuracaoPdf(0.02055138888888889)).toBe('1min');
+    expect(component.formatarHorasDuracaoPdf(null)).toBe('—');
+    expect(component.formatarHorasDuracaoPdf(2)).toBe('2h');
   });
 
-  it('resumosPorStatus tem um bloco de cartões por cada status selecionado (ordem fixa)', () => {
-    expect(component.resumosPorStatus.length).toBe(1);
-    expect(component.resumosPorStatus.map((r) => r.status)).toEqual([OrdemStatus.CONCLUIDO]);
+  it('modo padrão é ordens de serviço concluídas', () => {
+    expect(component.modoRelatorio).toBe('concluidas');
   });
 
-  it('limparFiltros repõe status ao padrão', () => {
-    component.statusSelecionados = [OrdemStatus.ABERTO];
+  it('snapshotParaExport captura modo, período e cópias de agregados', () => {
+    component.modoRelatorio = 'canceladas';
+    component.dataInicio = '2024-03-01';
+    component.dataFim = '2024-03-31';
+    component.aoAlterarModoRelatorio();
+    const snap = (component as unknown as { snapshotParaExport: () => Record<string, unknown> }).snapshotParaExport();
+    expect(snap['modo']).toBe('canceladas');
+    expect(snap['dataInicio']).toBe('2024-03-01');
+    expect(snap['dataFim']).toBe('2024-03-31');
+    expect(snap['agregados']).not.toBe(component.agregados);
+    expect(snap['agregadosEquipamento']).not.toBe(component.agregadosEquipamento);
+  });
+
+  it('limparFiltros repõe modo e janela de datas', () => {
+    component.modoRelatorio = 'canceladas';
+    component.dataInicio = '2000-01-01';
     component.limparFiltros();
-    expect(component.statusSelecionados).toEqual([OrdemStatus.CONCLUIDO]);
+    expect(component.modoRelatorio).toBe('concluidas');
+    const hoje = new Date();
+    expect(component.dataFim).toBe(ymd(hoje));
   });
 
-  it('não permite desmarcar o último status no pendente e mantém seleção', () => {
-    component.statusSelecionadosPendente = [OrdemStatus.ABERTO];
-    component.alternarStatusPendente(OrdemStatus.ABERTO, false);
-    expect(component.erro).toContain('pelo menos');
-    expect(component.statusMarcadoPendente(OrdemStatus.ABERTO)).toBe(true);
-  });
-
-  it('tituloPrincipalExportacao e textoFiltroStatusExportacao refletem o filtro', () => {
-    expect(component.tituloPrincipalExportacao()).toContain('ordens de serviço');
-    expect(component.textoFiltroStatusExportacao()).toContain('Concluído');
-  });
-
-  it('confirmarSelecaoStatus aplica pendente e fecha o painel', () => {
-    component.painelStatusAberto = true;
-    component.statusSelecionadosPendente = [OrdemStatus.CONCLUIDO, OrdemStatus.EM_ANDAMENTO];
-    component.confirmarSelecaoStatus();
-    expect(component.statusSelecionados).toEqual([OrdemStatus.CONCLUIDO, OrdemStatus.EM_ANDAMENTO]);
-    expect(component.painelStatusAberto).toBe(false);
-  });
-
-  it('confirmarSelecaoStatus com lista vazia define erro', () => {
-    component.statusSelecionadosPendente = [];
-    component.confirmarSelecaoStatus();
-    expect(component.erro).toContain('pelo menos');
-  });
-
-  it('cancelarPainelStatus repõe pendente a partir do aplicado e fecha', () => {
-    component.statusSelecionados = [OrdemStatus.CONCLUIDO];
-    component.painelStatusAberto = true;
-    component.statusSelecionadosPendente = [OrdemStatus.CONCLUIDO, OrdemStatus.ABERTO];
-    component.cancelarPainelStatus();
-    expect(component.statusSelecionados).toEqual([OrdemStatus.CONCLUIDO]);
-    expect(component.statusSelecionadosPendente).toEqual([OrdemStatus.CONCLUIDO]);
-    expect(component.painelStatusAberto).toBe(false);
+  it('tituloPrincipalExportacao e textoFiltroStatusExportacao refletem o modo', () => {
+    expect(component.tituloPrincipalExportacao().toLowerCase()).toContain('concluí');
+    expect(component.textoFiltroStatusExportacao()).toContain('O.S. Concluídas');
   });
 
   it('deve usar período padrão de 7 dias até hoje nas datas', () => {
@@ -121,7 +119,7 @@ describe('RelatoriosOs', () => {
     expect(component.dataInicio).toBe(esperadoIni);
   });
 
-  it('deve recalcular resumo ao alterar período (aoAlterarFiltro) sem botão Aplicar', () => {
+  it('deve recalcular resumo ao alterar período (aoAlterarFiltro)', () => {
     expect(component.resumo.totalOs).toBe(1);
     expect(component.resumo.totalHoras).toBe(5);
     component.dataInicio = '2000-01-01';
@@ -138,18 +136,11 @@ describe('RelatoriosOs', () => {
     expect(component.resumo.totalOs).toBe(1);
   });
 
-  it('limparFiltros repõe janela de 7 dias e recalcula o relatório', () => {
-    component.dataInicio = '2000-01-01';
-    component.dataFim = '2000-01-31';
-    component.aoAlterarFiltro();
-    component.limparFiltros();
-    const hoje = new Date();
-    const esperadoFim = ymd(hoje);
-    const ini = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-    ini.setDate(ini.getDate() - 7);
-    expect(component.dataFim).toBe(esperadoFim);
-    expect(component.dataInicio).toBe(ymd(ini));
-    expect(component.resumo.totalOs).toBe(1);
+  it('modo tempo de espera calcula média com ordens no universo', () => {
+    component.modoRelatorio = 'tempo_espera_pecas';
+    component.aoAlterarModoRelatorio();
+    expect(component.mediaEsperaPecas?.osNoUniverso).toBe(1);
+    expect(component.mediaEsperaPecas?.osComEsperaRegistada).toBe(0);
   });
 
   it('aoAlterarFiltro com data inicial maior que final define erro e não atualiza totais para intervalo inválido', () => {

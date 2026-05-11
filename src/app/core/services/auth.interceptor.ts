@@ -40,13 +40,20 @@ function isAuthLikeClientErrorMessage(message: string): boolean {
   return /token|jwt|bearer|n[aã]o fornecid|autoriza/i.test(message);
 }
 
-/** Backend pode devolver 400 com "Token não fornecido" em vez de 401. */
+/**
+ * Alguns backends devolvem 5xx com corpo de auth (ex.: {"message":"Token não fornecido"}) em vez de 401.
+ * Nesse caso tentamos refresh + reenvio como para 401, desde que a mensagem seja claramente de autenticação
+ * (evita refresh em "Erro Interno" genérico).
+ */
 function isAuthFailureRecoverableWithRefresh(
   error: HttpErrorResponse,
   message: string
 ): boolean {
   if (error.status === 401) return true;
   if (error.status === 400 || error.status === 403) {
+    return isAuthLikeClientErrorMessage(message);
+  }
+  if (error.status >= 500 && error.status <= 599) {
     return isAuthLikeClientErrorMessage(message);
   }
   return false;
@@ -125,6 +132,9 @@ export class AuthInterceptor implements HttpInterceptor {
         const authLike =
           error.status === 401 ||
           ((error.status === 400 || error.status === 403) &&
+            isAuthLikeClientErrorMessage(msg)) ||
+          (error.status >= 500 &&
+            error.status <= 599 &&
             isAuthLikeClientErrorMessage(msg));
 
         if (authLike && !skip401Retry) {

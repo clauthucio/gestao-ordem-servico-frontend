@@ -23,10 +23,9 @@ export class RoleGuard implements CanActivate {
     state: RouterStateSnapshot
   ): boolean {
     // Pegar o role necessário da rota (armazenado em route.data)
-    const requiredRole = route.data['requiredRole'] as UserRole;
+    const requiredRole = route.data['requiredRole'] as UserRole | UserRole[] | undefined;
 
-    // Se não tem um role necessário definido, deixa entrar
-    if (!requiredRole) {
+    if (requiredRole == null || (Array.isArray(requiredRole) && requiredRole.length === 0)) {
       return true;
     }
 
@@ -38,7 +37,7 @@ export class RoleGuard implements CanActivate {
 
     // Se não tem o role, negar acesso
     console.warn(`Acesso negado, necessário logar com perfil: ${requiredRole})`);
-    this.router.navigate(['/dashboard']);
+    this.router.navigate(['/app/dashboard']);
     return false;
   }
 }

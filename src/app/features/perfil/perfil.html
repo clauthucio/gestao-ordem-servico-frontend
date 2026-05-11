@@ -1,0 +1,232 @@
+@if (showModalSenha && usuario) {
+  <app-modal-container titulo="Alterar senha" (fechar)="fecharModalSenha()">
+    <p class="text-sm text-on-surface-variant mb-4">
+      Alteração da senha da sua conta
+      <span class="font-semibold text-on-background">({{ usuario.emailUsuario }})</span>
+    </p>
+    @if (erroApiSenha) {
+      <p class="text-sm text-error mb-4" role="alert">{{ erroApiSenha }}</p>
+    }
+    <form [formGroup]="formSenha" (ngSubmit)="onSalvarNovaSenha()" class="space-y-4">
+      <div>
+        <label
+          for="pf-senha-atual"
+          class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
+          >Senha atual</label
+        >
+        <input
+          id="pf-senha-atual"
+          type="password"
+          formControlName="senhaAtual"
+          autocomplete="current-password"
+          class="w-full px-3 py-2.5 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm"
+        />
+        @if (formSenha.controls.senhaAtual.invalid && formSenha.controls.senhaAtual.touched) {
+          <p class="mt-1.5 text-xs text-error">
+            @if (formSenha.controls.senhaAtual.errors?.['required']) {
+              Informe a senha atual.
+            } @else if (formSenha.controls.senhaAtual.errors?.['minlength']) {
+              Mínimo de 6 caracteres.
+            } @else if (formSenha.controls.senhaAtual.errors?.['maxlength']) {
+              Máximo de 100 caracteres.
+            }
+          </p>
+        }
+      </div>
+      <div>
+        <label
+          for="pf-senha-nova"
+          class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
+          >Nova senha</label
+        >
+        <input
+          id="pf-senha-nova"
+          type="password"
+          formControlName="senhaNova"
+          autocomplete="new-password"
+          class="w-full px-3 py-2.5 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm"
+        />
+        @if (formSenha.controls.senhaNova.invalid && formSenha.controls.senhaNova.touched) {
+          <p class="mt-1.5 text-xs text-error">
+            @if (formSenha.controls.senhaNova.errors?.['required']) {
+              Informe a nova senha.
+            } @else if (formSenha.controls.senhaNova.errors?.['minlength']) {
+              Mínimo de 6 caracteres.
+            } @else if (formSenha.controls.senhaNova.errors?.['maxlength']) {
+              Máximo de 100 caracteres.
+            }
+          </p>
+        }
+        @if (formSenha.touched && formSenha.errors?.['igualAtual']) {
+          <p class="mt-1.5 text-xs text-error">A nova senha não pode ser igual à senha atual.</p>
+        }
+      </div>
+      <div>
+        <label
+          for="pf-conf-senha"
+          class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
+          >Confirmar nova senha</label
+        >
+        <input
+          id="pf-conf-senha"
+          type="password"
+          formControlName="confirmarSenha"
+          autocomplete="new-password"
+          class="w-full px-3 py-2.5 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm"
+        />
+        @if (formSenha.controls.confirmarSenha.invalid && formSenha.controls.confirmarSenha.touched) {
+          <p class="mt-1.5 text-xs text-error">
+            @if (formSenha.controls.confirmarSenha.errors?.['required']) {
+              Confirme a nova senha.
+            } @else if (formSenha.controls.confirmarSenha.errors?.['minlength']) {
+              Mínimo de 6 caracteres.
+            } @else if (formSenha.controls.confirmarSenha.errors?.['maxlength']) {
+              Máximo de 100 caracteres.
+            }
+          </p>
+        }
+        @if (formSenha.touched && formSenha.errors?.['mismatch']) {
+          <p class="mt-1.5 text-xs text-error">As senhas não coincidem.</p>
+        }
+      </div>
+      <div class="flex flex-col sm:flex-row gap-3 pt-2">
+        <button
+          type="submit"
+          [disabled]="salvandoSenha"
+          class="flex-1 py-3 bg-primary text-on-primary font-bold rounded-lg hover:opacity-90 transition text-sm disabled:opacity-50"
+        >
+          @if (salvandoSenha) {
+            <span class="inline-flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined animate-spin text-lg">hourglass_bottom</span>
+              Salvando...
+            </span>
+          } @else {
+            Salvar
+          }
+        </button>
+        <button
+          type="button"
+          (click)="fecharModalSenha()"
+          class="flex-1 py-3 border border-outline-variant/30 text-on-surface font-bold rounded-lg hover:bg-surface-container transition text-sm"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </app-modal-container>
+}
+
+@if (dialogVisivel) {
+  <app-dialog
+    [titulo]="dialogTitulo"
+    [mensagem]="dialogMensagem"
+    [tipo]="dialogTipo"
+    [botoes]="dialogBotoes"
+    (acao)="onDialogAcao($event)"
+  />
+}
+
+<div class="min-h-full bg-surface-container/30 px-4 py-6 sm:px-6">
+  <div class="max-w-2xl mx-auto">
+    <div class="mb-8">
+      <h1 class="text-2xl font-black tracking-tight text-on-background">Perfil</h1>
+      <p class="text-sm text-on-surface-variant mt-1">Dados da sua conta e segurança.</p>
+    </div>
+
+    @if (usuario) {
+      <form [formGroup]="formPerfil" (ngSubmit)="onSalvarPerfil()" class="space-y-8">
+        <div class="bg-surface rounded-xl border border-outline-variant/10 shadow-sm p-6 space-y-5">
+          <h2 class="text-sm font-bold text-on-surface uppercase tracking-widest">Dados da conta</h2>
+
+          <div>
+            <label
+              for="pf-nome"
+              class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
+              >Nome do usuário</label
+            >
+            <input
+              id="pf-nome"
+              type="text"
+              formControlName="nomeUsuario"
+              autocomplete="name"
+              class="w-full px-3 py-2.5 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm focus:ring-2 focus:ring-primary/20"
+            />
+            @if (formPerfil.controls.nomeUsuario.invalid && formPerfil.controls.nomeUsuario.touched) {
+              <p class="mt-1.5 text-xs text-error">
+                @if (formPerfil.controls.nomeUsuario.errors?.['required']) {
+                  Informe o nome.
+                } @else if (formPerfil.controls.nomeUsuario.errors?.['minlength']) {
+                  Mínimo de 2 caracteres.
+                }
+              </p>
+            }
+          </div>
+
+          <div>
+            <label
+              for="pf-email"
+              class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
+              >E-mail</label
+            >
+            <input
+              id="pf-email"
+              type="email"
+              formControlName="emailUsuario"
+              [readonly]="!isAdmin"
+              autocomplete="email"
+              class="w-full px-3 py-2.5 rounded-lg border border-outline-variant/20 bg-surface-container-low text-sm focus:ring-2 focus:ring-primary/20"
+              [class.opacity-80]="!isAdmin"
+            />
+            @if (isAdmin && formPerfil.controls.emailUsuario.invalid && formPerfil.controls.emailUsuario.touched) {
+              <p class="mt-1.5 text-xs text-error">
+                @if (formPerfil.controls.emailUsuario.errors?.['required']) {
+                  Informe o e-mail.
+                } @else if (formPerfil.controls.emailUsuario.errors?.['email']) {
+                  E-mail inválido.
+                }
+              </p>
+            }
+            @if (!isAdmin) {
+              <p class="mt-1.5 text-xs text-on-surface-variant">Somente administradores podem alterar o e-mail.</p>
+            }
+          </div>
+
+          <div>
+            <span class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2"
+              >Perfil</span
+            >
+            <p
+              class="w-full px-3 py-2.5 rounded-lg border border-outline-variant/10 bg-surface-container-low/50 text-sm text-on-surface"
+            >
+              {{ perfilLabel }}
+            </p>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3 pt-2">
+            <button
+              type="submit"
+              [disabled]="salvandoPerfil"
+              class="flex-1 py-3 bg-primary text-on-primary font-bold rounded-lg hover:opacity-90 transition text-sm disabled:opacity-50"
+            >
+              @if (salvandoPerfil) {
+                <span class="inline-flex items-center justify-center gap-2">
+                  <span class="material-symbols-outlined animate-spin text-lg">hourglass_bottom</span>
+                  Salvando...
+                </span>
+              } @else {
+                Salvar alterações
+              }
+            </button>
+            <button
+              type="button"
+              (click)="abrirModalSenha()"
+              class="flex-1 py-3 border border-outline-variant/30 text-on-surface font-bold rounded-lg hover:bg-surface-container transition text-sm"
+            >
+              Alterar senha
+            </button>
+          </div>
+        </div>
+      </form>
+    }
+  </div>
+</div>

@@ -73,6 +73,11 @@ export function parseConclusaoMs(conclusaoEm: Date | string | undefined): number
   return parseDataReferenciaMs(conclusaoEm);
 }
 
+/** Ms para abertura/criação: `aberturaEm` ou, se ausente, `dataCriacao`. */
+export function parseAberturaOuCriacaoMs(o: OrdemServico): number | null {
+  return parseDataReferenciaMs(o.aberturaEm) ?? parseDataReferenciaMs(o.dataCriacao);
+}
+
 /**
  * Compara com CONCLUIDO de forma tolerante a strings vindas do backend (espaços, caixa).
  */
@@ -118,7 +123,7 @@ export function statusOrdemEhConcluida(raw: unknown): boolean {
 }
 
 /**
- * Instante para filtro de período: `conclusaoEm` → `dataAtualizacao` → `inicioEm` → `aberturaEm`
+ * Instante para filtro de período: `conclusaoEm` → `dataAtualizacao` → `inicioEm` → abertura ou `dataCriacao`
  * (útil quando a API omite conclusão ou `dataAtualizacao` não reflete a conclusão).
  */
 export function instanteReferenciaConclusao(o: OrdemServico): number | null {
@@ -129,7 +134,7 @@ export function instanteReferenciaConclusao(o: OrdemServico): number | null {
   if (atual !== null) return atual;
   const ini = parseDataReferenciaMs(o.inicioEm);
   if (ini !== null) return ini;
-  return parseDataReferenciaMs(o.aberturaEm);
+  return parseAberturaOuCriacaoMs(o);
 }
 
 /**
@@ -143,31 +148,77 @@ export function instanteConclusaoParaPeriodoRelatorio(o: OrdemServico): number |
 
 /**
  * Instante usado para **inclusão no período** e ordenação no relatório:
- * — OS com status mapeado para **Concluído**: só `conclusaoEm` (sem fallback).
- * — Demais status: `dataAtualizacao` → `inicioEm` → `aberturaEm`.
+ * — OS **Concluído**: só `conclusaoEm` (sem fallback).
+ * — OS **Cancelado**: `conclusaoEm` (se existir) → `dataAtualizacao` → `inicioEm` → abertura ou `dataCriacao`.
+ * — Demais status: `dataAtualizacao` → `inicioEm` → abertura ou `dataCriacao`.
  */
 export function instanteParaFiltroPeriodoRelatorio(o: OrdemServico): number | null {
-  if (mapearStatusOrdemParaEnum(o.statusOrdemServico) === OrdemStatus.CONCLUIDO) {
+  const st = mapearStatusOrdemParaEnum(o.statusOrdemServico);
+  if (st === OrdemStatus.CONCLUIDO) {
     return parseConclusaoMs(o.conclusaoEm);
+  }
+  if (st === OrdemStatus.CANCELADO) {
+    return (
+      parseDataReferenciaMs(o.conclusaoEm) ??
+      parseDataReferenciaMs(o.dataAtualizacao) ??
+      parseDataReferenciaMs(o.inicioEm) ??
+      parseAberturaOuCriacaoMs(o)
+    );
   }
   return (
     parseDataReferenciaMs(o.dataAtualizacao) ??
     parseDataReferenciaMs(o.inicioEm) ??
-    parseDataReferenciaMs(o.aberturaEm)
+    parseAberturaOuCriacaoMs(o)
   );
 }
 
 /**
- * Horas para o relatório: usa `horasTrabalhadas` quando é número válido (inclui 0).
- * Se estiver ausente, estima pelo intervalo entre início da OS (`inicioEm` ou `aberturaEm`) e o instante de referência de conclusão.
+ * Horas para o relatório:
+ * — OS **concluídas**: `horasTrabalhadas` menos `horasAguardandoPecaAcumuladas` (contrato API: total aguardando pré-calculado); se `horasTrabalhadas` ausente, estima `(conclusão − início) h` menos aguardando.
+ * — OS **canceladas**: `horasTotaisAteCancelamento` da API se existir; senão `(fim − início) h` com fim = conclusão ou data de atualização (inclui aguardando peça).
+ * — Demais status: `horasTrabalhadas` quando válido; se ausente, estima pelo intervalo início → referência de conclusão.
  */
 export function horasContabilizadasRelatorio(o: OrdemServico): number {
+  const st = mapearStatusOrdemParaEnum(o.statusOrdemServico);
   const h = o.horasTrabalhadas;
+
+  if (st === OrdemStatus.CONCLUIDO) {
+    if (typeof h === 'number' && !Number.isNaN(h)) {
+      const ag =
+        typeof o.horasAguardandoPecaAcumuladas === 'number' && !Number.isNaN(o.horasAguardandoPecaAcumuladas)
+          ? o.horasAguardandoPecaAcumuladas
+          : 0;
+      return Math.max(0, h - ag);
+    }
+    const fim = parseConclusaoMs(o.conclusaoEm);
+    const ini = parseDataReferenciaMs(o.inicioEm) ?? parseAberturaOuCriacaoMs(o);
+    if (fim === null || ini === null) return 0;
+    const elapsed = (fim - ini) / (3600 * 1000);
+    if (!Number.isFinite(elapsed) || elapsed <= 0) return 0;
+    const ag =
+      typeof o.horasAguardandoPecaAcumuladas === 'number' && !Number.isNaN(o.horasAguardandoPecaAcumuladas)
+        ? o.horasAguardandoPecaAcumuladas
+        : 0;
+    return Math.max(0, elapsed - ag);
+  }
+
+  if (st === OrdemStatus.CANCELADO) {
+    const ht = o.horasTotaisAteCancelamento;
+    if (typeof ht === 'number' && !Number.isNaN(ht)) {
+      return Math.max(0, ht);
+    }
+    const ini = parseDataReferenciaMs(o.inicioEm) ?? parseAberturaOuCriacaoMs(o);
+    const fim = parseDataReferenciaMs(o.conclusaoEm) ?? parseDataReferenciaMs(o.dataAtualizacao);
+    if (fim === null || ini === null) return 0;
+    const elapsed = (fim - ini) / (3600 * 1000);
+    return elapsed > 0 && Number.isFinite(elapsed) ? elapsed : 0;
+  }
+
   if (typeof h === 'number' && !Number.isNaN(h)) {
     return h;
   }
   const fim = instanteReferenciaConclusao(o);
-  const ini = parseDataReferenciaMs(o.inicioEm) ?? parseDataReferenciaMs(o.aberturaEm);
+  const ini = parseDataReferenciaMs(o.inicioEm) ?? parseAberturaOuCriacaoMs(o);
   if (fim === null || ini === null) return 0;
   const derivado = (fim - ini) / (3600 * 1000);
   return derivado > 0 && Number.isFinite(derivado) ? derivado : 0;
@@ -278,6 +329,118 @@ export function montarDadosGraficoTopOs(aggs: TecnicoProdutividadeAgg[], topN: n
     percentual: Math.round((a.osConcluidas / denom) * 100),
     corHex: CORES_GRAFICO_HEX[i % CORES_GRAFICO_HEX.length],
   }));
+}
+
+/** Agrupamento por equipamento no relatório «O.S. por equipamento» (só concluídas e canceladas no período). */
+export interface EquipamentoAbertasAgg {
+  idEquipamento: string;
+  nomeExibicao: string;
+  quantidade: number;
+  /** Média aritmética de `horasContabilizadasRelatorio` entre as ordens do grupo. */
+  mediaHorasPorOrdemServico: number | null;
+  ordens: OrdemServico[];
+}
+
+/**
+ * Equipamentos com pelo menos uma O.S. **Concluída** ou **Cancelada** cuja data de referência do relatório
+ * cai no período; `quantidade` = número dessas ordens por equipamento.
+ */
+export function agruparConcluidasOuCanceladasPorEquipamento(
+  todasOrdens: OrdemServico[],
+  dataInicio: string,
+  dataFim: string,
+): EquipamentoAbertasAgg[] {
+  const { inicioMs, fimMs } = criarLimitesPeriodoLocal(dataInicio, dataFim);
+  const base = filtrarOrdensRelatorioNoPeriodo(todasOrdens, inicioMs, fimMs, [
+    OrdemStatus.CONCLUIDO,
+    OrdemStatus.CANCELADO,
+  ]);
+  const map = new Map<string, { nome: string; ordens: OrdemServico[] }>();
+  for (const o of base) {
+    const id = String(o.idEquipamento ?? '').trim() || '__sem_equipamento__';
+    const nome = o.equipamentoNome?.trim() || `Equipamento ${id}`;
+    if (!map.has(id)) {
+      map.set(id, { nome, ordens: [] });
+    } else if (map.get(id)!.nome.startsWith('Equipamento ') && o.equipamentoNome?.trim()) {
+      map.get(id)!.nome = o.equipamentoNome.trim();
+    }
+    map.get(id)!.ordens.push(o);
+  }
+  const aggs: EquipamentoAbertasAgg[] = [];
+  for (const [idEquipamento, { nome, ordens: lista }] of map) {
+    const ordensOrdenadas = [...lista].sort(
+      (a, b) =>
+        (instanteParaFiltroPeriodoRelatorio(a) ?? 0) - (instanteParaFiltroPeriodoRelatorio(b) ?? 0),
+    );
+    const somaH = ordensOrdenadas.reduce((s, o) => s + horasContabilizadasRelatorio(o), 0);
+    const n = ordensOrdenadas.length;
+    const mediaHorasPorOrdemServico = n > 0 ? somaH / n : null;
+    aggs.push({
+      idEquipamento,
+      nomeExibicao: nome,
+      quantidade: lista.length,
+      mediaHorasPorOrdemServico,
+      ordens: ordensOrdenadas,
+    });
+  }
+  aggs.sort((a, b) => b.quantidade - a.quantidade);
+  return aggs;
+}
+
+export function montarDadosGraficoTopEquipamento(aggs: EquipamentoAbertasAgg[], topN: number): GraficoBarraItem[] {
+  const sorted = [...aggs].sort((a, b) => b.quantidade - a.quantidade).slice(0, topN);
+  const max = sorted[0]?.quantidade ?? 0;
+  const denom = max > 0 ? max : 1;
+  return sorted.map((a, i) => ({
+    nome: a.nomeExibicao,
+    valor: a.quantidade,
+    percentual: Math.round((a.quantidade / denom) * 100),
+    corHex: CORES_GRAFICO_HEX[i % CORES_GRAFICO_HEX.length],
+  }));
+}
+
+/**
+ * OS concluídas ou canceladas cuja data de referência do relatório está no intervalo (sem duplicar por id).
+ */
+export function filtrarConcluidasOuCanceladasNoPeriodo(
+  ordens: OrdemServico[],
+  dataInicio: string,
+  dataFim: string,
+): OrdemServico[] {
+  const { inicioMs, fimMs } = criarLimitesPeriodoLocal(dataInicio, dataFim);
+  const a = filtrarOrdensRelatorioNoPeriodo(ordens, inicioMs, fimMs, [OrdemStatus.CONCLUIDO]);
+  const b = filtrarOrdensRelatorioNoPeriodo(ordens, inicioMs, fimMs, [OrdemStatus.CANCELADO]);
+  const seen = new Set<string>();
+  const out: OrdemServico[] = [];
+  for (const o of [...a, ...b]) {
+    if (seen.has(o.idOrdemServico)) continue;
+    seen.add(o.idOrdemServico);
+    out.push(o);
+  }
+  return out;
+}
+
+export interface MediaEsperaPecasResultado {
+  /** Média apenas entre OS com `horasAguardandoPecaAcumuladas > 0`. */
+  mediaHoras: number | null;
+  osComEsperaRegistada: number;
+  osNoUniverso: number;
+  somaHorasEspera: number;
+}
+
+export function calcularMediaTempoEsperaPecas(ordens: OrdemServico[]): MediaEsperaPecasResultado {
+  const comDado = ordens.filter((o) => {
+    const v = o.horasAguardandoPecaAcumuladas;
+    return typeof v === 'number' && !Number.isNaN(v) && v > 0;
+  });
+  const soma = comDado.reduce((s, o) => s + (o.horasAguardandoPecaAcumuladas ?? 0), 0);
+  const n = comDado.length;
+  return {
+    mediaHoras: n > 0 ? soma / n : null,
+    osComEsperaRegistada: n,
+    osNoUniverso: ordens.length,
+    somaHorasEspera: soma,
+  };
 }
 
 /**

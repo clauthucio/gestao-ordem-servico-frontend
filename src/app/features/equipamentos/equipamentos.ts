@@ -18,6 +18,8 @@ import {
   EquipamentoListItem,
   TipoEquipamento,
 } from '../../core/models/equipamento.model';
+import { AuthService } from '../../core/services/auth.service';
+import { UserRole } from '../../core/enums/roles.enum';
 
 export type StatusEquipamentoExibicao = 'ativo' | 'emManutencao' | 'inativo';
 
@@ -39,6 +41,7 @@ export type ColunaOrdenacaoEquipamento =
 })
 export class Equipamentos implements OnInit, CanComponentDeactivate {
   private readonly equipamentoService = inject(EquipamentoService);
+  private readonly authService = inject(AuthService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly fb = inject(FormBuilder);
 
@@ -104,6 +107,11 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
   dialogBotoes: DialogBotao[] = [];
   private dialogCallback: (() => void) | null = null;
 
+  /** Técnico: apenas consulta (sem cadastro, edição ou exclusão). */
+  get somenteLeitura(): boolean {
+    return this.authService.getCurrentUserRole() === UserRole.TECNICO;
+  }
+
   ngOnInit(): void {
     this.carregar();
   }
@@ -121,6 +129,14 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
       this.acaoAbertaId = null;
       this.cdr.markForCheck();
     }
+  }
+
+  private fecharMenuAcaoLinha(): void {
+    if (this.acaoAbertaId === null) {
+      return;
+    }
+    this.acaoAbertaId = null;
+    this.cdr.markForCheck();
   }
 
   carregar(mensagemSucessoAposEdicao?: string): void {
@@ -434,7 +450,7 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
 
   onEditar(eq: EquipamentoListItem, event: MouseEvent): void {
     event.stopPropagation();
-    this.acaoAbertaId = null;
+    this.fecharMenuAcaoLinha();
     this.equipamentoEditar = eq;
     this.formEditar.patchValue({
       nome: eq.nome,
@@ -497,7 +513,7 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
 
   onHistorico(eq: EquipamentoListItem, event: MouseEvent): void {
     event.stopPropagation();
-    this.acaoAbertaId = null;
+    this.fecharMenuAcaoLinha();
     this.equipamentoHistorico = eq;
     this.showModalHistorico = true;
     this.cdr.markForCheck();
@@ -522,9 +538,20 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
 
   onExcluir(eq: EquipamentoListItem, event: MouseEvent): void {
     event.stopPropagation();
-    this.acaoAbertaId = null;
+    this.fecharMenuAcaoLinha();
+    if (this.statusExibicao(eq) === 'emManutencao') {
+      this.dialogTitulo = 'Não é possível excluir';
+      this.dialogMensagem =
+        'Equipamento vinculado a uma Ordem de Serviço em aberto. Finalize a Ordem de Serviço para prosseguir';
+      this.dialogTipo = 'erro';
+      this.dialogBotoes = [{ label: 'Fechar', acao: 'ok', estilo: 'primario' }];
+      this.dialogCallback = null;
+      this.dialogVisivel = true;
+      this.cdr.markForCheck();
+      return;
+    }
     this.dialogTitulo = 'Confirmar exclusão';
-    this.dialogMensagem = `Deseja realmente excluir o equipamento "${eq.nome}" (${eq.codigo})? Esta ação não pode ser desfeita.`;
+    this.dialogMensagem = `Deseja realmente excluir o equipamento "${eq.nome}" (${eq.codigo})? O histórico do equipamento será perdido. Esta ação não pode ser desfeita.`;
     this.dialogTipo = 'confirmacao';
     this.dialogBotoes = [
       { label: 'Não', acao: 'cancelar', estilo: 'neutro' },
@@ -541,7 +568,7 @@ export class Equipamentos implements OnInit, CanComponentDeactivate {
       .pipe(take(1))
       .subscribe({
         next: () => {
-          this.carregar();
+          this.carregar('Equipamento foi excluído com sucesso.');
         },
         error: (err: { error?: { erro?: string; message?: string } }) => {
           this.dialogTitulo = 'Erro ao excluir';

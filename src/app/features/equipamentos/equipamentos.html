@@ -282,6 +282,11 @@
       <div>
         <h1 class="text-2xl font-black tracking-tight text-on-background">Equipamentos</h1>
         <p class="text-sm text-on-surface-variant mt-1">Cadastro e acompanhamento de ativos.</p>
+        @if (somenteLeitura) {
+          <p class="text-xs text-on-surface-variant mt-2 max-w-xl">
+            Perfil técnico: apenas consulta. Filtros e ordenação disponíveis; não é possível cadastrar, editar ou excluir.
+          </p>
+        }
       </div>
     </div>
 
@@ -350,7 +355,7 @@
       </div>
 
       <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto" [class.pb-72]="acaoAbertaId !== null">
           <table class="w-full text-left text-sm min-w-[960px]">
             <thead>
               <tr class="border-b border-outline-variant/15 bg-surface-container-low/50">
@@ -491,52 +496,64 @@
                     <span [class]="statusClass(eq)">{{ statusLabel(eq) }}</span>
                   </td>
                   <td class="px-4 py-3 text-right">
-                    <div class="flex items-center justify-end">
-                      <div class="relative">
-                        <button
-                          type="button"
-                          class="p-1.5 hover:bg-surface-container-highest rounded-md text-on-surface-variant transition-colors"
-                          title="Ações"
-                          (click)="abrirMenuAcao(eq.id, $event)"
-                        >
-                          <span class="material-symbols-outlined text-[20px]">more_vert</span>
-                        </button>
-                        @if (acaoAbertaId === eq.id) {
-                          <div
-                            class="absolute right-0 top-full mt-1 z-30 bg-surface rounded-xl shadow-xl border border-outline-variant/20 py-1 min-w-[180px]"
-                            (click)="$event.stopPropagation()"
+                    @if (somenteLeitura) {
+                      <button
+                        type="button"
+                        class="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+                        (click)="onHistorico(eq, $event)"
+                        title="Histórico"
+                      >
+                        <span class="material-symbols-outlined text-[18px]">history</span>
+                        Histórico
+                      </button>
+                    } @else {
+                      <div class="flex items-center justify-end">
+                        <div class="relative">
+                          <button
+                            type="button"
+                            class="p-1.5 hover:bg-surface-container-highest rounded-md text-on-surface-variant transition-colors"
+                            title="Ações"
+                            (click)="abrirMenuAcao(eq.id, $event)"
                           >
-                            <button
-                              type="button"
-                              class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
-                              (click)="onEditar(eq, $event)"
-                              title="Editar"
+                            <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                          </button>
+                          @if (acaoAbertaId === eq.id) {
+                            <div
+                              class="absolute right-0 top-full mt-1 z-30 bg-surface rounded-xl shadow-xl border border-outline-variant/20 py-1 min-w-[180px] max-h-[min(320px,calc(100vh-16px))] overflow-y-auto"
+                              (click)="$event.stopPropagation()"
                             >
-                              <span class="material-symbols-outlined text-[18px] text-primary">edit</span>
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
-                              (click)="onHistorico(eq, $event)"
-                              title="Histórico"
-                            >
-                              <span class="material-symbols-outlined text-[18px] text-on-surface-variant">history</span>
-                              Histórico
-                            </button>
-                            <button
-                              type="button"
-                              class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-error hover:bg-error/5 transition-colors"
-                              (click)="onExcluir(eq, $event)"
-                              title="Excluir"
-                            >
-                              <span class="material-symbols-outlined text-[18px]">delete</span>
-                              Excluir
-                            </button>
-                          </div>
-                        }
+                              <button
+                                type="button"
+                                class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
+                                (click)="onEditar(eq, $event)"
+                                title="Editar"
+                              >
+                                <span class="material-symbols-outlined text-[18px] text-primary">edit</span>
+                                Editar
+                              </button>
+                              <button
+                                type="button"
+                                class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors"
+                                (click)="onHistorico(eq, $event)"
+                                title="Histórico"
+                              >
+                                <span class="material-symbols-outlined text-[18px] text-on-surface-variant">history</span>
+                                Histórico
+                              </button>
+                              <button
+                                type="button"
+                                class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-error hover:bg-error/5 transition-colors"
+                                (click)="onExcluir(eq, $event)"
+                                title="Excluir"
+                              >
+                                <span class="material-symbols-outlined text-[18px]">delete</span>
+                                Excluir
+                              </button>
+                            </div>
+                          }
+                        </div>
                       </div>
-                    </div>
+                    }
                   </td>
                 </tr>
               } @empty {
@@ -607,13 +624,15 @@
 </div>
 
 <div class="fixed bottom-8 right-8 z-40">
-  <button
-    type="button"
-    class="bg-slate-500 w-14 h-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-90 transition-all"
-    (click)="onNovoEquipamento()"
-    aria-label="Novo equipamento"
-    title="Novo equipamento"
-  >
-    <span class="material-symbols-outlined text-3xl">add</span>
-  </button>
+  @if (!somenteLeitura) {
+    <button
+      type="button"
+      class="bg-slate-500 w-14 h-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-90 transition-all"
+      (click)="onNovoEquipamento()"
+      aria-label="Novo equipamento"
+      title="Novo equipamento"
+    >
+      <span class="material-symbols-outlined text-3xl">add</span>
+    </button>
+  }
 </div>

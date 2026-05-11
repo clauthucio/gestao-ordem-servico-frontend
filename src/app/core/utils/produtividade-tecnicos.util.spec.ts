@@ -2,13 +2,18 @@ import { OrdemStatus } from '../enums/status.enum';
 import type { OrdemServico } from '../models/ordem-servico.model';
 import {
   CHAVE_SEM_TECNICO,
+  agruparConcluidasOuCanceladasPorEquipamento,
   aplicarFiltrosTipoPrioridade,
+  calcularMediaTempoEsperaPecas,
   calcularResumoGlobal,
   computarProdutividadePorTecnico,
   criarLimitesPeriodoLocal,
+  filtrarConcluidasOuCanceladasNoPeriodo,
   filtrarOrdensRelatorioNoPeriodo,
   filtrarOsConcluidasNoPeriodo,
   horasContabilizadasRelatorio,
+  instanteParaFiltroPeriodoRelatorio,
+  parseAberturaOuCriacaoMs,
   parseConclusaoMs,
   parseDataReferenciaMs,
 } from './produtividade-tecnicos.util';
@@ -188,10 +193,37 @@ describe('produtividade-tecnicos.util', () => {
     expect(aggs[0].mediaHorasPorOs).toBe(2);
   });
 
-  it('horasContabilizadasRelatorio usa intervalo quando horasTrabalhadas está ausente', () => {
+  it('horasContabilizadasRelatorio para CONCLUIDO sem horasTrabalhadas estima líquido (elapsed menos aguardando peça)', () => {
     const o = os({
       idOrdemServico: 'z',
       statusOrdemServico: OrdemStatus.CONCLUIDO,
+      aberturaEm: '2024-06-10T08:00:00',
+      inicioEm: '2024-06-10T08:00:00',
+      conclusaoEm: '2024-06-10T13:00:00',
+      horasAguardandoPecaAcumuladas: 1,
+    });
+    expect(horasContabilizadasRelatorio(o)).toBe(4);
+  });
+
+  it('horasContabilizadasRelatorio para CONCLUIDO com horasTrabalhadas desconta horasAguardandoPecaAcumuladas (contrato API)', () => {
+    const o = os({
+      idOrdemServico: 'z',
+      statusOrdemServico: OrdemStatus.CONCLUIDO,
+      horasTrabalhadas: 10,
+      horasAguardandoPecaAcumuladas: 2.5,
+      aberturaEm: '2024-06-10T08:00:00',
+      inicioEm: '2024-06-10T08:00:00',
+      conclusaoEm: '2024-06-10T13:00:00',
+    });
+    expect(horasContabilizadasRelatorio(o)).toBe(7.5);
+    const semAguardar = { ...o, horasAguardandoPecaAcumuladas: undefined };
+    expect(horasContabilizadasRelatorio(semAguardar)).toBe(10);
+  });
+
+  it('horasContabilizadasRelatorio para status não concluído usa intervalo quando horasTrabalhadas está ausente', () => {
+    const o = os({
+      idOrdemServico: 'z',
+      statusOrdemServico: OrdemStatus.EM_ANDAMENTO,
       aberturaEm: '2024-06-10T08:00:00',
       inicioEm: '2024-06-10T08:00:00',
       conclusaoEm: '2024-06-10T13:00:00',
@@ -199,7 +231,16 @@ describe('produtividade-tecnicos.util', () => {
     expect(horasContabilizadasRelatorio(o)).toBe(5);
   });
 
-  it('computarProdutividadePorTecnico soma horas derivadas quando API omite horasTrabalhadas', () => {
+  it('parseAberturaOuCriacaoMs usa dataCriacao quando aberturaEm está ausente', () => {
+    const o = os({
+      idOrdemServico: 'x',
+      aberturaEm: undefined,
+      dataCriacao: '2024-06-15',
+    });
+    expect(parseAberturaOuCriacaoMs(o)).toBe(parseDataReferenciaMs('2024-06-15'));
+  });
+
+  it('computarProdutividadePorTecnico soma fallback líquido para CONCLUIDO sem horasTrabalhadas da API', () => {
     const o = os({
       idOrdemServico: '1',
       idTecnico: 't1',
@@ -212,6 +253,41 @@ describe('produtividade-tecnicos.util', () => {
     const aggs = computarProdutividadePorTecnico([o], '2024-06-01', '2024-06-30');
     expect(aggs[0].horasTotais).toBe(5);
     expect(aggs[0].mediaHorasPorOs).toBe(5);
+  });
+
+  it('horasContabilizadasRelatorio para CANCELADO usa horasTotaisAteCancelamento da API quando existir', () => {
+    const o = os({
+      idOrdemServico: 'c1',
+      statusOrdemServico: OrdemStatus.CANCELADO,
+      inicioEm: '2024-06-10T08:00:00',
+      dataAtualizacao: '2024-06-10T18:00:00',
+      horasTotaisAteCancelamento: 9.5,
+    });
+    expect(horasContabilizadasRelatorio(o)).toBe(9.5);
+  });
+
+  it('horasContabilizadasRelatorio para CANCELADO sem campo dedicado usa intervalo início até conclusão ou atualização (inclui aguardando)', () => {
+    const o = os({
+      idOrdemServico: 'c2',
+      statusOrdemServico: OrdemStatus.CANCELADO,
+      inicioEm: '2024-06-10T08:00:00',
+      conclusaoEm: '2024-06-10T18:00:00',
+      horasAguardandoPecaAcumuladas: 2,
+    });
+    expect(horasContabilizadasRelatorio(o)).toBe(10);
+  });
+
+  it('instanteParaFiltroPeriodoRelatorio para CANCELADO usa conclusaoEm ou dataAtualizacao', () => {
+    const { inicioMs, fimMs } = criarLimitesPeriodoLocal('2024-06-01', '2024-06-30');
+    const cancelada = os({
+      idOrdemServico: 'cx',
+      statusOrdemServico: OrdemStatus.CANCELADO,
+      conclusaoEm: '2024-06-15T12:00:00',
+      dataAtualizacao: '2024-07-01T12:00:00',
+    });
+    expect(instanteParaFiltroPeriodoRelatorio(cancelada)).toBe(parseDataReferenciaMs('2024-06-15T12:00:00'));
+    const lista = filtrarOrdensRelatorioNoPeriodo([cancelada], inicioMs, fimMs, [OrdemStatus.CANCELADO]);
+    expect(lista).toHaveLength(1);
   });
 
   it('calcularResumoGlobal soma técnicos', () => {
@@ -240,5 +316,70 @@ describe('produtividade-tecnicos.util', () => {
     expect(res.totalHoras).toBe(6);
     expect(res.mediaHorasPorOsGlobal).toBe(3);
     expect(res.tecnicosComOs).toBe(1);
+  });
+
+  it('agruparConcluidasOuCanceladasPorEquipamento conta só concluídas e canceladas no período e média de horas', () => {
+    const lista = [
+      os({
+        idOrdemServico: '1',
+        idEquipamento: 'e1',
+        equipamentoNome: 'Prensa',
+        statusOrdemServico: OrdemStatus.CONCLUIDO,
+        horasTrabalhadas: 4,
+        conclusaoEm: '2024-06-10T10:00:00',
+      }),
+      os({
+        idOrdemServico: '2',
+        idEquipamento: 'e1',
+        equipamentoNome: 'Prensa',
+        statusOrdemServico: OrdemStatus.CONCLUIDO,
+        horasTrabalhadas: 2,
+        conclusaoEm: '2024-06-20T10:00:00',
+      }),
+      os({
+        idOrdemServico: '3',
+        idEquipamento: 'e1',
+        equipamentoNome: 'Prensa',
+        statusOrdemServico: OrdemStatus.ABERTO,
+        horasTrabalhadas: 99,
+        dataAtualizacao: '2024-06-15T10:00:00',
+      }),
+      os({
+        idOrdemServico: '4',
+        idEquipamento: 'e1',
+        equipamentoNome: 'Prensa',
+        statusOrdemServico: OrdemStatus.CONCLUIDO,
+        conclusaoEm: '2024-07-15T10:00:00',
+      }),
+    ];
+    const ag = agruparConcluidasOuCanceladasPorEquipamento(lista, '2024-06-01', '2024-06-30');
+    expect(ag).toHaveLength(1);
+    expect(ag[0].quantidade).toBe(2);
+    expect(ag[0].nomeExibicao).toBe('Prensa');
+    expect(ag[0].mediaHorasPorOrdemServico).toBe(3);
+  });
+
+  it('filtrarConcluidasOuCanceladasNoPeriodo não duplica id', () => {
+    const lista = [
+      os({
+        idOrdemServico: '1',
+        statusOrdemServico: OrdemStatus.CONCLUIDO,
+        conclusaoEm: '2024-06-15T12:00:00',
+      }),
+    ];
+    const r = filtrarConcluidasOuCanceladasNoPeriodo(lista, '2024-06-01', '2024-06-30');
+    expect(r).toHaveLength(1);
+  });
+
+  it('calcularMediaTempoEsperaPecas ignora zeros e calcula média', () => {
+    const lista = [
+      os({ idOrdemServico: 'a', horasAguardandoPecaAcumuladas: 4 }),
+      os({ idOrdemServico: 'b', horasAguardandoPecaAcumuladas: 2 }),
+      os({ idOrdemServico: 'c', horasAguardandoPecaAcumuladas: 0 }),
+    ];
+    const m = calcularMediaTempoEsperaPecas(lista);
+    expect(m.osNoUniverso).toBe(3);
+    expect(m.osComEsperaRegistada).toBe(2);
+    expect(m.mediaHoras).toBe(3);
   });
 });

@@ -61,8 +61,8 @@ import { UserRole, ROLE_LABELS } from '../../../core/enums/roles.enum';
             </a>
           }
 
-          <!-- Equipamentos (SUPERVISOR+) -->
-          @if (hasRole(UserRole.SUPERVISOR_DE_MANUTENCAO) || hasRole(UserRole.ADMIN)) {
+          <!-- Equipamentos (TÉCNICO+, consulta ou gestão) -->
+          @if (hasRole(UserRole.TECNICO) || hasRole(UserRole.SUPERVISOR_DE_MANUTENCAO) || hasRole(UserRole.ADMIN)) {
             <a
               routerLink="/app/equipamentos"
               routerLinkActive="bg-on-primary/20"
@@ -73,8 +73,8 @@ import { UserRole, ROLE_LABELS } from '../../../core/enums/roles.enum';
             </a>
           }
 
-          <!-- Relatórios (SUPERVISOR+) -->
-          @if (hasRole(UserRole.SUPERVISOR_DE_MANUTENCAO) || hasRole(UserRole.ADMIN)) {
+          <!-- Relatórios (TÉCNICO+, consulta ou gestão) -->
+          @if (hasRole(UserRole.TECNICO) || hasRole(UserRole.SUPERVISOR_DE_MANUTENCAO) || hasRole(UserRole.ADMIN)) {
             <a
               routerLink="/app/relatorios/tecnicos"
               routerLinkActive="bg-on-primary/20"
@@ -110,19 +110,13 @@ import { UserRole, ROLE_LABELS } from '../../../core/enums/roles.enum';
               class="absolute bottom-full left-0 w-full mb-2 bg-surface rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
             >
               <a
-                href="#"
+                routerLink="/app/perfil"
                 class="flex items-center gap-2 px-4 py-2 text-on-surface hover:bg-surface-container transition-colors text-sm first:rounded-t-lg"
               >
                 <span class="material-symbols-outlined text-sm">person</span>
                 <span>Perfil</span>
               </a>
-              <a
-                href="#"
-                class="flex items-center gap-2 px-4 py-2 text-on-surface hover:bg-surface-container transition-colors text-sm"
-              >
-                <span class="material-symbols-outlined text-sm">settings</span>
-                <span>Configurações</span>
-              </a>
+              <!-- Implementação futura: item "Configurações" (rota /app/configuracoes ou equivalente) quando existir a feature. -->
               <button
                 (click)="onLogout()"
                 class="w-full flex items-center gap-2 px-4 py-2 text-error hover:bg-error/10 transition-colors text-sm last:rounded-b-lg"

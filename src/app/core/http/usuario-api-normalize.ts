@@ -1,4 +1,5 @@
 import { UserRole } from '../enums/roles.enum';
+import { User } from '../models/auth.model';
 import { Usuario } from '../models/usuario.model';
 
 function asRecord(v: unknown): Record<string, unknown> | null {
@@ -33,7 +34,7 @@ function toBoolStatus(v: unknown): boolean {
 /** Item da API (camelCase ou snake_case) → `Usuario`. */
 export function mapBrutoParaUsuario(raw: unknown): Usuario {
   const r = asRecord(raw) ?? {};
-  const id = String(r['idUsuario'] ?? r['id_usuario'] ?? '').trim();
+  const id = String(r['idUsuario'] ?? r['id_usuario'] ?? r['id'] ?? '').trim();
   const nome = String(r['nomeUsuario'] ?? r['nome_usuario'] ?? '').trim();
   const email = String(r['emailUsuario'] ?? r['email_usuario'] ?? r['email'] ?? '').trim();
   const perfilRaw = String(r['perfilUsuario'] ?? r['perfil_usuario'] ?? r['perfil'] ?? '').trim();
@@ -59,6 +60,21 @@ export function mapBrutoParaUsuario(raw: unknown): Usuario {
     u.senhaTemporaria = senhaRaw;
   }
   return u;
+}
+
+/** Login / localStorage → `User` da sessão; `null` se não houver id válido. */
+export function mapBrutoParaSessionUser(raw: unknown): User | null {
+  const u = mapBrutoParaUsuario(raw);
+  if (!u.idUsuario) {
+    return null;
+  }
+  return {
+    idUsuario: u.idUsuario,
+    nomeUsuario: u.nomeUsuario,
+    emailUsuario: u.emailUsuario,
+    perfilUsuario: u.perfilUsuario,
+    statusUsuario: u.statusUsuario,
+  };
 }
 
 export function normalizarListaUsuarios(body: unknown): Usuario[] {
