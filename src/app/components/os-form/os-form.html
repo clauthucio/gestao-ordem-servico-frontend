@@ -29,7 +29,7 @@
     </div>
   }
 
-  <form [formGroup]="form" (ngSubmit)="onSalvar()" novalidate>
+  <form [formGroup]="form" (ngSubmit)="onSalvar()" novalidate class="text-left">
 
     <!-- Erro global -->
     @if (erro) {
@@ -46,7 +46,7 @@
           <!-- Coluna A: metadados compactos -->
           <div class="space-y-4">
             <div>
-              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+              <label class="block text-left text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
                 Equipamento
               </label>
               <input
@@ -59,7 +59,7 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+                <label class="block text-left text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
                   Tipo de Manutenção
                 </label>
                 <input
@@ -70,7 +70,7 @@
                 />
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+                <label class="block text-left text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
                   Prioridade
                 </label>
                 <input
@@ -83,7 +83,7 @@
             </div>
 
             <div>
-              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+              <label class="block text-left text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
                 Técnico Responsável
               </label>
               <input
@@ -98,7 +98,7 @@
           <!-- Coluna B: descrições -->
           <div class="space-y-4">
             <div>
-              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+              <label class="block text-left text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
                 Descrição da Falha
               </label>
               <textarea
@@ -113,7 +113,7 @@
 
         <!-- Data prevista (meta): largura total -->
         <div>
-          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+          <label class="block text-left text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
             Data prevista para conclusão <span class="text-error">*</span>
           </label>
           <input
@@ -135,7 +135,7 @@
       <div class="space-y-6">
         <!-- Descrição da Falha (readonly) -->
         <div>
-          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+          <label class="block text-left text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
             Descrição da Falha
           </label>
           <textarea
@@ -148,7 +148,7 @@
 
         <!-- Descrição do Serviço (obrigatório) -->
         <div>
-          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+          <label class="block text-left text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
             Descrição do Serviço <span class="text-error">*</span>
           </label>
           <textarea
@@ -166,7 +166,7 @@
 
         <!-- Peças Utilizadas (obrigatório) -->
         <div>
-          <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+          <label class="block text-left text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
             Peças Utilizadas <span class="text-error">*</span>
           </label>
           <input
@@ -191,7 +191,7 @@
 
           <!-- Equipamento -->
           <div>
-            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            <label class="block text-left text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
               Equipamento <span class="text-error">*</span>
             </label>
             <div class="relative">
@@ -230,7 +230,7 @@
 
           <!-- Descrição da Falha -->
           <div>
-            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            <label class="block text-left text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
               Descrição da Falha <span class="text-error">*</span>
             </label>
             <textarea
@@ -256,7 +256,7 @@
 
           <!-- Tipo de Manutenção -->
           <div>
-            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            <label class="block text-left text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
               Tipo de Manutenção <span class="text-error">*</span>
             </label>
             <div class="relative">
@@ -274,7 +274,7 @@
 
           <!-- Prioridade -->
           <div>
-            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            <label class="block text-left text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
               Prioridade <span class="text-error">*</span>
             </label>
             <div class="relative">
@@ -297,7 +297,7 @@
           </div>
 
           <div>
-            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+            <label class="block text-left text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
               Técnico Responsável
               @if (requerTecnico) {
                 <span class="text-error">*</span>
