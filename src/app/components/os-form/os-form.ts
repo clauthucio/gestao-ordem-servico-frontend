@@ -176,6 +176,7 @@ export class OsFormComponent implements OnInit {
 
         this.aplicarValidadorTecnico();
         this.aplicarValidadorDataPrevistaConclusao();
+        this.aplicarValidadoresEncerramento();
 
         this.cdr.markForCheck();
       },
@@ -202,7 +203,7 @@ export class OsFormComponent implements OnInit {
       prioridadeOrdemServico: os.prioridadeOrdemServico,
       descricaoFalha: os.descricaoFalha,
       idTecnico: os.idTecnico ?? '',
-      descricaoServico: os.descricaoServico ?? '',
+      descricaoServico: '',
       pecasUtilizadas: os.pecasUtilizadas ?? '',
     });
   }
@@ -282,6 +283,23 @@ export class OsFormComponent implements OnInit {
     ctrl.updateValueAndValidity({ emitEvent: false });
   }
 
+  /** Descrição do serviço e peças só são obrigatórios ao encerrar a OS. */
+  private aplicarValidadoresEncerramento(): void {
+    const ds = this.form.get('descricaoServico');
+    const pu = this.form.get('pecasUtilizadas');
+    if (!ds || !pu) return;
+    const max = Validators.maxLength(2000);
+    if (this.modoEncerrar) {
+      ds.setValidators([Validators.required, max]);
+      pu.setValidators([Validators.required, max]);
+    } else {
+      ds.setValidators([max]);
+      pu.setValidators([max]);
+    }
+    ds.updateValueAndValidity({ emitEvent: false });
+    pu.updateValueAndValidity({ emitEvent: false });
+  }
+
   private mostrarDialogValidacaoFormulario(): void {
     const idTecnicoCtrl = this.form.get('idTecnico');
     const dpCtrl = this.form.get('dataPrevistaConclusao');
@@ -293,6 +311,10 @@ export class OsFormComponent implements OnInit {
       this.dialogTitulo = 'Campo obrigatório';
       this.dialogMensagem =
         'Técnico responsável é obrigatório.';
+    } else if (this.modoEncerrar) {
+      this.dialogTitulo = 'Campos obrigatórios';
+      this.dialogMensagem =
+        'Informe a Descrição do Serviço e as Peças Utilizadas para finalizar a ordem.';
     } else {
       this.dialogTitulo = 'Campos obrigatórios';
       this.dialogMensagem =
@@ -344,8 +366,6 @@ export class OsFormComponent implements OnInit {
       idTecnico: raw.idTecnico!.trim(),
     };
 
-    if (raw.descricaoServico?.trim()) payload.descricaoServico = raw.descricaoServico;
-
     this.ordemService.criar(payload).subscribe({
       next: () => {
         this.salvando = false;
@@ -375,7 +395,6 @@ export class OsFormComponent implements OnInit {
     } else {
       payload.idTecnico = null;
     }
-    if (raw.descricaoServico?.trim()) payload.descricaoServico = raw.descricaoServico;
     if (raw.pecasUtilizadas?.trim()) payload.pecasUtilizadas = raw.pecasUtilizadas;
 
     this.ordemService
@@ -432,7 +451,6 @@ export class OsFormComponent implements OnInit {
       prioridadeOrdemServico: raw.prioridadeOrdemServico as PrioridadeType,
       descricaoFalha: raw.descricaoFalha!,
     };
-    if (raw.descricaoServico?.trim()) overlay.descricaoServico = raw.descricaoServico;
     if (raw.pecasUtilizadas?.trim()) overlay.pecasUtilizadas = raw.pecasUtilizadas;
     const osAberta = this.osParaEditar!.statusOrdemServico === OrdemStatus.ABERTO;
     if (osAberta) overlay.idTecnico = raw.idTecnico!.trim();
@@ -488,23 +506,6 @@ export class OsFormComponent implements OnInit {
   }
 
   private salvarEncerrar(raw: ReturnType<typeof this.form.getRawValue>): void {
-    const camposObrigatorios = [
-      { nome: 'Descrição do Serviço', valor: raw.descricaoServico?.trim() },
-      { nome: 'Peças Utilizadas', valor: raw.pecasUtilizadas?.trim() },
-    ];
-
-    const camposVazios = camposObrigatorios.filter(c => !c.valor);
-    if (camposVazios.length > 0) {
-      const nomes = camposVazios.map(c => c.nome).join(', ');
-      this.dialogTitulo = 'Campos obrigatórios';
-      this.dialogMensagem = `${nomes} ${camposVazios.length === 1 ? 'é obrigatório' : 'são obrigatórios'} para encerrar a ordem de serviço.`;
-      this.dialogTipo = 'erro';
-      this.dialogBotoes = [{ label: 'Entendi', acao: 'ok', estilo: 'primario' }];
-      this.dialogVisivel = true;
-      this.salvando = false;
-      return;
-    }
-
     const payload: AtualizarOrdemServicoPayload = {
       statusOrdemServico: OrdemStatus.CONCLUIDO,
       descricaoServico: raw.descricaoServico!.trim(),

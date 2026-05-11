@@ -108,17 +108,6 @@
                 [disabled]="true"
               ></textarea>
             </div>
-            <div>
-              <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
-                Descrição do Serviço
-              </label>
-              <textarea
-                rows="2"
-                [value]="osParaIniciar?.descricaoServico || 'N/D'"
-                class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface resize-none opacity-60 cursor-not-allowed"
-                [disabled]="true"
-              ></textarea>
-            </div>
           </div>
         </div>
 
@@ -258,19 +247,6 @@
                 @else if (f['descricaoFalha'].errors?.['maxlength']) { Máximo de 2000 caracteres. }
               </p>
             }
-          </div>
-
-          <!-- Descrição do Serviço -->
-          <div>
-            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
-              Descrição do Serviço
-            </label>
-            <textarea
-              formControlName="descricaoServico"
-              rows="3"
-              placeholder="Descreva o serviço a ser realizado..."
-              class="w-full bg-surface-container-low border-none rounded-lg py-3 px-4 text-sm text-on-surface placeholder:text-outline-variant/60 focus:ring-2 focus:ring-primary/20 resize-none"
-            ></textarea>
           </div>
 
         </div>
