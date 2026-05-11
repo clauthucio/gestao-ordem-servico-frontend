@@ -6,7 +6,7 @@
     (click)="$event.stopPropagation()"
   >
     <!-- Header -->
-    <div class="flex items-start gap-4">
+    <div class="flex items-start gap-4 text-left">
       <span class="material-symbols-outlined text-3xl shrink-0 mt-0.5" [class]="iconeClass">
         {{ icone }}
       </span>
@@ -17,7 +17,7 @@
     </div>
 
     <!-- Botões -->
-    <div class="flex items-center justify-end gap-3 pt-2 border-t border-outline-variant/20">
+    <div class="flex items-center justify-center gap-3 pt-2 border-t border-outline-variant/20">
       @for (botao of botoes; track botao.acao) {
         <button
           type="button"
